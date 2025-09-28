@@ -2,6 +2,24 @@
       background: var(--overlay); /* átlátszó using theme */
       backdrop-filter: blur(6px);      /* blur effekt */
     }
+    .navbar-brand-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .navbar-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .navbar-logo:hover {
+      transform: scale(1.05);
+    }
+
     .navbar-brand {
       font-weight: bold;
       font-size: 1.5rem;
@@ -66,7 +84,8 @@
       top: calc(100% + 9px) !important; /* place the menu just below the navbar bottom with a small gap */
       left: 0; /* align start of menu with the nav item */
       background: var(--overlay) !important; /* same transparency as navbar */
-      backdrop-filter: blur(6px); /* match navbar blur */
+      backdrop-filter: blur(6px); /* increased blur to match navbar */
+      -webkit-backdrop-filter: blur(6px); /* for Safari support */
       border: none; /* cleaner look */
       border-radius: 0.35rem; /* slightly rounded */
       box-shadow: 0 10px 30px rgba(0,0,0,0.45);

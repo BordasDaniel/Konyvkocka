@@ -6,6 +6,8 @@
   --link: #4DA6FF;
   --overlay: rgba(18,18,18,0.6);
   --navbar-height: 64px;
+  --border-color: #990000;
+  --tags: #FFD700;
 }
 
 body {
@@ -19,6 +21,14 @@ body {
       align-items: center;
       position: relative;
       height: 0px;
+    }
+
+    h2
+    {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      color: var(--secondary);
     }
 
     .carousel,
@@ -59,7 +69,7 @@ body {
       z-index: 2; /* előtérben */
       opacity: 0;
       transform: translateY(20px);
-      transition: opacity 0.8s ease, transform 0.8s ease;
+      transition: transform 0.8s ease;
     }
 
     .carousel-item.active .carousel-content {
@@ -72,6 +82,10 @@ body {
       display: flex;
       flex-direction: column;
       justify-content: center;
+      background: var(--overlay);
+      backdrop-filter: blur(6px);
+      border-radius: 20px;
+      padding: 2rem;
     }
 
     .tags span {
@@ -91,12 +105,12 @@ body {
     }
 
     .carousel-image img {
-      width: 100%;
-      height: auto;
-      max-height: 400px;
+      width: 400px;
+      height: 500px;
       object-fit: cover;
       border-radius: 10px;
       box-shadow: 0 0 20px rgba(0,0,0,0.6), 0 4px 18px rgba(194,157,89,0.08);
+      border: 4px solid var(--border-color);
     }
 
     .carousel .btn{
@@ -127,26 +141,36 @@ body {
     flex-direction: column;
     text-align: center;
     margin: 8%;
+    padding: 1rem;
   }
 
   .carousel-text {
     order: 2; /* mobilon a szöveg legyen a kép után */
+    width: 100%;
+    padding: 1.5rem;
   }
 
   .carousel-image {
     order: 1; /* mobilon a kép legyen legfelül */
+    width: 100%;
   }
 
   .carousel-image img {
-    max-height: 250px;
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+    margin: 0 auto;
   }
   
-  .carousel-item
-  {
+  .carousel-item {
     background-size: cover;
     background-position: center;
+    min-height: 100vh;
   }
 
+  .hero-carousel {
+    min-height: 100vh;
+  }
 }
 
 /* Themed carousel controls using the site's color variables */
@@ -156,14 +180,14 @@ body {
   height: 4rem;
   top: 50%;
   transform: translateY(-50%);
-  opacity: 0.95;
+  opacity: 1;
 }
 
 .carousel-control-prev-icon,
 .carousel-control-next-icon {
   background-image: none !important;
-  width: 2rem;
-  height: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
   display: inline-block;
   background-color: var(--primary);
   border-radius: 0.35rem;
@@ -174,7 +198,7 @@ body {
   -webkit-mask-position: center;
   mask-position: center;
   transition: background-color .18s ease, transform .18s ease, opacity .18s ease;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 8px rgba(194,157,89,0.4);
 }
 
 .carousel-control-prev-icon {
@@ -200,4 +224,143 @@ body {
 }
 .carousel-indicators .active {
   background-color: var(--primary);
+}
+
+
+
+
+/*lower-cards*/
+
+
+
+/*Footer styles*/
+
+footer {
+    background: var(--overlay);
+    backdrop-filter: blur(6px);
+    padding: 2rem 0 0 0;
+    color: var(--text);
+}
+
+.footer h4 {
+    color: var(--secondary);
+    margin-bottom: 1rem;
+    font-weight: bold;
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li {
+    margin-bottom: 0.8rem;
+}
+
+.footer-links a {
+    color: var(--text);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: var(--primary);
+}
+
+.social-links a {
+    color: var(--text);
+    font-size: 1.5rem;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.social-links a:hover {
+    color: var(--primary);
+}
+
+
+.footer-divider {
+    border-color: rgba(255,255,255,0.1);
+    margin: 0.3rem 0;
+}
+
+/* Add Bootstrap Icons */
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css");
+
+.lower-cards {
+    h3 {
+        color: var(--secondary);
+    }
+
+    .card {
+        height: 550px;
+        background: var(--overlay);
+        border: none;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        width: 300px;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    }
+
+    .card-img-top {
+        height: 350px;
+        object-fit: cover;
+        border-bottom: 2px solid var(--primary);
+    }
+
+    .card-body {
+        background: var(--overlay);
+        backdrop-filter: blur(6px);
+        padding: 1.5rem;
+    }
+
+    .card-title {
+        color: var(--secondary);
+        font-weight: bold;
+    }
+
+    .card-text {
+        color: var(--text);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .btn {
+        background-color: var(--primary);
+        color: var(--bg);
+        border: none;
+        padding: 0.5rem 1.2rem;
+        font-size: 0.9rem;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+        position: relative;
+        overflow: hidden;
+        z-index: 1;
+        width: 100%;
+        border-radius: 5px;
+    }
+
+    .btn:hover {
+        background-color: var(--secondary);
+        color: var(--bg);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(194,157,89,0.4);
+        font-weight: bold;
+    }
+
+    .btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(194,157,89,0.3);
+    }
 }
