@@ -21,6 +21,7 @@ body {
       align-items: center;
       position: relative;
       height: 0px;
+      border-bottom: var(--border-color) 3px dotted;
     }
 
     h2
@@ -44,6 +45,8 @@ body {
       justify-content: center;
       color: var(--text);
       overflow: hidden;
+      background-repeat: no-repeat !important;
+      background-size: cover;
     }
 
     /* háttér blur */
@@ -312,6 +315,16 @@ footer {
         height: 350px;
         object-fit: cover;
         border-bottom: 2px solid var(--primary);
+        position: relative;
+        transition: filter 0.3s ease;
+    }
+
+    .card-img-blur {
+        filter: blur(1.5px);
+    }
+
+    .card:hover .card-img-blur {
+        filter: blur(0);
     }
 
     .card-body {
