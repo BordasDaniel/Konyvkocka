@@ -1,0 +1,16 @@
+:root {
+  --bg: #121212;
+  --primary: #C29D59;
+  --secondary: #E6C07C;
+  --text: #E0E0E0;
+  --link: #4DA6FF;
+  --overlay: rgba(18,18,18,0.6);
+  --navbar-height: 64px;
+  --border-color: #990000;
+  --tags: #FFD700;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+}
