@@ -6,6 +6,21 @@
       background: var(--overlay); /* átlátszó using theme */
       backdrop-filter: blur(6px);      /* blur effekt */
     }
+
+/* Ensure the page content doesn't go under the fixed navbar */
+/* remove global body padding to avoid large desktop gap; we'll add mobile-only spacing in carousel.css */
+
+/* subtle separator on desktop so navbar doesn't feel floating */
+.navbar-custom {
+  box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 2px 8px rgba(0,0,0,0.25);
+}
+
+/* On small screens the navbar might be taller (hamburger + padding) */
+@media (max-width: 767.98px) {
+  :root {
+    --navbar-height: 96px;
+  }
+}
     .navbar-brand-container {
       display: flex;
       align-items: center;
@@ -87,16 +102,44 @@
       position: absolute; /* position relative to .nav-item.dropdown */
       top: calc(100% + 9px) !important; /* place the menu just below the navbar bottom with a small gap */
       left: 0; /* align start of menu with the nav item */
-      background: var(--overlay) !important; /* same transparency as navbar */
-      backdrop-filter: blur(6px); /* increased blur to match navbar */
-      -webkit-backdrop-filter: blur(6px); /* for Safari support */
-      border: none; /* cleaner look */
+      /* explicit visible fallback background so dropdown is readable even without backdrop-filter */
+      background: linear-gradient(180deg, rgba(10,10,10,0.72), rgba(18,18,18,0.5)) !important;
+      background-color: rgba(18,18,18,0.6) !important;
+      -webkit-background-clip: padding-box;
+      background-clip: padding-box;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.02);
       border-radius: 0.35rem; /* slightly rounded */
       box-shadow: 0 10px 30px rgba(0,0,0,0.45);
       transform-origin: top center;
       padding-top: 0.35rem;
       z-index: 1050; /* above content but below any modals */
     }
+
+/* stronger selector that targets dropdowns inside our custom navbar to avoid Bootstrap overrides */
+.navbar-custom .dropdown-menu {
+  /* refined dropdown appearance */
+  background: linear-gradient(180deg, rgba(12,10,8,0.92), rgba(18,16,14,0.86)) !important;
+  background-color: rgba(12,10,8,0.92) !important;
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  border: 1px solid rgba(255,255,255,0.03) !important;
+  border-radius: 0.6rem !important;
+  padding: 0.45rem 0.25rem !important;
+  min-width: 200px !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.55) !important;
+  transition: transform 200ms ease, opacity 200ms ease;
+  transform-origin: top center;
+  opacity: 0;
+}
+
+.navbar-custom .dropdown-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+}
 
     /* remove the top rounding so it visually connects to the navbar */
     .dropdown.show > .dropdown-menu,
@@ -114,13 +157,32 @@
     /* ensure dropdown items remain readable on transparent bg */
     .dropdown-menu .dropdown-item {
       color: var(--text);
+      padding: 0.55rem 1rem;
+      border-radius: 0.35rem;
+      transition: background-color 160ms ease, color 160ms ease;
+      margin: 0.12rem 0;
     }
     .dropdown-menu .dropdown-item:focus, .dropdown-menu .dropdown-item:hover {
-      background-color: rgba(230,192,124,0.06);
+      background-color: rgba(230,192,124,0.08);
       color: var(--secondary);
+      transform: translateX(4px);
     }
 
     /* when the navbar is small (mobile), keep the dropdown attached */
     @media (max-width: 767.98px) {
       .dropdown-menu::before { left: 0.75rem; }
+      /* mobile collapsed menu: keep default dropdown toggle behavior, but make dropdowns more opaque */
+      .navbar-collapse {
+        background: rgba(6,6,6,0.12);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        padding: 0.25rem 0.5rem;
+      }
+      .navbar-collapse .dropdown-menu {
+        /* do NOT force display: block or position: static here — let Bootstrap toggle .show */
+        background: rgba(6,6,6,0.9) !important;
+        border-radius: 0.35rem !important;
+        padding: 0.25rem 0.35rem !important;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.45) !important;
+      }
     }

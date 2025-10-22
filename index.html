@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KönyvKocka - Könyvek és Filmek</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./src/css/carousel.css">
+  <link rel="stylesheet" href="./src/css/navbar.css">
+  <link rel="stylesheet" href="./src/css/general.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <style>
+
+  </style>
+</head>
+<body class="text-light" style="background-color: rgb(29 31 34);"">
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+  <div class="container-fluid">
+    <!-- Logo -->
+     
+    <div class="navbar-brand-container">
+      <img src="https://img.pikbest.com/origin/09/26/29/82YpIkbEsTegM.png!sw800" alt="Logo" class="navbar-logo">
+      <a class="navbar-brand" href="#">KönyvKocka</a>
+  </div>
+
+    <!-- Hamburger menu -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Menü -->
+    <div class="collapse navbar-collapse" id="mainNavbar">
+      <!-- Bal oldali menü elemek -->
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link active" href="./index.html">Kezdőlap</a>
+        </li>
+        
+        <!-- Dropdown -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="kategoriakDropdown" role="button" data-bs-toggle="dropdown">
+            Kategóriák
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="kategoriakDropdown">
+            <li><a class="dropdown-item" href="#">Romantikus</a></li>
+            <li><a class="dropdown-item" href="#">Sci-fi</a></li>
+            <li><a class="dropdown-item" href="#">Akció</a></li>
+             <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#">Könyvek</a></li>
+            <li><a class="dropdown-item" href="#">Filmek</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#">Lepj meg!</a></li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Keresés</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="#">Támogatás</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Rólunk</a>
+        </li>
+      </ul>
+
+      <!-- Jobb oldali elemek -->
+      <ul class="navbar-nav">
+
+        <li class="nav-item">
+          <a class="nav-link" href="./login.html"><i class="bi bi-person-circle"></i> Bejelentkezés</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="#"><i class="bi bi-cart3"></i> Kosár</a>
+        </li>
+     
+      </ul>
+    </div>
+  </div>
+</nav>
+
+
+<!-- HERO CAROUSEL -->
+<section class="hero-carousel">
+  <div id="contentCarousel" class="carousel slide carousel-fade w-100" data-bs-ride="carousel">
+    <div class="carousel-inner">
+
+      <!-- ITEM 1 -->
+      <div class="carousel-item active" style="background-image: url('../src/img/carousel.jpg');">
+        <div class="carousel-content">
+          <div class="carousel-text">
+            <div class="tags">
+              <span>PG-13</span>
+              <span>1997</span>
+              <span>Romantikus</span>
+              <span>Dráma</span>
+            </div>
+            <h2 class="mt-3">Titanic</h2>
+            <p>
+              A Titanic egy 1997-es amerikai romantikus filmdráma, amely egy tragikus szerelmi történetet mesél el a híres óceánjáró katasztrófájának hátterében.
+            </p>
+            <button class="btn mt-3">Lejátszás</button>
+          </div>
+          <div class="carousel-image">
+            <img src="https://m.media-amazon.com/images/I/71ZJ8am0mKL._AC_SY879_.jpg" alt="Film borító">
+          </div>
+        </div>
+      </div>
+
+      <!-- ITEM 2 -->
+      <div class="carousel-item" style="background-image: url('../src/img/carousel.jpg');">
+        <div class="carousel-content">
+          <div class="carousel-text">
+            <div class="tags">
+              <span>R</span>
+              <span>1972</span>
+              <span>Bűnügyi</span>
+              <span>Dráma</span>
+            </div>
+            <h2 class="mt-3">A keresztapa</h2>
+            <p>
+              A Keresztapa egy 1972-es bűnügyi dráma, amely a Corleone maffia család történetét meséli el, és amely a filmtörténelem egyik legnagyobb klasszikusává vált.
+            </p>
+            <button class="btn mt-3">Lejátszás</button>
+          </div>
+          <div class="carousel-image">
+            <img src="https://m.media-amazon.com/images/M/MV5BNGEwYjgwOGQtYjg5ZS00Njc1LTk2ZGEtM2QwZWQ2NjdhZTE5XkEyXkFqcGc@._V1_.jpg" alt="Film borító">
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Controls -->
+    <button class="carousel-control-prev" type="button" data-bs-target="#contentCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#contentCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon"></span>
+    </button>
+  </div>
+</section>
+
+<section class="container lower-cards my-5">
+  <div class="container my-5">
+    <h3 class="mb-4">Friss tartalmak</h3>
+    <div class="row">
+
+      <div class="col-md-3 mb-3">
+        <div class="card">
+          <img src="https://upload.wikimedia.org/wikipedia/en/1/18/Inception_OST.jpg" class="card-img-top" alt="Film borító">
+          <div class="card-body">
+            <h5 class="card-title">Eredet</h5>
+            <p class="card-text">Christopher Nolan elmetbending thrillere, a főhős az álmok világában próbál információkat szerezni.</p>
+            <button class="btn">Megtekintés</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 mb-3">
+        <div class="card">
+          <img src="https://m.media-amazon.com/images/M/MV5BYzdjMDAxZGItMjI2My00ODA1LTlkNzItOWFjMDU5ZDJlYWY3XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg" class="card-img-top" alt="Film borító">
+          <div class="card-body">
+            <h5 class="card-title">Interstellar</h5>
+            <p class="card-text">Egy csoport asztronauta átutazik egy féreglyukon, hogy új otthont találjon az emberiség számára.</p>
+            <button class="btn">Megtekintés</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 mb-3">
+        <div class="card">
+          <img src="https://books.google.hu/books/publisher/content?id=B4zqEAAAQBAJ&hl=hu&pg=PA1&img=1&zoom=3&bul=1&sig=ACfU3U0ZEhTqEsyQ00i0Dg2e8n0r7s5xiw&w=1280" class="card-img-top" alt="Könyv borító">
+          <div class="card-body">
+            <h5 class="card-title">A kis herceg</h5>
+            <p class="card-text">Antoine de Saint-Exupéry időtlen klasszikusa a barátságról, szeretetről és az élet nagy kérdéseiről.</p>
+            <button class="btn">Megtekintés</button>
+          </div>
+        </div>
+      </div>
+
+        <div class="col-md-3 mb-3">
+        <div class="card">
+          <img src="./src/img/carousel.jpg" class="card-img-top card-img-blur" alt="Anime cover">
+          <div class="card-body">
+            <h5 class="card-title">Továbbiak</h5>
+            <p class="card-text">Érdekelnek még további tartalmak?</p>
+            <button class="btn">Érdekel</button>
+          </div>
+        </div>
+      </div>
+  </div>
+</div>
+
+<hr>
+
+   <div class="container my-5">
+    <h3 class="mb-4">Felkapottak</h3>
+    <div class="row">
+
+      <div class="col-md-3 mb-3">
+        <div class="card">
+          <img src="https://images.justwatch.com/poster/176669762/s718/a-gyuruk-ura-a-gyuru-szovetsege.jpg" class="card-img-top" alt="Film borító">
+          <div class="card-body">
+            <h5 class="card-title">A Gyűrűk Ura</h5>
+            <p class="card-text">J.R.R. Tolkien fantasy remekműve, amely egy gyűrű elpusztításának epikus kalandját meséli el.</p>
+            <button class="btn">Megtekintés</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 mb-3">
+        <div class="card">
+          <img src="https://marvin.bline.hu/product_images/1376/B251773.JPG" class="card-img-top" alt="Könyv borító">
+          <div class="card-body">
+            <h5 class="card-title">1984</h5>
+            <p class="card-text">George Orwell disztópikus regénye egy totalitárius társadalomról, ahol a Nagy Testvér mindenkit figyel.</p>
+            <button class="btn">Megtekintés</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 mb-3">
+        <div class="card">
+          <img src="https://upload.wikimedia.org/wikipedia/en/1/1c/The_Grand_Budapest_Hotel.png" class="card-img-top" alt="Film borító">
+          <div class="card-body">
+            <h5 class="card-title">A Grand Budapest Hotel</h5>
+            <p class="card-text">Wes Anderson színes és szórakoztató filmje egy legendás concierge és fiatal portás barátságáról.</p>
+            <button class="btn">Megtekintés</button>
+          </div>
+        </div>
+      </div>
+
+        <div class="col-md-3 mb-3">
+        <div class="card">
+          <img src="./src/img/carousel.jpg" class="card-img-top card-img-blur" alt="Anime cover">
+          <div class="card-body">
+            <h5 class="card-title">Továbbiak</h5>
+            <p class="card-text">Érdekelnek még további tartalmak?</p>
+            <button class="btn">Érdekel</button>
+          </div>
+        </div>
+      </div>
+  </div>
+
+</section>
+
+
+  <!-- Footer -->
+  <footer class="footer">
+      <div class="container">
+          <div class="row">
+              <!-- Rólunk szekció -->
+        <div class="col-md-4 mb-4 px-5">
+                  <h4>KönyvKocka</h4>
+                  <p>Fedezd fel a könyvek és filmek világát velünk! Nálunk megtalálod a legjobb történeteket kedvező áron.</p>
+          <ul class="social-links list-unstyled">
+          <li><a href="#"><i class="bi bi-facebook"></i> Facebook</a></li>
+          <li><a href="#"><i class="bi bi-instagram"></i> Instagram</a></li>
+          <li><a href="#"><i class="bi bi-discord"></i> Discord</a></li>
+          </ul>
+              </div>
+              
+              <!-- Gyors linkek -->
+        <div class="col-md-4 mb-4 px-5">
+                  <h4>Gyors linkek</h4>
+                  <ul class="footer-links">
+                      <li><a href="./index.html">Kezdőlap</a></li>
+                      <li><a href="#">Kategóriák</a></li>
+                      <li><a href="#">Keresés</a></li>
+                      <li><a href="#">Támogatás</a></li>
+                      <li><a href="./gyik.html">GYIK</a></li>
+                  </ul>
+              </div>
+              
+              <!-- Kapcsolat -->
+        <div class="col-md-4 mb-4 px-5">
+                  <h4>Kapcsolat</h4>
+                  <ul class="footer-links">
+                      <li><i class="bi bi-envelope me-2"></i> info@konyvkocka.hu</li>
+                      <li><i class="bi bi-telephone me-2"></i> +36 1 234 5678</li>
+                      <li><i class="bi bi-geo-alt me-2"></i> Budapest, Magyarország</li>
+                  </ul>
+              </div>
+          </div>
+          
+          <!-- Copyright -->
+          <div class="footer-bottom text-center">
+              <p class="mb-0">&copy; 2025 KönyvKocka. Minden jog fenntartva.</p>
+          </div>
+      </div>
+  </footer>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // beállítjuk a háttérképet az inline style alapján
+  document.querySelectorAll('.carousel-item').forEach(item => {
+    const bg = item.getAttribute('style').match(/url\('(.*)'\)/)[1];
+    item.style.setProperty("--bg", `url(${bg})`);
+    item.style.setProperty("background-image", `url(${bg})`);
+  });
+</script>
+</body>
+</html>
