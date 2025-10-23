@@ -8,118 +8,9 @@
   <link rel="stylesheet" href="./src/css/carousel.css">
   <link rel="stylesheet" href="./src/css/navbar.css">
   <link rel="stylesheet" href="./src/css/general.css">
+  <link rel="stylesheet" href="./src/css/modal.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <link rel="icon" type="image/x-icon" href="https://img.pikbest.com/origin/09/26/29/82YpIkbEsTegM.png!sw800">
-
-  <style>
-    /* Modal custom styles */
-    .custom-modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(2,2,2,0.75);
-      z-index: 1040; /* below Bootstrap modal (1050) */
-      display: none;
-    }
-
-    .modal-custom { --bs-modal-zindex: 1060; }
-
-    .modal-content { background: linear-gradient(180deg, rgba(10,10,10,0.9), rgba(6,6,6,0.95)); border: 1px solid rgba(255,255,255,0.04); }
-
-    .modal-header { border-bottom: 1px solid rgba(255,255,255,0.03); }
-
-    .modal-title { color: var(--h1Text); font-weight: 800; }
-
-    .modal-content img.cover {
-      width: 100%;
-      height: auto;
-      object-fit: cover;
-      border-radius: 6px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
-      border: 1px solid rgba(255,255,255,0.03);
-    }
-
-    .tags-inline { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
-
-    .tags-inline span {
-      background: linear-gradient(180deg, rgba(194,157,89,0.12), rgba(230,192,124,0.06));
-      color: var(--primary);
-      padding: 0.28rem 0.6rem;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      border: 1px solid rgba(194,157,89,0.08);
-    }
-
-    .modal-body p { color: rgba(255,255,255,0.85); }
-
-    .video-wrapper { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 0.5rem; border-radius: 6px; overflow: hidden; }
-
-    .video-wrapper iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-
-    /* Responsive: stack cover above content on small screens */
-    @media (max-width: 767.98px){
-      .modal-dialog { max-width: 95%; }
-      .modal-body .row { align-items: start; }
-      .modal-body .col-md-4 { margin-bottom: 1rem; }
-    }
-
-    /* Rating / episodes / comments */
-    .viewer-rating { display:flex; align-items:center; gap:0.6rem; margin-top:0.8rem; }
-    .stars { display:flex; gap:4px; }
-    .stars i { color: rgba(255,255,255,0.18); }
-    .stars i.filled { color: var(--primary); filter: drop-shadow(0 4px 12px rgba(194,157,89,0.24)); }
-    .rating-num { color: var(--secondary); font-weight:700; }
-
-    .episode-list { margin-top: 0.8rem; }
-    .episode-list ul { list-style: none; padding: 0; margin: 0; display:flex; gap:0.5rem; flex-wrap:wrap; }
-    .episode-list li { background: var(--overlay); padding: 0.4rem 0.6rem; border-radius:6px; cursor:pointer; border: 1px solid rgba(255,255,255,0.03); }
-
-    .comments-section { margin-top:1rem; border-top:1px solid rgba(255,255,255,0.04); padding-top:0.75rem; }
-    .comments-list { max-height:220px; overflow:auto; margin-top:0.5rem; padding:0; list-style:none; }
-    .comments-list li { padding:0.5rem; border-bottom:1px solid rgba(255,255,255,0.03); }
-    .comment-meta { font-size:0.85rem; color: rgba(255,255,255,0.6); margin-bottom:0.25rem; }
-    .comment-text { color: rgba(255,255,255,0.9); }
-    .comment-form textarea { width:100%; resize:vertical; min-height:72px; background:transparent; color:var(--text); border:1px solid rgba(255,255,255,0.04); padding:0.5rem; border-radius:6px; }
-    .comment-form .btn { width:auto; padding:0.45rem 0.9rem; }
-    /* card-like CTA for small places (matches card Megtekintés buttons) */
-    .card-cta{
-      background-color: var(--primary);
-      color: var(--bg);
-      border: none;
-      padding: 0.5rem 1.2rem;
-      font-size: 0.9rem;
-      border-radius: 5px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 500;
-      transition: all 0.3s ease;
-    }
-    .card-cta:hover{ background-color: var(--secondary); color: var(--bg); box-shadow: 0 4px 15px rgba(194,157,89,0.4); transform: translateY(-2px); }
-
-  /* Card compact meta (replaces long descriptions) */
-  .card-meta { display:flex; flex-direction:column; gap:0.5rem; }
-  .card-rating { display:flex; align-items:center; gap:0.45rem; font-size:0.9rem; }
-  .card-rating .rating-num { color: var(--secondary); font-weight:700; }
-  .card-rating .card-stars i { color: rgba(255,255,255,0.18); }
-  .card-rating .card-stars i.filled { color: var(--primary); filter: drop-shadow(0 4px 12px rgba(194,157,89,0.18)); }
-
-  /* Card body layout improvements */
-  .card .card-body { display:flex; flex-direction:column; gap:0.6rem; }
-  .card-meta .card-rating { margin-bottom: 0.45rem; }
-  .card .card-body .view-btn { margin-top: 0.6rem; align-self:stretch; padding:0.55rem 0.9rem; border-radius:6px; background:var(--primary); color:var(--bg); border: none; }
-  .card .card-body .view-btn:hover { background:var(--secondary); color:var(--bg); box-shadow: 0 6px 18px rgba(194,157,89,0.24); transform: translateY(-2px); }
-
-  /* Carousel dots indicator */
-    .carousel-dots { position: absolute; left: 50%; transform: translateX(-50%); bottom: 70px; display:inline-flex; gap:0.6rem; align-items:center; justify-content:center; padding:8px 12px; border-radius:999px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); background: rgba(0,0,0,0.18); border:1px solid rgba(255,255,255,0.03); z-index:1060; }
-    .carousel-dots button { width:14px; height:14px; border-radius:50%; border:0; background: rgba(255,255,255,0.18); cursor:pointer; padding:0; transition:all 0.18s ease; }
-    .carousel-dots button.active { background: var(--primary); box-shadow: 0 6px 18px rgba(194,157,89,0.18); transform:translateY(-2px); }
-
-    /* touch targets on small screens */
-    @media (max-width: 767.98px){
-      .carousel-dots { bottom: 20px; padding:10px 14px; }
-      .carousel-dots button { width:20px; height:20px; }
-    }
-
-  </style>
 </head>
 <body class="text-light" style="background-color: rgb(29 31 34);"">
 
@@ -180,7 +71,7 @@
     <div class="carousel-inner">
 
       <!-- ITEM 1 -->
-      <div class="carousel-item active" style="background-image: url('../src/img/carousel.jpg');">
+      <div class="carousel-item active" style="background-image: url('./src/img/carousel.jpg');">
         <div class="carousel-content">
           <div class="carousel-text">
             <div class="tags">
@@ -193,7 +84,7 @@
             <p>
               A Titanic egy 1997-es amerikai romantikus filmdráma, amely egy tragikus szerelmi történetet mesél el a híres óceánjáró katasztrófájának hátterében.
             </p>
-            <button class="btn mt-3 view-btn"
+            <button class="btn mt-3 view-btn text-dark"
               data-img="https://m.media-amazon.com/images/I/71ZJ8am0mKL._AC_SY879_.jpg"
               data-title="Titanic"
               data-tags="Romantikus,Dráma,PG-13"
@@ -210,7 +101,7 @@
       </div>
 
       <!-- ITEM 2 -->
-      <div class="carousel-item" style="background-image: url('../src/img/carousel.jpg');">
+      <div class="carousel-item" style="background-image: url('./src/img/carousel.jpg');">
         <div class="carousel-content">
           <div class="carousel-text">
             <div class="tags">
@@ -223,7 +114,7 @@
             <p>
               A Keresztapa egy 1972-es bűnügyi dráma, amely a Corleone maffia család történetét meséli el, és amely a filmtörténelem egyik legnagyobb klasszikusává vált.
             </p>
-            <button class="btn mt-3 view-btn"
+            <button class="btn mt-3 view-btn text-dark"
               data-img="https://m.media-amazon.com/images/M/MV5BNGEwYjgwOGQtYjg5ZS00Njc1LTk2ZGEtM2QwZWQ2NjdhZTE5XkEyXkFqcGc@._V1_.jpg"
               data-title="A keresztapa"
               data-tags="Bűnügyi,Dráma,R"

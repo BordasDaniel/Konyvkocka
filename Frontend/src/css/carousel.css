@@ -409,3 +409,29 @@
     height: 1.9rem;
   }
 }
+
+
+
+  /* Card compact meta (replaces long descriptions) */
+  .card-meta { display:flex; flex-direction:column; gap:0.5rem; }
+  .card-rating { display:flex; align-items:center; gap:0.45rem; font-size:0.9rem; }
+  .card-rating .rating-num { color: var(--secondary); font-weight:700; }
+  .card-rating .card-stars i { color: rgba(255,255,255,0.18); }
+  .card-rating .card-stars i.filled { color: var(--primary); filter: drop-shadow(0 4px 12px rgba(194,157,89,0.18)); }
+
+  /* Card body layout improvements */
+  .card .card-body { display:flex; flex-direction:column; gap:0.6rem; }
+  .card-meta .card-rating { margin-bottom: 0.45rem; }
+  .card .card-body .view-btn { margin-top: 0.6rem; align-self:stretch; padding:0.55rem 0.9rem; border-radius:6px; background:var(--primary); color:var(--bg); border: none; }
+  .card .card-body .view-btn:hover { background:var(--secondary); color:var(--bg); box-shadow: 0 6px 18px rgba(194,157,89,0.24); transform: translateY(-2px); }
+
+  /* Carousel dots indicator */
+    .carousel-dots { position: absolute; left: 50%; transform: translateX(-50%); bottom: 70px; display:inline-flex; gap:0.6rem; align-items:center; justify-content:center; padding:8px 12px; border-radius:999px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); background: rgba(0,0,0,0.18); border:1px solid rgba(255,255,255,0.03); z-index:1060; }
+    .carousel-dots button { width:14px; height:14px; border-radius:50%; border:0; background: rgba(255,255,255,0.18); cursor:pointer; padding:0; transition:all 0.18s ease; }
+    .carousel-dots button.active { background: var(--primary); box-shadow: 0 6px 18px rgba(194,157,89,0.18); transform:translateY(-2px); }
+
+    /* touch targets on small screens */
+    @media (max-width: 767.98px){
+      .carousel-dots { bottom: 20px; padding:10px 14px; }
+      .carousel-dots button { width:20px; height:20px; }
+    }
