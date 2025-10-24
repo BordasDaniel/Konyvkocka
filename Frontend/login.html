@@ -147,7 +147,7 @@
                     <input type="checkbox" class="form-check-input" id="rememberMe">
                     <label class="form-check-label" for="rememberMe">Emlékezz rám</label>
                 </div>
-                    <button type="submit" class="btn btn-primary w-100 text-white">Bejelentkezés</button>
+                    <button type="submit" onclick="loginUser()" class="btn btn-primary w-100 text-white">Bejelentkezés</button>
                 </form>
 
                 <div class="text-center form-change-links mt-3">
@@ -222,6 +222,18 @@
                 </div>
             </div>
         `;
+    }
+
+    function loginUser()
+    {
+        // Bejelentkezési logika ide jön
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        if (email && password) {
+            window.location.href = './user.html';
+        } else {
+            alert('Kérlek, töltsd ki az összes mezőt!');
+        }
     }
 
 </script>
