@@ -4,6 +4,11 @@ body{
   background-size: cover;
   background-position: 2%;
   color: var(--text);
+  overflow-x: hidden;
+}
+
+html {
+  overflow-x: hidden;
 }
 
 .container h1{
@@ -20,8 +25,13 @@ main
 {
     padding-bottom: 1rem;
     padding-top: 4rem;
+    overflow-x: hidden;
 }
 
+.container {
+  max-width: 100%;
+  overflow-x: hidden;
+}
 
 .pricing-row{
   display: grid;
@@ -30,6 +40,7 @@ main
   margin-top: 1rem; /* reduced gap to the about text above */
   margin-bottom: 1rem; /* small gap to footer below */
   padding-bottom: 2rem;
+  max-width: 100%;
 }
 
 .pricing-card{

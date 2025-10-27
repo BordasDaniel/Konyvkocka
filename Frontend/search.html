@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="./src/css/carousel.css">
     <link rel="stylesheet" href="./src/css/navbar.css">
     <link rel="stylesheet" href="./src/css/search.css">
     <link rel="stylesheet" href="./src/css/general.css">
@@ -13,7 +12,7 @@
     <title>Keresés - KönyvKocka</title>
 </head>
 <body class="bg-dark text-light">
-
+  
 <!-- Navbar (copied 1:1) -->
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
   <div class="container-fluid">
@@ -61,61 +60,8 @@
     </div>
   </div>
 </nav>
-
 <!-- Top search area -->
-<section class="search-hero py-5">
-    <!-- Menü -->
-    <div class="collapse navbar-collapse" id="mainNavbar">
-      <!-- Bal oldali menü elemek -->
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item">
-          <a class="nav-link active" href="./MainPage/index.html">Kezdőlap</a>
-        </li>
-        
-        <!-- Dropdown -->
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="kategoriakDropdown" role="button" data-bs-toggle="dropdown">
-            Kategóriák
-          </a>
-          <ul class="dropdown-menu" aria-labelledby="kategoriakDropdown">
-            <li><a class="dropdown-item" href="#">Romantikus</a></li>
-            <li><a class="dropdown-item" href="#">Sci-fi</a></li>
-            <li><a class="dropdown-item" href="#">Akció</a></li>
-             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="#">Könyvek</a></li>
-            <li><a class="dropdown-item" href="#">Filmek</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="#">Lepj meg!</a></li>
-          </ul>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">Keresés</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" href="#">Támogatás</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="rolunk.html">Rólunk</a>
-        </li>
-      </ul>
-
-      <!-- Jobb oldali elemek -->
-      <ul class="navbar-nav">
-
-        <li class="nav-item">
-          <a class="nav-link" href="./login.html"><i class="bi bi-person-circle"></i> Bejelentkezés</a>
-        </li>
-
-        <li class="nav-item">
-          <a class="nav-link" href="#"><i class="bi bi-cart3"></i> Kosár</a>
-        </li>
-     
-      </ul>
-    </div>
-  </div>
-</nav>
-
-<!-- Top search area -->
+<div id="filterBackdrop" class="filter-backdrop"></div>
 <section class="search-hero py-5">
   <div class="container">
     <div class="row justify-content-center">
@@ -175,28 +121,21 @@
                 <div class="filter-group filter-genres">
                   <h6>Műfajok</h6>
                   <div class="genres-columns">
-                    <div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_action"><label class="form-check-label" for="genre_action">Akció</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_adventure"><label class="form-check-label" for="genre_adventure">Kaland</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_crime"><label class="form-check-label" for="genre_crime">Krimi</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_drama"><label class="form-check-label" for="genre_drama">Dráma</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_comedy"><label class="form-check-label" for="genre_comedy">Vígjáték</label></div>
-                    </div>
-                    <div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_romance"><label class="form-check-label" for="genre_romance">Romantikus</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_scifi"><label class="form-check-label" for="genre_scifi">Sci-fi</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_fantasy"><label class="form-check-label" for="genre_fantasy">Fantasy</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_horror"><label class="form-check-label" for="genre_horror">Horror</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_thriller"><label class="form-check-label" for="genre_thriller">Thriller</label></div>
-                    </div>
-                    <div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_family"><label class="form-check-label" for="genre_family">Családi</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_history"><label class="form-check-label" for="genre_history">Történelmi</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_biopic"><label class="form-check-label" for="genre_biopic">Életrajzi</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_documentary"><label class="form-check-label" for="genre_documentary">Dokumentum</label></div>
-                      <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_fairy_tale"><label class="form-check-label" for="genre_fairy_tale">Mese</label></div>
-
-                    </div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_action"><label class="form-check-label" for="genre_action">Akció</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_adventure"><label class="form-check-label" for="genre_adventure">Kaland</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_crime"><label class="form-check-label" for="genre_crime">Krimi</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_drama"><label class="form-check-label" for="genre_drama">Dráma</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_comedy"><label class="form-check-label" for="genre_comedy">Vígjáték</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_romance"><label class="form-check-label" for="genre_romance">Romantikus</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_scifi"><label class="form-check-label" for="genre_scifi">Sci-fi</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_fantasy"><label class="form-check-label" for="genre_fantasy">Fantasy</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_horror"><label class="form-check-label" for="genre_horror">Horror</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_thriller"><label class="form-check-label" for="genre_thriller">Thriller</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_family"><label class="form-check-label" for="genre_family">Családi</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_history"><label class="form-check-label" for="genre_history">Történelmi</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_biopic"><label class="form-check-label" for="genre_biopic">Életrajzi</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_documentary"><label class="form-check-label" for="genre_documentary">Dokumentum</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="genre_fairy_tale"><label class="form-check-label" for="genre_fairy_tale">Mese</label></div>
                   </div>
                 </div>
 
@@ -231,9 +170,9 @@
                   </div>
                 </div>
               </div>
-                <div class="filter-panel-footer text-end px-3 py-2">
+                <div class="filter-panel-footer px-3 py-2">
                   <button id="filterApply" class="btn btn-primary btn-sm">Alkalmaz</button>
-              <button id="filterReset" class="btn btn-secondary btn-sm ms-2 reset">Alaphelyzet</button>
+                  <button id="filterReset" class="btn btn-secondary btn-sm reset">Alaphelyzet</button>
             </div>
           </div>
         </div>
@@ -252,14 +191,6 @@
       </div>
     </div>
   </section>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-
 
  <!-- Footer -->
   <footer class="footer">
@@ -302,29 +233,47 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   // Toggle the filter panel. Minimal JS for demo; no real filtering logic yet.
-  document.getElementById('filterToggle').addEventListener('click', function(e){
-    e.stopPropagation();
-    const panel = document.getElementById('filterPanel');
-    panel.classList.toggle('d-none');
-  });
-
-  // Close the panel when clicking outside
-  document.addEventListener('click', function(e){
-    const panel = document.getElementById('filterPanel');
-    const toggle = document.getElementById('filterToggle');
-    if(!panel.classList.contains('d-none') && !panel.contains(e.target) && e.target !== toggle){
-      panel.classList.add('d-none');
-    }
-  });
-
-  // filter panel controls
   const filterPanel = document.getElementById('filterPanel');
+  const filterBackdrop = document.getElementById('filterBackdrop');
+  const filterToggle = document.getElementById('filterToggle');
   const filterClose = document.getElementById('filterClose');
   const filterApply = document.getElementById('filterApply');
   const filterReset = document.getElementById('filterReset');
 
-  if(filterClose){ filterClose.addEventListener('click', () => filterPanel.classList.add('d-none')) }
-  if(filterApply){ filterApply.addEventListener('click', () => { /* apply filters - placeholder */ filterPanel.classList.add('d-none'); }) }
+  function openFilterPanel() {
+    filterPanel.classList.remove('d-none');
+    filterBackdrop.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeFilterPanel() {
+    filterPanel.classList.add('d-none');
+    filterBackdrop.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  filterToggle.addEventListener('click', function(e){
+    e.stopPropagation();
+    if(filterPanel.classList.contains('d-none')) {
+      openFilterPanel();
+    } else {
+      closeFilterPanel();
+    }
+  });
+
+  // Close when clicking backdrop
+  filterBackdrop.addEventListener('click', closeFilterPanel);
+
+  // Close the panel when clicking outside
+  document.addEventListener('click', function(e){
+    if(!filterPanel.classList.contains('d-none') && !filterPanel.contains(e.target) && e.target !== filterToggle){
+      closeFilterPanel();
+    }
+  });
+
+  // filter panel controls
+  if(filterClose){ filterClose.addEventListener('click', closeFilterPanel) }
+  if(filterApply){ filterApply.addEventListener('click', () => { /* apply filters - placeholder */ closeFilterPanel(); }) }
   if(filterReset){ filterReset.addEventListener('click', () => {
     // uncheck all checkboxes inside panel
     filterPanel.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
