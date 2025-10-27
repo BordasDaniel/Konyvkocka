@@ -62,7 +62,7 @@ body
 
 .login-container .form-change-links a:hover
 {
-    color: var(--link) !important;
+    color: var(--h1Text) !important;
     text-decoration: underline;
     font-weight: bold;
 }

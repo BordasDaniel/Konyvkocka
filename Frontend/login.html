@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="./src/css/general.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="icon" type="image/x-icon" href="https://img.pikbest.com/origin/09/26/29/82YpIkbEsTegM.png!sw800">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <title>Bejelentkezés</title>
 </head>
 <body class="bg-dark text-light">
@@ -134,20 +135,23 @@
         `
         <div class="card-body">
                 <h3 class="card-title text-center mb-4 fw-bold text-decoration-underline">Bejelentkezés</h3>
-                <form>
+                <form id="loginForm" onsubmit="return false;">
                 <div class="mb-3">
                     <label for="email" class="form-label fw-bold">Email cím</label>
-                    <input type="email" class="form-control" id="email" placeholder="Írd be az email címed">
+                    <input type="email" class="form-control" id="email" placeholder="Írd be az email címed" required>
                 </div>
                 <div class="mb-3">
                     <label for="password" class="form-label fw-bold">Jelszó</label>
-                    <input type="password" class="form-control" id="password" placeholder="Írd be a jelszavad">
+                    <input type="password" class="form-control" id="password" placeholder="Írd be a jelszavad" required>
                 </div>
                 <div class="mb-3 form-check">
                     <input type="checkbox" class="form-check-input" id="rememberMe">
                     <label class="form-check-label" for="rememberMe">Emlékezz rám</label>
                 </div>
-                    <button type="submit" onclick="loginUser()" class="btn btn-primary w-100 text-white">Bejelentkezés</button>
+                <div class="mb-3 d-flex justify-content-center">
+                    <div id="recaptcha-container"></div>
+                </div>
+                    <button type="submit" onclick="loginUser(event)" class="btn btn-primary w-100 text-white">Bejelentkezés</button>
                 </form>
 
                 <div class="text-center form-change-links mt-3">
@@ -156,7 +160,16 @@
                     <a href="#" onclick="loadRegisterForm();" class="text-light">Nincs még fiókod? Regisztrálj!</a>
                 </div>
             </div>
-        `;   
+        `;
+        
+        // Render reCAPTCHA
+        setTimeout(function() {
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.render('recaptcha-container', {
+                    'sitekey': '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
+                });
+            }
+        }, 100);
     }
 
     function loadRegisterForm()
@@ -166,29 +179,33 @@
         `
         <div class="card-body">
                 <h3 class="card-title text-center mb-4 fw-bold text-decoration-underline">Regisztráció</h3>
-                <form>
+                <form id="registerForm" onsubmit="return false;">
     
                 <div class="mb-3">
                     <label for="username" class="form-label fw-bold">Felhasználónév</label>
-                    <input type="text" class="form-control" id="username" placeholder="Írd be a felhasználóneved">
+                    <input type="text" class="form-control" id="username" placeholder="Írd be a felhasználóneved" required>
                 </div>
 
                 <div class="mb-3">
                     <label for="email" class="form-label fw-bold">Email cím</label>
-                    <input type="email" class="form-control" id="email" placeholder="Írd be az email címed">
+                    <input type="email" class="form-control" id="email" placeholder="Írd be az email címed" required>
                 </div>
 
                 <div class="mb-3">
                     <label for="password" class="form-label fw-bold">Jelszó</label>
-                    <input type="password" class="form-control" id="password" placeholder="Írd be a jelszavad">
+                    <input type="password" class="form-control" id="password" placeholder="Írd be a jelszavad" required>
                 </div>
 
                 <div class="mb-3">
                     <label for="confirmPassword" class="form-label fw-bold">Jelszó megerősítése</label>
-                    <input type="password" class="form-control" id="confirmPassword" placeholder="Írd be újra a jelszavad">
+                    <input type="password" class="form-control" id="confirmPassword" placeholder="Írd be újra a jelszavad" required>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 text-white">Regisztráció</button>
+                <div class="mb-3 d-flex justify-content-center">
+                    <div id="recaptcha-container-register"></div>
+                </div>
+
+                <button type="submit" onclick="registerUser(event)" class="btn btn-primary w-100 text-white">Regisztráció</button>
 
                 </form>
                 <div class="text-center form-change-links mt-3">
@@ -198,6 +215,15 @@
                 </div>
             </div>        
             `;
+            
+        // Render reCAPTCHA
+        setTimeout(function() {
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.render('recaptcha-container-register', {
+                    'sitekey': '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
+                });
+            }
+        }, 100);
     }
     
 
@@ -224,16 +250,65 @@
         `;
     }
 
-    function loginUser()
+    function loginUser(event)
     {
-        // Bejelentkezési logika ide jön
+        if(event) event.preventDefault();
+        
+        // reCAPTCHA validálás
+        if (typeof grecaptcha !== 'undefined') {
+            const recaptchaResponse = grecaptcha.getResponse();
+            if (recaptchaResponse.length === 0) {
+                alert('Kérlek, erősítsd meg, hogy nem vagy robot!');
+                return false;
+            }
+        }
+        
+        // Bejelentkezési logika
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+        
         if (email && password) {
+            // Szimulált sikeres bejelentkezés
+            alert('Sikeres bejelentkezés!');
             window.location.href = './user.html';
         } else {
             alert('Kérlek, töltsd ki az összes mezőt!');
         }
+        return false;
+    }
+
+    function registerUser(event)
+    {
+        if(event) event.preventDefault();
+        
+        // reCAPTCHA validálás
+        if (typeof grecaptcha !== 'undefined') {
+            const recaptchaResponse = grecaptcha.getResponse(1); // 1 = második widget ID
+            if (recaptchaResponse.length === 0) {
+                alert('Kérlek, erősítsd meg, hogy nem vagy robot!');
+                return false;
+            }
+        }
+        
+        // Regisztrációs logika
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        if (password !== confirmPassword) {
+            alert('A két jelszó nem egyezik!');
+            return false;
+        }
+        
+        if (username && email && password && confirmPassword) {
+            // Szimulált sikeres regisztráció
+            alert('Sikeres regisztráció! Most már bejelentkezhetsz.');
+            loadLoginForm();
+        } else {
+            alert('Kérlek, töltsd ki az összes mezőt!');
+        }
+        return false;
     }
 
 </script>
