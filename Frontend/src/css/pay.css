@@ -1,0 +1,391 @@
+/* pay.css - Checkout page styles */
+
+/* Stepper */
+.stepper {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 5.5rem;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #cfcfcf;
+  background: linear-gradient(180deg, rgba(18, 18, 18, 0.55), rgba(10, 10, 10, 0.35));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+.step .bubble {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-weight: 700;
+}
+
+.step.active .bubble {
+  background: var(--secondary);
+}
+
+.step.done .bubble {
+  background: rgba(0, 255, 153, 0.6);
+}
+
+.step .label {
+  font-weight: 600;
+}
+
+.divider {
+  height: 2px;
+  width: 56px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Brand button */
+.btn-kk {
+  background-color: var(--primary);
+  color: var(--bg);
+  border: none;
+}
+
+.btn-kk:hover {
+  background-color: var(--secondary);
+  color: var(--bg);
+}
+
+.btn-kk:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Plan cards - compact */
+.plan-card {
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.1));
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  padding: 1rem;
+}
+
+.plan-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.plan-card.selected {
+  outline: 2px solid var(--secondary);
+  box-shadow: 0 0 0 4px rgba(255, 167, 38, 0.18);
+}
+
+.plan-card h4 {
+  margin-bottom: 0.25rem;
+}
+
+.plan-meta {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.9rem;
+}
+
+.price {
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.discount {
+  color: #9ef5c7;
+  font-weight: 700;
+}
+
+.about-panel h4,
+.about-panel h5 {
+  color: var(--h1Text);
+}
+
+.pay-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Selection summary banner */
+.selection-banner {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--h1Text);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+}
+
+.selection-banner strong {
+  color: var(--secondary);
+}
+
+/* Top note banner */
+.note-banner {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--h1Text);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Security note badge */
+.security-note {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--h1Text);
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Plans grid responsive */
+.plans-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 992px) {
+  .plans-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Payment methods */
+.alt-methods .btn {
+  min-width: 180px;
+}
+
+.card-icons img {
+  height: 24px;
+  opacity: 0.9;
+}
+
+/* Polished translucent form fields (glass look) */
+.about-panel .form-label {
+  color: var(--h1Text);
+  font-weight: 600;
+}
+
+/*Hide number arrows*/
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.about-panel .form-control,
+.about-panel .form-select {
+  background: linear-gradient(180deg, rgba(18, 18, 18, 0.55), rgba(10, 10, 10, 0.35));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  min-height: 48px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 12px rgba(0, 0, 0, 0.25);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.08s ease;
+}
+
+.about-panel .form-control:focus,
+.about-panel .form-control:active,
+.about-panel .form-control:focus-visible,
+.about-panel .form-select:focus {
+  background: linear-gradient(180deg, rgba(22, 22, 22, 0.6), rgba(12, 12, 12, 0.42)) !important;
+  color: var(--text) !important;
+  border-color: rgba(255, 167, 38, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(255, 167, 38, 0.15), 0 2px 18px rgba(0, 0, 0, 0.35) !important;
+  outline: none !important;
+}
+
+.about-panel .form-control::placeholder {
+  color: #ffffff;
+  opacity: 0.85;
+}
+
+/* Select dropdown chevron (white) */
+.about-panel .form-select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M3.2 5.5a.5.5 0 0 1 .7 0L8 9.1l4.1-3.6a.5.5 0 1 1 .66.75l-4.42 3.87a.75.75 0 0 1-.98 0L2.54 6.25a.5.5 0 0 1 .66-.75z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 14px 14px;
+  padding-right: 2.2rem;
+  color-scheme: dark;
+}
+
+/* Dark dropdown options */
+.about-panel .form-select option,
+.about-panel .form-select optgroup {
+  background-color: #0f0f0f;
+  color: #ffffff;
+}
+
+.about-panel .form-select option:checked {
+  background-color: rgba(255, 167, 38, 0.3);
+}
+
+.about-panel .form-select option:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Custom country dropdown */
+.custom-select-wrapper {
+  position: relative;
+}
+
+.custom-select-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  max-height: 320px;
+  overflow-y: auto;
+  background: linear-gradient(180deg, rgba(12, 12, 12, 0.98), rgba(8, 8, 8, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  margin-top: 0.25rem;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  display: none;
+}
+
+.custom-select-menu.show {
+  display: block;
+}
+
+.custom-select-menu .country-header {
+  color: var(--secondary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  text-transform: uppercase;
+  margin-top: 0.5rem;
+}
+
+.custom-select-menu .country-item {
+  color: #fff;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-left: 3px solid transparent;
+}
+
+.custom-select-menu .country-item:hover {
+  background: rgba(255, 167, 38, 0.2);
+  border-left-color: var(--secondary);
+}
+
+.custom-select-menu .country-item:active {
+  background: rgba(255, 167, 38, 0.35);
+}
+
+/* Validation colors */
+.about-panel .form-control.is-invalid,
+.about-panel .form-select.is-invalid,
+.about-panel .was-validated .form-control:invalid,
+.about-panel .was-validated .form-select:invalid {
+  border-color: rgba(255, 77, 77, 0.7) !important;
+  box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.15) !important;
+}
+
+.about-panel .form-control.is-valid,
+.about-panel .form-select.is-valid,
+.about-panel .was-validated .form-control:valid,
+.about-panel .was-validated .form-select:valid {
+  border-color: rgba(0, 255, 153, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(0, 255, 153, 0.12) !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 576px) {
+  .stepper {
+    gap: 8px;
+  }
+
+  .step .label {
+    display: none;
+  }
+
+  .plans-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-card {
+    padding: 0.85rem;
+  }
+
+  .price {
+    font-size: 1.35rem;
+  }
+
+  .note-banner,
+  .selection-banner {
+    font-size: 0.95rem;
+  }
+
+  /* Step 1 header: stack title then note banner */
+  .step1-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+  }
+
+  .step1-header .note-banner {
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Step 1 footer: put buttons below selection banner, side-by-side */
+  .step1-footer {
+    flex-wrap: wrap;
+  }
+
+  .step1-footer .selection-banner {
+    flex: 1 1 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .step1-footer .pay-actions {
+    width: 100%;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    margin-top: 1rem;
+  }
+
+  .step1-footer .pay-actions .btn {
+    flex: 1 1 0;
+  }
+}
