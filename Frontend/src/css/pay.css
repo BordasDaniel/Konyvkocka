@@ -389,3 +389,100 @@ input[type=number] {
     flex: 1 1 0;
   }
 }
+
+/* Payment Modal */
+.payment-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+
+.payment-modal.show {
+  display: flex;
+}
+
+.payment-modal-content {
+  background: linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(10, 10, 10, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.payment-modal-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+
+.payment-modal-icon.success {
+  background: rgba(0, 255, 153, 0.15);
+  color: rgba(0, 255, 153, 0.9);
+  border: 2px solid rgba(0, 255, 153, 0.3);
+}
+
+.payment-modal-icon.error {
+  background: rgba(255, 77, 77, 0.15);
+  color: rgba(255, 77, 77, 0.9);
+  border: 2px solid rgba(255, 77, 77, 0.3);
+}
+
+.payment-modal-title {
+  color: var(--h1Text);
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.payment-modal-message {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.payment-modal-transaction {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: var(--secondary);
+}
+
+.payment-modal-btn {
+  min-width: 200px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+}
