@@ -210,7 +210,8 @@
               data-tags="Gyerek,Klasszikus"
               data-desc="Antoine de Saint-Exupéry időtlen klasszikusa a barátságról, szeretetről és az élet nagy kérdéseiről."
               data-trailer="https://www.youtube.com/embed/5rOiW8yX5Z0"
-              data-episodes='["1: A pilóta találkozik a kis herceggel","2: A kis herceg bolygói","3: A róka és a barátság","4: A búcsú"]'>
+              data-episodes='["Olvasás"]'
+              data-reader="./reader.html">
               Megtekintés
             </button>
           </div>
@@ -554,10 +555,18 @@
               const li = document.createElement('li');
               li.tabIndex = 0;
               li.textContent = (typeof it === 'string') ? it : (it.season ? `S${it.season}E${it.episode} ${it.title||''}` : (it.title||'Epizód'));
-              li.addEventListener('click', ()=>{
-                episodeList.querySelectorAll('li').forEach(n=>n.classList.remove('active'));
-                li.classList.add('active');
-              });
+              const readerHref = (btn && btn.dataset && btn.dataset.reader) ? btn.dataset.reader : '';
+              if(readerHref && items.length === 1){
+                li.style.cursor = 'pointer';
+                li.addEventListener('click', () => {
+                  window.location.href = readerHref;
+                });
+              } else {
+                li.addEventListener('click', ()=>{
+                  episodeList.querySelectorAll('li').forEach(n=>n.classList.remove('active'));
+                  li.classList.add('active');
+                });
+              }
               episodeList.appendChild(li);
               added++;
             });
