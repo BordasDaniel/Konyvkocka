@@ -1,0 +1,127 @@
+/* gyik.css - FAQ page styling matched to site theme */
+:root{
+  --bg: #121212;
+  --primary: #C29D59;
+  --secondary: #E6C07C;
+  --text: #E0E0E0;
+  --h1Text: #f3e9b8;
+  --overlay: rgba(18,18,18,0.6);
+}
+
+body{
+  background-image: url("../img/carousel.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+    /* keep the background visually stable when page content changes */
+  background-attachment: fixed;
+  background-position: center center;
+  color: var(--text);
+}
+
+.container h1{
+  color: var(--h1Text);
+  background: rgba(12,10,8,0.28);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(194,157,89,0.08);
+  text-underline-offset: 10px;
+}
+
+.faq-list{
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem; /* larger gap between articles */
+}
+
+.faq-item{
+  /* container has no heavy background so only title panel shows when closed */
+  margin: 0; /* spacing is handled by .faq-list gap */
+}
+
+.faq-question{
+  width: 100%;
+  background: var(--overlay); /* title shows as a small translucent panel */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.03);
+  color: var(--secondary); /* gold title color */
+  text-align: left;
+  padding: 1rem 1rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.faq-question.open{
+  /* when open, make header blend into the answer panel */
+  border-bottom-left-radius: 0.35rem;
+  border-bottom-right-radius: 0.35rem;
+}
+
+.faq-question .faq-caret{
+  transition: transform 220ms ease;
+  color: var(--primary);
+}
+
+.faq-question.open .faq-caret{
+  transform: rotate(180deg);
+}
+
+.faq-answer{
+  max-height: 0;
+  transition: max-height 260ms ease, opacity 200ms ease;
+  padding: 0;
+  color: var(--text);
+  opacity: 0;
+}
+
+
+.faq-answer p{ margin: 0; }
+
+.faq-item:hover .faq-question{ box-shadow: 0 18px 36px rgba(0,0,0,0.6); }
+
+/* answer panel styling when expanded */
+.faq-answer .inner{
+  background: rgba(6,6,6,0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 0.35rem;
+  padding: 1rem;
+  margin-top: 0.4rem;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.02);
+  color: var(--text);
+  position: relative;
+}
+
+/* ensure the answer container reveals with clipped overflow so the inner blurred panel shows */
+.faq-answer{
+  overflow: hidden;
+}
+
+.faq-question.open + .faq-answer{
+  max-height: 400px; /* allow enough space for typical answers */
+  opacity: 1;
+}
+
+/* when open, reveal answer */
+.faq-question.open + .faq-answer{
+  opacity: 1;
+}
+
+/* cleaned empty rule */
+
+/* responsive tweaks */
+@media (min-width: 992px){
+  .container{ max-width: 900px; }
+}
+
+@media (max-width: 767.98px){
+  .faq-question{ font-size: 1rem; padding: 0.85rem 0.9rem;}
+  .faq-list{ gap: 0.2rem; }
+  .faq-answer{ padding: 0 0.9rem 0.9rem 0.9rem; }
+}

@@ -1,0 +1,514 @@
+/* Reader Layout */
+.reader-container {
+  display: flex;
+  height: 100vh;
+  padding-top: 60px;
+  background: var(--bgPrimary);
+  overflow: hidden;
+}
+
+/* Sidebar */
+.reader-sidebar {
+  width: 320px;
+  background: linear-gradient(135deg, rgba(18, 18, 18, 0.95), rgba(10, 10, 10, 0.95));
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  transition: transform 0.3s ease, width 0.3s ease;
+  z-index: 100;
+}
+
+/* Desktop collapse support */
+.reader-sidebar.collapsed {
+  width: 0 !important;
+  overflow: hidden;
+  border-right: none;
+}
+
+.reader-sidebar.collapsed * {
+  display: none !important;
+}
+
+.sidebar-header {
+  padding: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.book-info {
+  padding: 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.book-cover {
+  width: 120px;
+  height: 160px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, rgba(255, 167, 38, 0.2), rgba(255, 167, 38, 0.05));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: var(--secondary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.book-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--h1Text);
+  margin-bottom: 0.5rem;
+}
+
+.book-author {
+  font-size: 0.9rem;
+  color: var(--text);
+  margin: 0;
+}
+
+/* Reader Controls */
+.reader-controls {
+  padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.control-group {
+  margin-bottom: 1.5rem;
+}
+
+.control-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.page-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.page-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  justify-content: center;
+}
+
+.page-input {
+  width: 60px;
+  padding: 0.4rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: var(--text);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.page-input:focus {
+  outline: none;
+  border-color: var(--secondary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.page-total {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.btn-control {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-control:hover {
+  background: rgba(255, 167, 38, 0.2);
+  border-color: var(--secondary);
+  color: var(--secondary);
+}
+
+.btn-control.active {
+  background: var(--secondary);
+  border-color: var(--secondary);
+  color: #000;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.zoom-level {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+  color: var(--h1Text);
+}
+
+.zoom-slider {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  touch-action: none; /* improve touch drag responsiveness on mobile */
+}
+
+/* On mobile, hide the zoom slider and keep + / - buttons only (pinch-to-zoom handles the rest) */
+@media (max-width: 768px) {
+  .zoom-slider { display: none; }
+  .zoom-controls { margin-bottom: 0; }
+}
+
+.zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--secondary);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.zoom-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.view-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.btn-bookmark {
+  width: 100%;
+  padding: 0.6rem;
+  background: linear-gradient(135deg, rgba(255, 167, 38, 0.2), rgba(255, 167, 38, 0.1));
+  border: 1px solid rgba(255, 167, 38, 0.3);
+  border-radius: 8px;
+  color: var(--secondary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-bookmark:hover {
+  background: linear-gradient(135deg, rgba(255, 167, 38, 0.3), rgba(255, 167, 38, 0.15));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(255, 167, 38, 0.2);
+}
+
+.bookmarks-list {
+  margin-top: 0.75rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.bookmark-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bookmark-item:hover {
+  background: rgba(255, 167, 38, 0.1);
+}
+
+.bookmark-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.btn-remove {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 0.25rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-remove:hover {
+  color: #ff5555;
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.btn-action {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--secondary);
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-action:hover {
+  background: #ffb84d;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 167, 38, 0.3);
+}
+
+.btn-action.btn-outline {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text);
+}
+
+.btn-action.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--secondary);
+  color: var(--secondary);
+}
+
+/* Main Reader Area */
+.reader-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Toolbar */
+.reader-toolbar {
+  height: 60px;
+  background: linear-gradient(135deg, rgba(18, 18, 18, 0.98), rgba(10, 10, 10, 0.98));
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  gap: 1rem;
+}
+
+.toolbar-title {
+  flex: 1;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--h1Text);
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1.1rem;
+}
+
+.btn-icon:hover {
+  background: rgba(255, 167, 38, 0.2);
+  border-color: var(--secondary);
+  color: var(--secondary);
+}
+
+/* (search bar removed) */
+
+/* PDF Viewer */
+.pdf-viewer {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: flex-start; /* top align so we can scroll up/down naturally when zoomed */
+  justify-content: center;
+  padding: 16px 0; /* breathing room at top/bottom */
+  background: #2a2a2a;
+  position: relative;
+}
+
+.pdf-canvas {
+  display: block;
+  max-width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.loading-state,
+.error-state {
+  text-align: center;
+  color: var(--text);
+}
+
+.error-state h3 {
+  color: var(--h1Text);
+  margin-top: 1rem;
+}
+
+/* Bottom Navigation */
+.reader-bottom-nav {
+  height: 60px;
+  background: linear-gradient(135deg, rgba(18, 18, 18, 0.98), rgba(10, 10, 10, 0.98));
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+}
+
+.btn-nav {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-nav:hover {
+  background: var(--secondary);
+  border-color: var(--secondary);
+  color: #000;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 167, 38, 0.3);
+}
+
+.page-indicator {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--h1Text);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .reader-sidebar {
+    position: fixed;
+    left: 0;
+    top: 60px;
+    bottom: 0;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .reader-sidebar.show {
+    transform: translateX(0);
+  }
+
+  .sidebar-header {
+    display: flex;
+  }
+
+  .toolbar-title {
+    font-size: 0.95rem;
+  }
+
+  .toolbar-actions {
+    gap: 0.25rem;
+  }
+
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+
+  .reader-bottom-nav {
+    padding: 0 1rem;
+  }
+
+  .btn-nav {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .page-indicator {
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .sidebar-header {
+    display: none;
+  }
+}
+
+/* Scrollbar styling */
+.reader-sidebar::-webkit-scrollbar,
+.bookmarks-list::-webkit-scrollbar,
+.pdf-viewer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.reader-sidebar::-webkit-scrollbar-track,
+.bookmarks-list::-webkit-scrollbar-track,
+.pdf-viewer::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.reader-sidebar::-webkit-scrollbar-thumb,
+.bookmarks-list::-webkit-scrollbar-thumb,
+.pdf-viewer::-webkit-scrollbar-thumb {
+  background: rgba(255, 167, 38, 0.3);
+  border-radius: 4px;
+}
+
+.reader-sidebar::-webkit-scrollbar-thumb:hover,
+.bookmarks-list::-webkit-scrollbar-thumb:hover,
+.pdf-viewer::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 167, 38, 0.5);
+}
