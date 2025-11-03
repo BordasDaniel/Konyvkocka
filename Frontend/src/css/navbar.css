@@ -173,9 +173,9 @@
       .dropdown-menu::before { left: 0.75rem; }
       /* mobile collapsed menu: keep default dropdown toggle behavior, but make dropdowns more opaque */
       .navbar-collapse {
-        background: rgba(6,6,6,0.12);
+        /* background: rgba(6,6,6,0.12);
         backdrop-filter: blur(3px);
-        -webkit-backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px); */
         padding: 0.25rem 0.5rem;
       }
       .navbar-collapse .dropdown-menu {
