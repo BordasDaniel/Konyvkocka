@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./src/css/navbar.css">
+    <link rel="stylesheet" href="./src/css/login.css">
+    <link rel="stylesheet" href="./src/css/general.css">
+    <link rel="stylesheet" href="./src/css/pay.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="icon" type="image/x-icon" href="https://img.pikbest.com/origin/09/26/29/82YpIkbEsTegM.png!sw800">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <title>Jelszó visszaállítás</title>
+</head>
+<body class="bg-dark text-light">
+
+<!-- Navbar -->
+
+<!-- Navbar (copied 1:1) -->
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+  <div class="container-fluid">
+    <!-- Logo -->
+    <div class="navbar-brand-container">
+      <img src="https://img.pikbest.com/origin/09/26/29/82YpIkbEsTegM.png!sw800" alt="Logo" class="navbar-logo">
+      <a class="navbar-brand" href="./index.html">KönyvKocka</a>
+    </div>
+
+    <!-- Hamburger menu -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Menü -->
+    <div class="collapse navbar-collapse" id="mainNavbar">
+      <!-- Bal oldali menü elemek -->
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link active" href="./index.html">Kezdőlap</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="./search.html">Keresés</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="./support.html">Támogatás</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="./about.html">Rólunk</a>
+        </li>
+         <li class="nav-item">
+          <a class="nav-link active" href="./news.html">Hírek</a>
+        </li>
+      </ul>
+
+      <!-- Jobb oldali elemek -->
+      <ul class="navbar-nav">
+
+        <li class="nav-item">
+          <a class="nav-link" href="./login.html"><i class="bi bi-person-circle"></i> Bejelentkezés</a>
+        </li>
+
+      </ul>
+    </div>
+  </div>
+</nav>
+<!-- Navbar vége -->
+ 
+
+<section class="my-5 pt-3">
+    <div class="container mt-5 pt-5 login-container">
+        <div class="row justify-content-center">
+        <div class="col-md-6">
+      <div class="card text-light login-card">
+                
+        <div class="card-body about-panel">
+        <h3 class="card-title text-center mb-4 fw-bold text-decoration-underline">Új jelszó megadása</h3>
+        <form id="resetForm" onsubmit="return false;">
+
+        <p class="text-center mb-2">A következő e-mail címhez állítod be az új jelszót. A mező csak tájékoztató jellegű és le van tiltva.</p>
+
+        <div class="mb-3">
+          <label for="email" class="form-label fw-bold">Email cím</label>
+          <input type="email" class="form-control" id="email" placeholder="email@domain.hu" disabled>
+          <input type="hidden" id="emailHidden" name="email">
+        </div>
+
+        <div class="mb-3">
+          <label for="newPassword" class="form-label fw-bold">Új jelszó</label>
+          <div class="input-group">
+            <input type="password" class="form-control" id="newPassword" placeholder="Írd be az új jelszavad" minlength="8" required>
+            <button class="btn btn-outline-secondary" type="button" aria-label="Jelszó megjelenítése" onclick="togglePassword('newPassword', this)"><i class="bi bi-eye"></i></button>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="confirmPassword" class="form-label fw-bold">Jelszó megerősítése</label>
+          <div class="input-group">
+            <input type="password" class="form-control" id="confirmPassword" placeholder="Írd be újra az új jelszavad" minlength="8" required>
+            <button class="btn btn-outline-secondary" type="button" aria-label="Jelszó megerősítése megjelenítése" onclick="togglePassword('confirmPassword', this)"><i class="bi bi-eye"></i></button>
+          </div>
+        </div>
+
+        <div class="mb-3 d-flex justify-content-center">
+          <div id="recaptcha-container-register"></div>
+        </div>
+
+        <div id="messageBox" class="mb-3" aria-live="polite"></div>
+
+  <button type="submit" onclick="submitNewPassword(event)" class="btn btn-kk w-100 text-white">Jelszó mentése</button>
+
+        </form>
+
+
+            </div>
+        </div>
+        </div>
+    </div>
+</section>
+
+
+
+<!-- Footer -->
+  <footer class="footer">
+      <div class="container">
+          <div class="row">
+        <div class="col-md-4 mb-4 px-5">
+                  <h4>KönyvKocka</h4>
+                  <p>Fedezd fel a könyvek és filmek világát velünk! Nálunk megtalálod a legjobb történeteket kedvező áron.</p>
+          <ul class="social-links list-unstyled">
+          <li><a href="#"><i class="bi bi-facebook"></i> Facebook</a></li>
+          <li><a href="#"><i class="bi bi-instagram"></i> Instagram</a></li>
+          <li><a href="#"><i class="bi bi-discord"></i> Discord</a></li>
+          </ul>
+              </div>
+        <div class="col-md-4 mb-4 px-5">
+                  <h4>Gyors linkek</h4>
+                  <ul class="footer-links">
+                      <li><a href="./index.html">Kezdőlap</a></li>
+                      <li><a href="./search.html">Keresés</a></li>
+                      <li><a href="./support.html">Támogatás</a></li>
+                      <li><a href="./about.html">Rólunk</a></li>
+                  </ul>
+              </div>
+        <div class="col-md-4 mb-4 px-5">
+                  <h4>Kapcsolat</h4>
+                  <ul class="footer-links">
+                      <li><i class="bi bi-envelope me-2"></i> info@konyvkocka.hu</li>
+                      <li><i class="bi bi-telephone me-2"></i> +36 1 234 5678</li>
+                      <li><i class="bi bi-geo-alt me-2"></i> Budapest, Magyarország</li>
+                  </ul>
+              </div>
+          </div>
+          <div class="footer-bottom text-center">
+              <p class="mb-0">&copy; 2025 KönyvKocka. Minden jog fenntartva.</p>
+          </div>
+      </div>
+  </footer>
+<!-- Footer vége -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+ 
+
+
+        // Render reCAPTCHA
+        setTimeout(function() {
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.render('recaptcha-container-register', {
+                    'sitekey': '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
+                });
+            }
+        }, 100);
+    
+  function submitNewPassword(event) {
+    if (event) event.preventDefault();
+
+    const emailHidden = document.getElementById('emailHidden').value.trim();
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const msg = document.getElementById('messageBox');
+    msg.innerHTML = '';
+
+    if (!newPassword || !confirmPassword) {
+      msg.innerHTML = '<div class="alert alert-danger">Kérlek töltsd ki mindkét jelszó mezőt.</div>';
+      return false;
+    }
+
+    if (newPassword.length < 8) {
+      msg.innerHTML = '<div class="alert alert-danger">A jelszónak legalább 8 karakter hosszúnak kell lennie.</div>';
+      return false;
+    }
+
+    if (newPassword !== confirmPassword) {
+      msg.innerHTML = '<div class="alert alert-danger">A két jelszó nem egyezik.</div>';
+      return false;
+    }
+
+    // reCAPTCHA validálás
+    if (typeof grecaptcha !== 'undefined') {
+      const recaptchaResponse = grecaptcha.getResponse();
+      if (recaptchaResponse.length === 0) {
+        msg.innerHTML = '<div class="alert alert-danger">Kérlek, erősítsd meg, hogy nem vagy robot!</div>';
+        return false;
+      }
+    }
+
+    // Itt kellene elküldeni az új jelszót a szervernek (POST /api/password-reset/complete pl.)
+    // Példa (kikommentezve):
+    // fetch('/api/password-reset/complete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email: emailHidden, password: newPassword, captcha: recaptchaResponse }) })
+
+    // Szimulált siker
+    msg.innerHTML = '<div class="alert alert-success">A jelszó sikeresen megváltozott. Most bejelentkezhetsz az új jelszóval.</div>';
+
+    // Reset the captcha widget if possible
+    if (typeof grecaptcha !== 'undefined' && typeof grecaptcha.reset === 'function') {
+      try { grecaptcha.reset(); } catch (e) { /* noop */ }
+    }
+
+    // Opció: automatikus átirányítás 2s után
+    setTimeout(function() { window.location.href = './login.html'; }, 2000);
+    return false;
+  }
+
+  // On load: try to prefill the disabled email from ?email= query param
+  (function prefillEmailFromQuery() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const emailParam = params.get('email') || '';
+      const emailInput = document.getElementById('email');
+      const emailHidden = document.getElementById('emailHidden');
+      if (emailParam) {
+        emailInput.value = decodeURIComponent(emailParam);
+        emailHidden.value = decodeURIComponent(emailParam);
+      } else {
+        // if no email in query, keep disabled but empty
+        emailInput.placeholder = 'ismeretlen@pelda.hu';
+        emailHidden.value = '';
+      }
+    } catch (e) {
+      // noop
+    }
+  })();
+
+  // Toggle password visibility for any password field
+  function togglePassword(fieldId, btn) {
+    try {
+      const input = document.getElementById(fieldId);
+      if (!input) return;
+      const icon = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) { icon.classList.remove('bi-eye'); icon.classList.add('bi-eye-slash'); }
+        btn.setAttribute('aria-pressed', 'true');
+      } else {
+        input.type = 'password';
+        if (icon) { icon.classList.remove('bi-eye-slash'); icon.classList.add('bi-eye'); }
+        btn.setAttribute('aria-pressed', 'false');
+      }
+    } catch (e) {
+      // noop
+    }
+  }
+
+</script>
+</body>
+</html>
