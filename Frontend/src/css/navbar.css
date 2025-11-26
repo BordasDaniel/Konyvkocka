@@ -2,6 +2,8 @@
       --navbar-height: 80px; /* állítsd be a navbar pontos magasságát */
     }
 
+    
+
 .navbar-custom {
       background: var(--overlay); /* átlátszó using theme */
       backdrop-filter: blur(6px);      /* blur effekt */
@@ -56,6 +58,8 @@
     .nav-link:hover {
       text-decoration: underline;
       color: var(--primary) !important;
+      text-decoration-thickness: 2px !important;
+      text-underline-offset: 2px !important;
     }
 
     /* animated caret: down when closed, rotate to right when open */
@@ -167,6 +171,13 @@
       color: var(--secondary);
       transform: translateX(4px);
     }
+
+    .navbar-collapse a
+    {
+      font-weight: bold !important;
+    }
+
+    
 
     /* when the navbar is small (mobile), keep the dropdown attached */
     @media (max-width: 767.98px) {

@@ -123,8 +123,8 @@ input[type=number] {
 .btn:focus {
   background-color: var(--secondary);
   color: var(--bg);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(194, 157, 89, 0.4), inset 0 -2px 0 currentColor;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 15px rgba(194, 157, 89, 0.4), inset 0 0 0 currentColor !important;
   text-decoration-line: underline !important;
   text-decoration-thickness: 2px !important;
   text-underline-offset: 2px;

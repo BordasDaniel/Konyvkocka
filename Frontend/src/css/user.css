@@ -215,3 +215,95 @@
 @media (max-width:575px){
   .about-panel form select.form-select{ padding-right:1.8rem }
 }
+
+/* Purchase history table styling */
+.purchase-table{
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-radius: 0;
+  overflow: visible;
+  border: none;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.purchase-table thead{
+  background: linear-gradient(90deg, rgba(194,157,89,0.12), rgba(230,192,124,0.08));
+  border-bottom: 1px solid rgba(194,157,89,0.25);
+}
+
+.purchase-table thead th{
+  color: var(--secondary);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.8px;
+  padding: 0.9rem 0.85rem;
+  border: none;
+  background: transparent;
+}
+
+.purchase-table tbody{
+  background: transparent;
+}
+
+.purchase-table tbody tr{
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.purchase-table tbody tr:last-child{
+  border-bottom: none;
+}
+
+.purchase-table tbody tr:hover{
+  background: linear-gradient(90deg, rgba(194,157,89,0.06), rgba(230,192,124,0.03));
+  transform: translateX(3px);
+}
+
+.purchase-table tbody td{
+  color: rgba(255,255,255,0.85);
+  padding: 0.95rem 0.85rem;
+  vertical-align: middle;
+  border: none;
+  background: transparent;
+}
+
+.purchase-table .badge{
+  padding: 0.35rem 0.65rem;
+  font-weight: 600;
+  font-size: 0.78rem;
+  border-radius: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.purchase-total{
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.purchase-total strong{
+  color: var(--secondary);
+  font-size: 1.15rem;
+}
+
+@media (max-width: 767px){
+  .purchase-table thead th{
+    font-size: 0.75rem;
+    padding: 0.75rem 0.5rem;
+  }
+  .purchase-table tbody td{
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+  }
+  .purchase-total{
+    font-size: 0.95rem;
+  }
+  .purchase-total strong{
+    font-size: 1.05rem;
+  }
+}

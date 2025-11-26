@@ -53,7 +53,7 @@ main
   background: linear-gradient(90deg, rgba(230,192,124,0.95), rgba(194,157,89,0.92));
   color: var(--bg) !important;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(194,157,89,0.28), inset 0 0 currentColor;
+  box-shadow: 0 6px 18px rgba(194,157,89,0.28), inset 0 0 0 currentColor;
   border-color: rgba(255,255,255,0.04);
 }
 @media (max-width:575px){
@@ -76,7 +76,8 @@ main
     border-color: rgba(255, 167, 38, 0.55) !important;
     box-shadow: 0 0 0 3px rgba(255, 167, 38, 0.15), 0 2px 18px rgba(0, 0, 0, 0.35) !important;
     outline: none !important;
-    transform: translateY(-1px); }
+    transform: translateY(-1px); 
+  }
     
 .btn-filter.active{ background: rgba(230,192,124,0.12); border-color: rgba(230,192,124,0.35); color: var(--secondary) !important; }
 
@@ -119,11 +120,11 @@ main
 .btn-read:hover{
   background-color: var(--secondary);
   color: var(--bg);
-  box-shadow: 0 4px 12px rgba(194,157,89,.35), inset 2px currentColor;
+  box-shadow: 0 4px 12px rgba(194,157,89,.35), inset 2px currentColor !important;
   text-decoration-line: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 2px;
-  transform: translateY(2px); 
+  transform: translateY(-2px) !important; 
 }
 
 /* Optional: subtle card hover */
