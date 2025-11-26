@@ -76,14 +76,14 @@
   padding: .35rem .75rem;
   margin-right: .5rem;
   background: rgba(255,255,255,0.02);
-  color: var(--text);
+  color: var(--text) !important;
   border: 1px solid rgba(255,255,255,0.05);
   transition: all .18s ease-in-out;
 }
 .profile-actions .btn-action i{ vertical-align:middle }
 .profile-actions .btn-action.active, .profile-actions .btn-action:hover{
   background: linear-gradient(90deg, var(--secondary), var(--primary));
-  color: var(--bg);
+  color: var(--bg) !important;
   transform: translateY(-1px);
   box-shadow: 0 10px 26px rgba(0,0,0,0.45);
   border-color: rgba(255,255,255,0.02);

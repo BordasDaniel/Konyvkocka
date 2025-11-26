@@ -50,9 +50,6 @@ body
 }
 
 
-.login-container .form-label {
-    color: var(--text);
-}
 
 .login-container .form-change-links a
 {

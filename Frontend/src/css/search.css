@@ -63,8 +63,8 @@ html {
   background: linear-gradient(180deg, rgba(18,18,18,0.55), rgba(10,10,10,0.35));
   border: 1px solid rgba(255,255,255,0.08);
   color: var(--text);
-  padding-left: 4rem; /* space for filter button */
-  padding-right: 2.5rem; /* no search button, smaller right padding */
+  padding-left: 4rem !important; /* space for filter button */
+  padding-right: 2.5rem !important; /* no search button, smaller right padding */
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   margin-top: 5vh;
