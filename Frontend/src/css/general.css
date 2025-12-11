@@ -1,3 +1,140 @@
+/* Global form styling – aligned with pay page */
+
+body
+{
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+
+/* Labels above inputs */
+.form-label {
+  color: var(--h1Text);
+  font-weight: 600;
+}
+
+/* Hide number input arrows */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Inputs and selects: glassy dark background, subtle border */
+.form-control,
+.form-select {
+  background: linear-gradient(180deg, rgba(18, 18, 18, 0.55), rgba(10, 10, 10, 0.35));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  min-height: 48px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 12px rgba(0, 0, 0, 0.25);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.08s ease;
+}
+
+.form-control:focus,
+.form-control:active,
+.form-control:focus-visible,
+.form-select:focus {
+  background: linear-gradient(180deg, rgba(22, 22, 22, 0.6), rgba(12, 12, 12, 0.42)) !important;
+  color: var(--text) !important;
+  border-color: rgba(255, 167, 38, 0.55) !important; /* gold focus */
+  box-shadow: 0 0 0 3px rgba(255, 167, 38, 0.15), 0 2px 18px rgba(0, 0, 0, 0.35) !important;
+  outline: none !important;
+}
+
+.form-control::placeholder {
+  color: #ffffff;
+  opacity: 0.85;
+}
+
+/* Select dropdown chevron (white) */
+.form-select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M3.2 5.5a.5.5 0 0 1 .7 0L8 9.1l4.1-3.6a.5.5 0 1 1 .66.75l-4.42 3.87a.75.75 0 0 1-.98 0L2.54 6.25a.5.5 0 0 1 .66-.75z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 14px 14px;
+  padding-right: 2.2rem;
+  color-scheme: dark;
+}
+
+/* Dark dropdown options */
+.form-select option,
+.form-select optgroup {
+  background-color: #0f0f0f;
+  color: #ffffff;
+}
+
+.form-select option:checked {
+  background-color: rgba(255, 167, 38, 0.3); /* gold tint */
+}
+
+.form-select option:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Validation colors (Bootstrap-compatible) */
+.form-control.is-invalid,
+.form-select.is-invalid,
+.was-validated .form-control:invalid,
+.was-validated .form-select:invalid {
+  border-color: rgba(255, 77, 77, 0.7) !important;
+  box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.15) !important;
+}
+
+.form-control.is-valid,
+.form-select.is-valid,
+.was-validated .form-control:valid,
+.was-validated .form-select:valid {
+  border-color: rgba(0, 255, 153, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(0, 255, 153, 0.12) !important;
+}
+
+/* Global button styling – unified across the site */
+.btn {
+  background-color: var(--primary);
+  color: var(--bg) !important;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.95rem;
+  border-radius: 5px;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: bold !important;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.btn:hover,
+.btn:focus {
+  background-color: var(--secondary);
+  color: var(--bg);
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 15px rgba(194, 157, 89, 0.4), inset 0 0 0 currentColor !important;
+  text-decoration-line: underline !important;
+  text-decoration-thickness: 2px !important;
+  text-underline-offset: 2px;
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(194, 157, 89, 0.3);
+}
+
 :root {
   --bg: #121212;
   --primary: #C29D59;
@@ -103,3 +240,6 @@ footer.footer, section.footer-section{ backdrop-filter: none !important; -webkit
 
 /* Add Bootstrap Icons if not already present elsewhere */
 @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css");
+
+
+/* Buttons */

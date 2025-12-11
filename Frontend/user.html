@@ -109,80 +109,192 @@
 		</div>
 	</div>
 
-			<!-- Settings panel (hidden by default) -->
-			<div id="settingsPanel" class="about-panel p-3 mb-4 d-none">
-				<h4>Beállítások</h4>
+		<!-- Settings panel (hidden by default) -->
+		<div id="settingsPanel" class="d-none">
+			
+			<!-- Account Settings Section -->
+			<div class="about-panel p-4 mb-4">
+				<div class="d-flex align-items-center mb-3">
+					<i class="bi bi-person-circle me-2" style="font-size: 1.5rem; color: var(--secondary);"></i>
+					<h4 class="mb-0">Fiók beállítások</h4>
+				</div>
 				<form>
-					<div class="mb-3">
-						<label class="form-label">Felhasználónév</label>
-						<input class="form-control" id="settingsUsername" value="BordasDaniel" disabled>
-					</div>
-					<div class="mb-3">
-						<label class="form-label">E-mail</label>
-						<input type="email" class="form-control" id="settingsEmail" value="daniel@example.com">
-					</div>
-					<hr style="border-color: rgba(255,255,255,0.06)">
-					<h6>Jelszó</h6>
-					<div class="mb-3">
-						<label class="form-label">Jelenlegi jelszó</label>
-						<input type="password" class="form-control" id="settingsCurrentPassword">
-					</div>
-					<div class="mb-3">
-						<label class="form-label">Új jelszó</label>
-						<input type="password" class="form-control" id="settingsNewPassword">
-					</div>
-					<div class="mb-3">
-						<label class="form-label">Új jelszó megerősítése</label>
-						<input type="password" class="form-control" id="settingsConfirmPassword">
-					</div>
-					<hr style="border-color: rgba(255,255,255,0.06)">
-					<div class="form-check form-switch mb-3">
-						<input class="form-check-input" type="checkbox" id="settingsTwoFactor">
-						<label class="form-check-label" for="settingsTwoFactor">Kétlépcsős azonosítás (2FA)</label>
-					</div>
-					<div class="mb-3">
-						<label class="form-label">Értesítési gyakoriság</label>
-						<select id="settingsNotifFreq" class="form-select">
-							<option value="immediate">Azonnal</option>
-							<option value="daily">Napi</option>
-							<option value="weekly" selected>Heti</option>
-							<option value="none">Egyáltalán nem</option>
-						</select>
-					</div>
-					<div class="mb-3">
-						<label class="form-label">Időzóna</label>
-						<select id="settingsTimezone" class="form-select">
-							<option value="Europe/Budapest" selected>Europe/Budapest</option>
-							<option value="Europe/London">Europe/London</option>
-							<option value="America/New_York">America/New_York</option>
-						</select>
-					</div>
-					<hr style="border-color: rgba(255,255,255,0.06)">
-					<h6>Kapcsolódó fiókok</h6>
-					<div class="mb-3">
-						<button class="btn btn-outline-light btn-sm me-2" type="button">Csatlakozás Google</button>
-						<button class="btn btn-outline-light btn-sm" type="button">Csatlakozás Facebook</button>
-					</div>
-					<hr style="border-color: rgba(255,255,255,0.06)">
 					<div class="row">
-						<div class="col-12 col-md-8 mb-3 mb-md-0">
-							<div class="d-flex gap-2">
-								<button type="button" id="settingsSave" class="btn btn-primary">Mentés</button>
-								<button type="button" id="settingsBack" class="btn btn-secondary">Vissza</button>
-							</div>
+						<div class="col-md-6 mb-3">
+							<label class="form-label">Felhasználónév</label>
+							<input class="form-control" id="settingsUsername" value="BordasDaniel" disabled>
 						</div>
-						<div class="col-12 col-md-4 text-md-end">
-							<div class="d-flex flex-wrap gap-2 justify-content-md-end">
-								<button id="settingsExportData" class="btn btn-sm btn-outline-light" type="button" title="Adatok exportálása"><i class="bi bi-download"></i> Export</button>
-								<button id="settingsLogout" class="btn btn-sm btn-secondary" type="button" title="Kijelentkezés"><i class="bi bi-box-arrow-right"></i> Kijelentkezés</button>
-								<button id="settingsDeleteAccount" class="btn btn-sm btn-danger" type="button" title="Fiók törlése"><i class="bi bi-trash"></i> Fiók törlése</button>
-							</div>
+						<div class="col-md-6 mb-3">
+							<label class="form-label">E-mail cím</label>
+							<input type="email" class="form-control" id="settingsEmail" value="daniel@example.com">
 						</div>
 					</div>
 				</form>
 			</div>
 
-			<!-- Stats area (left + right columns will match height) -->
+			<!-- Security Section -->
+			<div class="about-panel p-4 mb-4">
+				<div class="d-flex align-items-center mb-3">
+					<i class="bi bi-shield-lock me-2" style="font-size: 1.5rem; color: var(--secondary);"></i>
+					<h4 class="mb-0">Biztonság</h4>
+				</div>
+				<form>
+					<h6 class="mb-3" style="color: var(--h1Text);">Jelszó módosítása</h6>
+					<div class="row">
+						<div class="col-md-4 mb-3">
+							<label class="form-label">Jelenlegi jelszó</label>
+							<input type="text" class="form-control" id="settingsCurrentPassword">
+						</div>
+						<div class="col-md-4 mb-3">
+							<label class="form-label">Új jelszó</label>
+							<input type="text" class="form-control" id="settingsNewPassword">
+						</div>
+						<div class="col-md-4 mb-3">
+							<label class="form-label">Új jelszó megerősítése</label>
+							<input type="text" class="form-control" id="settingsConfirmPassword">
+						</div>
+					</div>
+					<hr style="border-color: rgba(255,255,255,0.06)" class="my-4">
+					<h6 class="mb-3" style="color: var(--h1Text);">Kétlépcsős azonosítás</h6>
+					<div class="form-check form-switch">
+						<input class="form-check-input" type="checkbox" id="settingsTwoFactor">
+						<label class="form-check-label" for="settingsTwoFactor">Kétlépcsős azonosítás (2FA) engedélyezése</label>
+					</div>
+				</form>
+			</div>
+
+			<!-- Preferences Section -->
+			<div class="about-panel p-4 mb-4">
+				<div class="d-flex align-items-center mb-3">
+					<i class="bi bi-sliders me-2" style="font-size: 1.5rem; color: var(--secondary);"></i>
+					<h4 class="mb-0">Preferenciák</h4>
+				</div>
+				<form>
+					<div class="row">
+						<div class="col-md-6 mb-3">
+							<label class="form-label">Értesítési gyakoriság</label>
+							<select id="settingsNotifFreq" class="form-select">
+								<option value="immediate">Azonnal</option>
+								<option value="daily">Napi</option>
+								<option value="weekly" selected>Heti</option>
+								<option value="none">Egyáltalán nem</option>
+							</select>
+						</div>
+						<div class="col-md-6 mb-3">
+							<label class="form-label">Időzóna</label>
+							<select id="settingsTimezone" class="form-select">
+								<option value="Europe/Budapest" selected>Europe/Budapest (GMT+1)</option>
+								<option value="Europe/London">Europe/London (GMT+0)</option>
+								<option value="America/New_York">America/New_York (GMT-5)</option>
+							</select>
+						</div>
+					</div>
+				</form>
+			</div>
+
+			<!-- Connected Accounts Section -->
+			<div class="about-panel p-4 mb-4">
+				<div class="d-flex align-items-center mb-3">
+					<i class="bi bi-link-45deg me-2" style="font-size: 1.5rem; color: var(--secondary);"></i>
+					<h4 class="mb-0">Kapcsolódó fiókok</h4>
+				</div>
+				<div class="d-flex flex-wrap gap-2">
+					<button class="btn btn-outline-light btn-sm" type="button">
+						<i class="bi bi-google me-1"></i> Csatlakozás Google-lal
+					</button>
+					<button class="btn btn-outline-light btn-sm" type="button">
+						<i class="bi bi-facebook me-1"></i> Csatlakozás Facebook-kal
+					</button>
+				</div>
+			</div>
+
+			<!-- Purchase History Section -->
+			<div class="about-panel p-4 mb-4">
+				<div class="d-flex align-items-center mb-3">
+					<i class="bi bi-receipt me-2" style="font-size: 1.5rem; color: var(--secondary);"></i>
+					<h4 class="mb-0">Vásárlási előzmények</h4>
+				</div>
+				<table class="table purchase-table">
+						<thead>
+							<tr>
+								<th>Dátum</th>
+								<th>Termék</th>
+								<th>Típus</th>
+								<th>Ár</th>
+								<th>Státusz</th>
+								<th>Számla</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>2025-11-15</td>
+								<td>Premium előfizetés (1 hónap)</td>
+								<td><span class="badge bg-warning text-dark">Előfizetés</span></td>
+								<td>2.990 Ft</td>
+								<td><span class="badge bg-success">Aktív</span></td>
+								<td><button class="btn btn-sm btn-outline-light"><i class="bi bi-download"></i></button></td>
+							</tr>
+							<tr>
+								<td>2025-10-20</td>
+								<td>A szél árnyéka - eBook</td>
+								<td><span class="badge bg-info">eBook</span></td>
+								<td>1.490 Ft</td>
+								<td><span class="badge bg-success">Teljesítve</span></td>
+								<td><button class="btn btn-sm btn-outline-light"><i class="bi bi-download"></i></button></td>
+							</tr>
+							<tr>
+								<td>2025-09-05</td>
+								<td>Film csomag (3 hónap)</td>
+								<td><span class="badge bg-warning text-dark">Előfizetés</span></td>
+								<td>7.990 Ft</td>
+								<td><span class="badge bg-secondary">Lejárt</span></td>
+								<td><button class="btn btn-sm btn-outline-light"><i class="bi bi-download"></i></button></td>
+							</tr>
+							<tr>
+								<td>2025-08-12</td>
+								<td>Az éjszaka titkai - Audiobook</td>
+								<td><span class="badge bg-primary">Audiobook</span></td>
+								<td>2.290 Ft</td>
+								<td><span class="badge bg-success">Teljesítve</span></td>
+								<td><button class="btn btn-sm btn-outline-light"><i class="bi bi-download"></i></button></td>
+							</tr>
+						</tbody>
+					</table>
+				<div class="text-end mt-3">
+					<span class="purchase-total">Összes költés: <strong>14.760 Ft</strong></span>
+				</div>
+			</div>
+
+			<!-- Actions Section -->
+			<div class="about-panel p-4 mb-4">
+				<div class="row">
+					<div class="col-12 col-md-6 mb-3 mb-md-0">
+						<div class="d-flex gap-2">
+							<button type="button" id="settingsSave" class="btn btn-primary">
+								<i class="bi bi-check-circle me-1"></i> Mentés
+							</button>
+							<button type="button" id="settingsBack" class="btn btn-secondary">
+								<i class="bi bi-arrow-left me-1"></i> Vissza
+							</button>
+						</div>
+					</div>
+					<div class="col-12 col-md-6 text-md-end">
+						<div class="d-flex flex-wrap gap-2 justify-content-md-end">
+							<button id="settingsExportData" class="btn btn-sm btn-outline-light" type="button" title="Adatok exportálása">
+								<i class="bi bi-download me-1"></i> Export
+							</button>
+							<button id="settingsLogout" class="btn btn-sm btn-secondary" type="button" title="Kijelentkezés">
+								<i class="bi bi-box-arrow-right me-1"></i> Kijelentkezés
+							</button>
+							<button id="settingsDeleteAccount" class="btn btn-sm btn-danger" type="button" title="Fiók törlése">
+								<i class="bi bi-trash me-1"></i> Fiók törlése
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>			<!-- Stats area (left + right columns will match height) -->
 			<div id="mainContent">
 	<div class="row mt-4 align-items-stretch">
 		<div class="col-lg-8">

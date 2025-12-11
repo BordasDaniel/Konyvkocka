@@ -139,10 +139,13 @@
                     <label for="email" class="form-label fw-bold">Email cím</label>
                     <input type="email" class="form-control" id="email" placeholder="Írd be az email címed" required>
                 </div>
-                <div class="mb-3">
-                    <label for="password" class="form-label fw-bold">Jelszó</label>
-                    <input type="password" class="form-control" id="password" placeholder="Írd be a jelszavad" required>
-                </div>
+                                <div class="mb-3">
+                                        <label for="password" class="form-label fw-bold">Jelszó</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="password" placeholder="Írd be a jelszavad" required>
+                                            <button class="btn btn-outline-secondary" type="button" aria-label="Jelszó megjelenítése" onclick="togglePassword('password', this)"><i class="bi bi-eye"></i></button>
+                                        </div>
+                                </div>
                 <div class="mb-3 form-check">
                     <input type="checkbox" class="form-check-input" id="rememberMe">
                     <label class="form-check-label" for="rememberMe">Emlékezz rám</label>
@@ -190,15 +193,21 @@
                     <input type="email" class="form-control" id="email" placeholder="Írd be az email címed" required>
                 </div>
 
-                <div class="mb-3">
-                    <label for="password" class="form-label fw-bold">Jelszó</label>
-                    <input type="password" class="form-control" id="password" placeholder="Írd be a jelszavad" required>
-                </div>
+                                <div class="mb-3">
+                                        <label for="password" class="form-label fw-bold">Jelszó</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="password" placeholder="Írd be a jelszavad" required>
+                                            <button class="btn btn-outline-secondary" type="button" aria-label="Jelszó megjelenítése" onclick="togglePassword('password', this)"><i class="bi bi-eye"></i></button>
+                                        </div>
+                                </div>
 
-                <div class="mb-3">
-                    <label for="confirmPassword" class="form-label fw-bold">Jelszó megerősítése</label>
-                    <input type="password" class="form-control" id="confirmPassword" placeholder="Írd be újra a jelszavad" required>
-                </div>
+                                <div class="mb-3">
+                                        <label for="confirmPassword" class="form-label fw-bold">Jelszó megerősítése</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="confirmPassword" placeholder="Írd be újra a jelszavad" required>
+                                            <button class="btn btn-outline-secondary" type="button" aria-label="Jelszó megerősítése megjelenítése" onclick="togglePassword('confirmPassword', this)"><i class="bi bi-eye"></i></button>
+                                        </div>
+                                </div>
 
                 <div class="mb-3 d-flex justify-content-center">
                     <div id="recaptcha-container-register"></div>
@@ -308,6 +317,26 @@
             alert('Kérlek, töltsd ki az összes mezőt!');
         }
         return false;
+    }
+
+    // Toggle password visibility (reused from reset.html)
+    function togglePassword(fieldId, btn) {
+        try {
+            const input = document.getElementById(fieldId);
+            if (!input) return;
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) { icon.classList.remove('bi-eye'); icon.classList.add('bi-eye-slash'); }
+                btn.setAttribute('aria-pressed', 'true');
+            } else {
+                input.type = 'password';
+                if (icon) { icon.classList.remove('bi-eye-slash'); icon.classList.add('bi-eye'); }
+                btn.setAttribute('aria-pressed', 'false');
+            }
+        } catch (e) {
+            // noop
+        }
     }
 
 </script>

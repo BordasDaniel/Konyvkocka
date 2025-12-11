@@ -378,7 +378,7 @@
                   <form id="commentForm" class="comment-form">
                     <textarea id="commentText" placeholder="Írj egy hozzászólást..."></textarea>
                     <div class="d-flex justify-content-end mt-2">
-                      <button id="commentSubmit" type="submit" class="card-cta">Küldés</button>
+                      <button id="commentSubmit" type="submit" class="btn">Küldés</button>
                     </div>
                   </form>
                   <ul id="commentsList" class="comments-list"></ul>
@@ -612,18 +612,10 @@
     // When modal is shown ensure backdrop visible
     modalEl.addEventListener('shown.bs.modal', () => showBackdrop());
 
-    // Update comment submit button based on login status when modal is shown
+    // Update comment submit label when modal is shown (do not disable to keep styling/click handlers)
     modalEl.addEventListener('shown.bs.modal', () => {
       const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-      if(commentSubmit){
-        if(!isLoggedIn){
-          commentSubmit.disabled = true;
-          commentSubmit.textContent = 'Jelentkezz be először';
-        } else {
-          commentSubmit.disabled = false;
-          commentSubmit.textContent = 'Küldés';
-        }
-      }
+        commentSubmit.textContent = isLoggedIn ? 'Küldés' : 'Jelentkezz be először';
     });
 
     // clicking on backdrop should close modal
@@ -682,7 +674,6 @@
       e.preventDefault();
       const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
       if(!isLoggedIn){
-        // Shouldn't happen because button is disabled, but guard anyway
         alert('Kérlek jelentkezz be először.');
         return;
       }
