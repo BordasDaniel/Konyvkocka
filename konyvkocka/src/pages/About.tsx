@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-function About() {
+function About(): React.JSX.Element {
     return (
         <>
         <main className="mt-5">
@@ -71,7 +71,7 @@ function About() {
     </div>
   </section>
 </>
-    );
+    )
 }
 
 export default About;

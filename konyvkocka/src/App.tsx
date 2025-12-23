@@ -12,7 +12,7 @@ import Reader from './pages/Reader.tsx'
 import Watch from './pages/Watch.tsx'
 import User from './pages/User.tsx'
 import ResetPassword from './pages/ResetPassword.tsx'
-import NotFound from './pages/Notfound.tsx'
+import NotFound from './pages/NotFound.tsx'
 
 function App() {
   
