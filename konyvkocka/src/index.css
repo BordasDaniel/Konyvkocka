@@ -1,0 +1,19 @@
+@import './styles/general.css';
+@import './styles/navbar.css';
+@import './styles/about.css';
+@import './styles/pay.css';
+
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-content {
+  flex: 1 0 auto;
+  width: 100%;
+}

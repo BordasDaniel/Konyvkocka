@@ -65,7 +65,7 @@ function About() {
           </ul>
         </div>
         <div className="pricing-cta">
-          <Link to="/payment" className="btn fw-bold">Előfizetek</Link>
+          <Link to="/pay" className="btn fw-bold">Előfizetek</Link>
         </div>
       </div>
     </div>
