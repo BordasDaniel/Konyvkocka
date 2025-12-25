@@ -7,6 +7,11 @@
       display: none;
     }
 
+    /* Hide carousel dots when modal is open */
+    body:has(.modal.show) .carousel-dots {
+      display: none !important;
+    }
+
     .modal-custom { --bs-modal-zindex: 1060; }
 
     .modal-content { background: linear-gradient(180deg, rgba(10,10,10,0.9), rgba(6,6,6,0.95)); border: 1px solid rgba(255,255,255,0.04); }

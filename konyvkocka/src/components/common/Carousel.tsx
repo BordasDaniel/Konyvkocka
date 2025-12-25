@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import 'bootstrap/js/dist/carousel'
 
 type Slide = {
   id: string
@@ -10,12 +9,14 @@ type Slide = {
   trailer?: string
   episodes?: string[]
   reader?: string
+  rating?: number
 }
 
 type Props = {
   slides?: Slide[]
   fetchUrl?: string
   interval?: number
+  onSlideClick?: (slide: Slide) => void
 }
 
 const defaultSlides: Slide[] = [
@@ -26,7 +27,8 @@ const defaultSlides: Slide[] = [
     tags: ['Romantikus', 'Dráma', 'PG-13'],
     desc: 'A Titanic egy 1997-es amerikai romantikus filmdráma, amely egy tragikus szerelmi történetet mesél el a híres óceánjáró katasztrófájának hátterében.',
     trailer: 'https://www.youtube.com/embed/kVrqfYjkTdQ',
-    episodes: ['1: Teljes film']
+    episodes: ['1: Teljes film'],
+    rating: 4.5
   },
   {
     id: 'godfather',
@@ -35,11 +37,12 @@ const defaultSlides: Slide[] = [
     tags: ['Bűnügyi', 'Dráma', 'R'],
     desc: 'A Keresztapa egy 1972-es bűnügyi dráma, amely a Corleone maffia család történetét meséli el.',
     trailer: 'https://www.youtube.com/embed/sY1S34973zA',
-    episodes: ['1: Teljes film']
+    episodes: ['1: Teljes film'],
+    rating: 5.0
   }
 ]
 
-export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000 }: Props) {
+export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000, onSlideClick }: Props) {
   const [slides, setSlides] = useState<Slide[]>(slidesProp ?? [])
   const [activeIndex, setActiveIndex] = useState(0)
   const carouselRef = useRef<HTMLDivElement | null>(null)
@@ -82,15 +85,58 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
     return () => el.removeEventListener('slid.bs.carousel', handler)
   }, [slides])
 
+  // Initialize Bootstrap Carousel
+  useEffect(() => {
+    const el = carouselRef.current
+    if (!el || !slides.length) return
+    
+    // Ensure Bootstrap is loaded
+    if (typeof (window as any).bootstrap === 'undefined') {
+      console.warn('Bootstrap is not loaded')
+      return
+    }
+    
+    try {
+      const Carousel = (window as any).bootstrap.Carousel
+      const carouselInstance = Carousel.getOrCreateInstance(el, {
+        interval: interval,
+        ride: 'carousel',
+        pause: 'hover',
+        wrap: true
+      })
+      
+      return () => {
+        carouselInstance?.dispose()
+      }
+    } catch (e) {
+      console.error('Error initializing carousel:', e)
+    }
+  }, [slides, interval])
+
   const goTo = (i: number) => {
     const el = carouselRef.current
-    if (!el) return
+    if (!el) {
+      console.log('Carousel element not found')
+      return
+    }
+    
+    console.log('Going to slide', i)
+    
     try {
       const Carousel = (window as any).bootstrap?.Carousel
-      const inst = Carousel ? Carousel.getOrCreateInstance(el) : null
-      if (inst) inst.to(i)
+      if (!Carousel) {
+        console.error('Bootstrap.Carousel not found')
+        return
+      }
+      
+      const inst = Carousel.getOrCreateInstance(el)
+      console.log('Carousel instance:', inst)
+      
+      if (inst) {
+        inst.to(i)
+      }
     } catch (e) {
-      // noop
+      console.error('Error in goTo:', e)
     }
   }
 
@@ -108,7 +154,7 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
             <div
               key={s.id}
               className={`carousel-item ${idx === 0 ? 'active' : ''}`}
-              style={{ ['--bg' as any]: `url(${s.img})`, backgroundImage: `url(${s.img})` } as any}
+              data-bg={s.img}
             >
               <div className="carousel-content">
                 <div className="carousel-text">
@@ -117,12 +163,7 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
                   {s.desc && <p>{s.desc}</p>}
                   <button
                     className="btn mt-3 view-btn text-dark"
-                    data-img={s.img}
-                    data-title={s.title}
-                    data-tags={(s.tags || []).join(',')}
-                    data-desc={s.desc}
-                    data-trailer={s.trailer}
-                    data-episodes={JSON.stringify(s.episodes || [])}
+                    onClick={() => onSlideClick?.(s)}
                   >
                     Megtekintés
                   </button>

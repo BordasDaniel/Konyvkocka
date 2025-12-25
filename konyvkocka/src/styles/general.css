@@ -131,8 +131,14 @@ input[type=number] {
 }
 
 .btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(194, 157, 89, 0.3);
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(194, 157, 89, 0.3) !important;
+}
+
+.btn:focus,
+.btn:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(194, 157, 89, 0.25) !important;
 }
 
 :root {

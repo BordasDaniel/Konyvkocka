@@ -20,7 +20,7 @@
       height: auto;
       padding-top: 0.5rem; /* slight breathing room for desktop */
       border-bottom: 2.5px solid var(--border-color)  ;
-      background-image: url("../assets/img/carousel.jpg");
+      background-image: url("/assets/img/carousel.jpg");
       background-repeat: no-repeat;
       background-size: cover;
     }
@@ -51,11 +51,13 @@
       padding: 2rem 0; /* allow space for content on small screens */
     }
 
-    /* háttér blur */
+    /* háttér blur - a hero-carousel hátterét örökli */
     .carousel-item::before {
       content: "";
       position: absolute;
       inset: 0;
+      /* A hero-carousel hátterképét használja, nem egyedi képet */
+      background: inherit;
       background-size: cover;
       background-position: center;
       /* dim using the theme overlay so images read well on top */
@@ -202,7 +204,7 @@
   -webkit-backdrop-filter: blur(6px);
   border-radius: 0.6rem;
   box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-  z-index: 5;
+  z-index: 1050;
   position: absolute;
 }
 
@@ -415,3 +417,40 @@
         transform: translateX(100%);
     }
   }
+
+/* Position adjustments per side (prev vs next) */
+.carousel-control-prev { left: 1rem; }
+.carousel-control-next { right: 1rem; }
+
+@media (max-width: 575.98px) {
+  .carousel-control-prev { left: 0.6rem; width: 3.2rem; height: 3.2rem; }
+  .carousel-control-next { right: 0.6rem; width: 3.2rem; height: 3.2rem; }
+  .carousel-control-prev-icon,
+  .carousel-control-next-icon {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+}
+
+/* Card compact meta (replaces long descriptions) */
+.card-meta { display:flex; flex-direction:column; gap:0.5rem; }
+.card-rating { display:flex; align-items:center; gap:0.45rem; font-size:0.9rem; }
+.card-rating .rating-num { color: var(--secondary); font-weight:700; }
+.card-rating .card-stars i { color: rgba(255,255,255,0.18); }
+.card-rating .card-stars i.filled { color: var(--primary); filter: drop-shadow(0 4px 12px rgba(194,157,89,0.18)); }
+
+/* Card body layout improvements */
+.card .card-body { display:flex; flex-direction:column; gap:0.6rem; }
+.card-meta .card-rating { margin-bottom: 0.45rem; }
+.card .card-body .view-btn { margin-top: 0.6rem; align-self:stretch; padding:0.55rem 0.9rem; border-radius:6px; background:var(--primary); color:var(--bg); border: none; }
+.card .card-body .view-btn:hover { background:var(--secondary); color:var(--bg); box-shadow: 0 6px 18px rgba(194,157,89,0.24); transform: translateY(-2px); }
+
+/* Carousel dots indicator */
+.carousel-dots { position: absolute; left: 50%; transform: translateX(-50%); bottom: 70px; display:inline-flex; gap:0.6rem; align-items:center; justify-content:center; padding:8px 12px; border-radius:999px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); background: rgba(0,0,0,0.18); border:1px solid rgba(255,255,255,0.03); z-index:1060; }
+.carousel-dots button { width:14px; height:14px; border-radius:50%; border:0; background: rgba(255,255,255,0.18); cursor:pointer; padding:0; transition:all 0.18s ease; }
+.carousel-dots button.active { background: var(--primary); box-shadow: 0 6px 18px rgba(194,157,89,0.18); transform:translateY(-2px); }
+
+/* Touch targets on small screens */
+@media (max-width: 575.98px) {
+  .carousel-dots button { width: 16px; height: 16px; }
+}
