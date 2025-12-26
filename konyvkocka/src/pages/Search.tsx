@@ -132,19 +132,24 @@ const Search: React.FC = () => {
 			</section>
 
 			<section className="search-results my-4">
-				<div className="container">
-					<div className="row results-grid">
-						{results.length === 0 ? (
-							<p className="fw-bold text-center text-decoration-underline">Nincsenek találatok. Kezdd el a keresést a fenti mezőben.</p>
-						) : (
-							<Card
-								data={results}
-								count={results.length}
-								category="custom"
-								showMoreCard={false}
-								onCardClick={(c) => setSelectedCard(c)}
-							/>
-						)}
+				<div className="container-fluid px-4">
+					<div className="results-grid">
+						<div className="row">
+							{results.length === 0 ? (
+								<div className="col-12">
+									<p className="fw-bold text-center text-decoration-underline">Nincsenek találatok. Kezdd el a keresést a fenti mezőben.</p>
+								</div>
+							) : (
+								<Card
+									data={results}
+									count={results.length}
+									category="custom"
+									showMoreCard={false}
+									onCardClick={(c) => setSelectedCard(c)}
+									gridClass="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-4"
+								/>
+							)}
+						</div>
 					</div>
 				</div>
 			</section>

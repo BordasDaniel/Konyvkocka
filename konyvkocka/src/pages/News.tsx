@@ -141,7 +141,7 @@ export default function News() {
 
   return (
     <main className="mt-5">
-      <div className="container py-5">
+      <div className="container-fluid px-4 py-5">
         <h1 className="mb-4 text-center display-6 fw-bold text-decoration-underline">Hírek</h1>
 
         {/* Filters / categories */}

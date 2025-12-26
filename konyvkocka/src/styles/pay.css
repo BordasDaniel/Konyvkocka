@@ -159,13 +159,19 @@
 /* Plans grid responsive */
 .plans-grid {
   display: grid;
-  gap: 1rem;
+  gap: 1.5rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 @media (max-width: 992px) {
   .plans-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .plans-grid {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -7,12 +7,26 @@
       display: none;
     }
 
+    /* Prevent body scroll when modal is open */
+    body.modal-open {
+      overflow: hidden !important;
+      position: fixed;
+      width: 100%;
+      touch-action: none;
+    }
+
     /* Hide carousel dots when modal is open */
     body:has(.modal.show) .carousel-dots {
       display: none !important;
     }
 
     .modal-custom { --bs-modal-zindex: 1060; }
+
+    .modal-dialog {
+      max-width: 95%;
+      width: 95%;
+      margin: 1.75rem auto;
+    }
 
     .modal-content { background: linear-gradient(180deg, rgba(10,10,10,0.9), rgba(6,6,6,0.95)); border: 1px solid rgba(255,255,255,0.04); }
 
@@ -22,11 +36,22 @@
 
     .modal-content img.cover {
       width: 100%;
-      height: auto;
+      height: 100%;
       object-fit: cover;
       border-radius: 6px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.6);
       border: 1px solid rgba(255,255,255,0.03);
+      display: block;
+    }
+
+    .modal-body .row {
+      margin-left: 0;
+      margin-right: 0;
+    }
+
+    .modal-body .row > [class*='col-'] {
+      padding-left: 8px;
+      padding-right: 8px;
     }
 
     .tags-inline { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
@@ -70,13 +95,13 @@
     .comment-meta { font-size:0.85rem; color: rgba(255,255,255,0.6); margin-bottom:0.25rem; }
     .comment-text { color: rgba(255,255,255,0.9); }
     .comment-form textarea { width:100%; resize:vertical; min-height:72px; background:transparent; color:var(--text); border:1px solid rgba(255,255,255,0.04); padding:0.5rem; border-radius:6px; }
-    .comment-form .btn { width:auto; padding:0.45rem 0.9rem; }
+    .comment-form .btn { width:auto; padding:0.45rem 0.9rem; background-color: var(--primary); color: var(--bg); font-weight: bold; }
     .comment-form .btn:hover,
     .comment-form .btn:focus {
       background-color: var(--secondary);
       color: var(--bg);
       transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(194, 157, 89, 0.4), inset 0 -2px 0 currentColor;
+      box-shadow: 0 4px 15px rgba(194, 157, 89, 0.4);
       text-decoration-line: underline !important;
       text-decoration-thickness: 2px;
       text-underline-offset: 2px;

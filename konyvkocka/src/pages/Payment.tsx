@@ -204,7 +204,7 @@ function Payment(): React.JSX.Element {
                 ))}
             </div>
 
-            <main className="container py-4">
+            <main className="container-fluid px-4 py-4">
                 {/* STEP 1 */}
                 <section id="step-1" className={`about-panel p-3 mt-2 ${step !== 1 ? 'd-none' : ''}`}>
                     <div className="d-flex justify-content-between align-items-center mb-2 step1-header">

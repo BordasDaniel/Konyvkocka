@@ -24,8 +24,8 @@ const Home: React.FC = () => {
       <Carousel onSlideClick={handleSlideClick} />
 
       {/* Friss tartalmak */}
-      <section className="lower-cards my-5">
-        <div className="container my-5">
+      <section className="lower-cards">
+        <div className="container">
           <h3 className="mb-4">Friss tartalmak</h3>
           <div className="row">
             <Card 
@@ -35,19 +35,20 @@ const Home: React.FC = () => {
             />
           </div>
         </div>
+        <hr />
       </section>
 
-      <hr />
-
       {/* Felkapottak */}
-      <section className="container my-5">
-        <h3 className="mb-4">Felkapottak</h3>
-        <div className="row">
-          <Card 
-            count={3} 
-            category="popular" 
-            onCardClick={handleCardClick}
-          />
+      <section className="lower-cards">
+        <div className="container">
+          <h3 className="mb-4">Felkapottak</h3>
+          <div className="row">
+            <Card 
+              count={3} 
+              category="popular" 
+              onCardClick={handleCardClick}
+            />
+          </div>
         </div>
       </section>
 

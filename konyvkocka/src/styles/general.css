@@ -7,6 +7,10 @@ body
   min-height: 100vh;
 }
 
+section {
+  width: 100%;
+}
+
 
 /* Labels above inputs */
 .form-label {

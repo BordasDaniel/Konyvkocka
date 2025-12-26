@@ -28,19 +28,17 @@ main
     overflow-x: hidden;
 }
 
-.container {
-  max-width: 100%;
-  overflow-x: hidden;
-}
+
 
 .pricing-row{
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-top: 1rem; /* reduced gap to the about text above */
-  margin-bottom: 1rem; /* small gap to footer below */
+  gap: 2rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
   padding-bottom: 2rem;
-  max-width: 100%;
+  max-width: 1600px;
+  width: 100%;
 }
 
 .pricing-card{

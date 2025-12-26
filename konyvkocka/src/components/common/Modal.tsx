@@ -26,12 +26,20 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 
 	useEffect(() => {
 		if (open && card) {
+			const scrollY = window.scrollY;
+			document.body.style.position = 'fixed';
+			document.body.style.top = `-${scrollY}px`;
+			document.body.style.width = '100%';
 			document.body.style.overflow = 'hidden';
 			loadComments(card.title);
+			return () => {
+				document.body.style.position = '';
+				document.body.style.top = '';
+				document.body.style.width = '';
+				document.body.style.overflow = '';
+				window.scrollTo(0, scrollY);
+			};
 		}
-		return () => {
-			document.body.style.overflow = '';
-		};
 	}, [open, card]);
 
 	useEffect(() => {
@@ -102,12 +110,12 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 							<button type="button" className="btn-close btn-close-white" aria-label="Close" onClick={onClose}></button>
 						</div>
 						<div className="modal-body">
-							<div className="container">
-								<div className="row g-3">
-									<div className="col-md-4">
-										<img className="cover" src={card.img} alt={`${card.title} borító`} />
-									</div>
-									<div className="col-md-8">
+						<div className="px-3">
+							<div className="row g-2">
+								<div className="col-md-5">
+									<img className="cover" src={card.img} alt={`${card.title} borító`} />
+								</div>
+								<div className="col-md-7">
 										<h4>{card.title}</h4>
 										<div className="tags-inline">
 											{(card.tags || []).map((t, idx) => (
@@ -159,7 +167,17 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 													disabled={!isLoggedIn}
 												></textarea>
 												<div className="d-flex justify-content-end mt-2">
-													<button type="submit" className="btn" disabled={!isLoggedIn}>
+													<button 
+														type="button" 
+														className="btn"
+														onClick={() => {
+															if (isLoggedIn) {
+																handleSubmit(new Event('submit') as any);
+															} else {
+																window.location.href = '/login';
+															}
+														}}
+													>
 														{isLoggedIn ? 'Küldés' : 'Jelentkezz be először'}
 													</button>
 												</div>

@@ -19,6 +19,7 @@ interface CardProps {
   onCardClick?: (card: CardData) => void;
   showMoreCard?: boolean; // Ha true, megjelenik a "Továbbiak" kártya
   data?: CardData[]; // Ha átadod, ezt használja a mock/fetch helyett
+  gridClass?: string; // Bootstrap grid classes for the card wrapper
 }
 
 // Mock data - később API-ból fog jönni
@@ -93,7 +94,14 @@ export const mockCards: CardData[] = [
   }
 ];
 
-const Card: React.FC<CardProps> = ({ count = 3, category = 'latest', onCardClick, showMoreCard = true, data }) => {
+const Card: React.FC<CardProps> = ({ 
+  count = 3, 
+  category = 'latest', 
+  onCardClick, 
+  showMoreCard = true, 
+  data,
+  gridClass = "col-xl-3 col-lg-4 col-md-6 mb-4"
+}) => {
   const [cards, setCards] = useState<CardData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -170,7 +178,7 @@ const Card: React.FC<CardProps> = ({ count = 3, category = 'latest', onCardClick
   return (
     <>
       {cards.map((card) => (
-        <div key={card.id} className="col-md-3 mb-3">
+        <div key={card.id} className={gridClass}>
           <div className="card">
             <img src={card.img} className="card-img-top" alt={`${card.title} borító`} />
             <div className="card-body">
@@ -208,7 +216,7 @@ const Card: React.FC<CardProps> = ({ count = 3, category = 'latest', onCardClick
       
       {/* "Továbbiak" card */}
         {showMoreCard && (
-          <div className="col-md-3 mb-3">
+          <div className={gridClass}>
             <div className="card">
               <img src="/assets/img/carousel.jpg" className="card-img-top card-img-blur" alt="További tartalmak" />
               <div className="card-body">

@@ -4,7 +4,7 @@ function About(): React.JSX.Element {
     return (
         <>
         <main className="mt-5">
-    <div className="container py-5">
+    <div className="container-fluid px-4 py-5">
     <h1 className="mb-4 text-center display-6 fw-bold text-decoration-underline">Rólunk</h1>
 
     <div className="row gx-5">
@@ -31,7 +31,7 @@ function About(): React.JSX.Element {
   </div>
 </main>
 
-  <section className="container">
+  <section className="container-fluid px-4">
     <div className="pricing-row">
       <div className="pricing-card">
         <div>
