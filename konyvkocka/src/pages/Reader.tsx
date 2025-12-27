@@ -28,6 +28,7 @@ const Reader: React.FC = () => {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
+  const renderTaskRef = useRef<any>(null);
   const pendingScrollRatio = useRef<number | null>(null);
 
   // Get PDF URL from query parameter or use default
@@ -81,7 +82,14 @@ const Reader: React.FC = () => {
     setError(null);
 
     try {
-      const pdf = await pdfjsLib.getDocument(url).promise;
+      const loadingTask = pdfjsLib.getDocument({
+        url,
+        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+        cMapPacked: true,
+        enableXfa: false
+      });
+      
+      const pdf = await loadingTask.promise;
       setPdfDoc(pdf);
       setTotalPages(pdf.numPages);
 
@@ -103,33 +111,62 @@ const Reader: React.FC = () => {
   const renderPage = async (num: number) => {
     if (!pdfDoc || !canvasRef.current) return;
 
-    setPageRendering(true);
-    const page = await pdfDoc.getPage(num);
-    const viewport = page.getViewport({ scale: scale / 100, rotation });
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-
-    const renderContext = {
-      canvasContext: ctx,
-      viewport: viewport
-    };
-
-    await page.render(renderContext).promise;
-    setPageRendering(false);
-
-    // Restore scroll position after zoom
-    if (pendingScrollRatio.current !== null && viewerRef.current) {
-      const targetCenter = pendingScrollRatio.current * canvas.height;
-      viewerRef.current.scrollTop = Math.max(0, targetCenter - viewerRef.current.clientHeight / 2);
-      pendingScrollRatio.current = null;
+    // Cancel previous render task if it exists
+    if (renderTaskRef.current) {
+      renderTaskRef.current.cancel();
+      renderTaskRef.current = null;
     }
 
-    if (pageNumPending !== null) {
-      setPageNum(pageNumPending);
-      setPageNumPending(null);
+    setPageRendering(true);
+
+    try {
+      const page = await pdfDoc.getPage(num);
+      const viewport = page.getViewport({ scale: scale / 100, rotation });
+
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      
+      // Only resize if necessary to avoid flickering, but here we need it for zoom
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      // Clear canvas and set white background to prevent artifacts
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const renderContext = {
+        canvasContext: ctx,
+        viewport: viewport,
+        annotationMode: 0 // Disable annotations to prevent glitches
+      };
+
+      const renderTask = page.render(renderContext);
+      renderTaskRef.current = renderTask;
+
+      await renderTask.promise;
+      
+      renderTaskRef.current = null;
+      setPageRendering(false);
+
+      // Restore scroll position after zoom
+      if (pendingScrollRatio.current !== null && viewerRef.current) {
+        const targetCenter = pendingScrollRatio.current * canvas.height;
+        viewerRef.current.scrollTop = Math.max(0, targetCenter - viewerRef.current.clientHeight / 2);
+        pendingScrollRatio.current = null;
+      }
+
+      if (pageNumPending !== null) {
+        setPageNum(pageNumPending);
+        setPageNumPending(null);
+      }
+    } catch (error: any) {
+      if (error.name === 'RenderingCancelledException') {
+        // Rendering cancelled, this is expected
+        return;
+      }
+      console.error('Render error:', error);
+      setPageRendering(false);
     }
   };
 
