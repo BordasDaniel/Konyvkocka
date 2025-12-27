@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Card, { mockCards } from '../components/common/Card.tsx';
 import type { CardData } from '../components/common/Card.tsx';
 import Modal from '../components/common/Modal.tsx';
@@ -7,6 +7,20 @@ const Search: React.FC = () => {
 	const [query, setQuery] = useState('');
 	const [filterOpen, setFilterOpen] = useState(false);
 	const [selectedCard, setSelectedCard] = useState<CardData | null>(null);
+
+	useEffect(() => {
+		if (filterOpen) {
+			document.body.style.overflow = 'hidden';
+			document.documentElement.style.overflow = 'hidden';
+		} else {
+			document.body.style.overflow = '';
+			document.documentElement.style.overflow = '';
+		}
+		return () => {
+			document.body.style.overflow = '';
+			document.documentElement.style.overflow = '';
+		};
+	}, [filterOpen]);
 
 	const results = useMemo(() => {
 		const q = query.trim().toLowerCase();
@@ -134,7 +148,7 @@ const Search: React.FC = () => {
 			<section className="search-results my-4">
 				<div className="container-fluid px-4">
 					<div className="results-grid">
-						<div className="row">
+						<div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
 							{results.length === 0 ? (
 								<div className="col-12">
 									<p className="fw-bold text-center text-decoration-underline">Nincsenek találatok. Kezdd el a keresést a fenti mezőben.</p>
@@ -146,7 +160,7 @@ const Search: React.FC = () => {
 									category="custom"
 									showMoreCard={false}
 									onCardClick={(c) => setSelectedCard(c)}
-									gridClass="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-4"
+									gridClass="col mb-4"
 								/>
 							)}
 						</div>

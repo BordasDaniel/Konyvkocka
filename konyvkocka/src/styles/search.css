@@ -98,7 +98,7 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10rem;
+  border-radius: 50% !important;
   background: rgba(12,12,12,0.5);
   color: var(--text);
   border: 1px solid rgba(255,255,255,0.03);
