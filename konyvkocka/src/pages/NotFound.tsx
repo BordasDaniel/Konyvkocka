@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export default function NotFound() {
+  useEffect(() => {
+    document.title = '404 - Az oldal nem található | KönyvKocka';
+  }, []);
+
   return (
     <main className="d-flex align-items-center justify-content-center" style={{ minHeight: '80vh' }}>
       <div className="container">
