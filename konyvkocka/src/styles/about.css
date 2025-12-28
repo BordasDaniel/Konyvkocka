@@ -11,7 +11,8 @@ html {
   overflow-x: hidden;
 }
 
-.container h1{
+.container h1,
+.container-fluid h1{
   color: var(--h1Text);
   background: rgba(12,10,8,0.28);
   padding: 0.6rem 0.8rem;
