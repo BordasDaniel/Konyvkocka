@@ -1,8 +1,31 @@
-import {  NavLink} from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { useState, useRef, useEffect } from "react";
 
+function Navbar() {
+    const { user, isAuthenticated, logout } = useAuth();
+    const navigate = useNavigate();
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLLIElement>(null);
 
-function Navbar()
-{
+    // Dropdown bezárása kattintásra kívül
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleLogout = () => {
+        logout();
+        setDropdownOpen(false);
+        navigate('/');
+    };
+
     return (
     <nav className="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
       <div className="container-fluid">
@@ -40,17 +63,79 @@ function Navbar()
 
           {/* Jobb oldali elemek */}
           <ul className="navbar-nav">
-
-            <li className="nav-item">
-                <NavLink className="nav-link" to="/login"><i className="bi bi-person-circle"></i> Bejelentkezés</NavLink>
-            </li>
-      
+            {isAuthenticated && user ? (
+              // Bejelentkezett felhasználó - dropdown menü
+              <li className="nav-item dropdown" ref={dropdownRef}>
+                <button
+                  className="nav-link dropdown-toggle d-flex align-items-center gap-2 btn btn-link"
+                  type="button"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  aria-expanded={dropdownOpen}
+                  style={{ border: 'none', background: 'transparent' }}
+                >
+                  <img
+                    src={user.avatar}
+                    alt={user.username}
+                    className="rounded-circle"
+                    style={{ width: '32px', height: '32px', objectFit: 'cover' }}
+                  />
+                  <span>{user.username}</span>
+                  {user.isSubscriber && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      style={{ color: 'var(--secondary)' }}
+                    >
+                      <path fill="currentColor" d="M2 17l2-7 4 4 5-9 5 9 4-4 2 7H2z" />
+                    </svg>
+                  )}
+                </button>
+                <ul className={`dropdown-menu dropdown-menu-end dropdown-menu-dark ${dropdownOpen ? 'show' : ''}`}>
+                  <li>
+                    <NavLink
+                      to="/user"
+                      className="dropdown-item"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <i className="bi bi-person-circle me-2"></i>Profil
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/user"
+                      className="dropdown-item"
+                      onClick={() => setDropdownOpen(false)}
+                      state={{ view: 'settings' }}
+                    >
+                      <i className="bi bi-gear me-2"></i>Beállítások
+                    </NavLink>
+                  </li>
+                  <li><hr className="dropdown-divider" /></li>
+                  <li>
+                    <button
+                      className="dropdown-item text-danger"
+                      onClick={handleLogout}
+                    >
+                      <i className="bi bi-box-arrow-right me-2"></i>Kijelentkezés
+                    </button>
+                  </li>
+                </ul>
+              </li>
+            ) : (
+              // Nem bejelentkezett - bejelentkezés link
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/login">
+                  <i className="bi bi-person-circle"></i> Bejelentkezés
+                </NavLink>
+              </li>
+            )}
           </ul>
         </div>
       </div>
     </nav>
-
-    )
-};
+    );
+}
 
 export default Navbar;

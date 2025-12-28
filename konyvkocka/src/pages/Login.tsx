@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import '../styles/login.css';
 
 // Declare grecaptcha for TypeScript
@@ -15,7 +16,16 @@ const Login: React.FC = () => {
   const [formType, setFormType] = useState<FormType>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { login, register, isAuthenticated } = useAuth();
+
+  // Ha már be van jelentkezve, irányítsuk át a profil oldalra
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/user');
+    }
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     // Load reCAPTCHA script
@@ -51,7 +61,7 @@ const Login: React.FC = () => {
     return () => clearTimeout(timer);
   }, [formType]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // reCAPTCHA validation
@@ -68,14 +78,21 @@ const Login: React.FC = () => {
     const password = (document.getElementById('password') as HTMLInputElement)?.value;
 
     if (email && password) {
-      alert('Sikeres bejelentkezés!');
-      navigate('/user');
+      setIsSubmitting(true);
+      const success = await login(email, password);
+      setIsSubmitting(false);
+      
+      if (success) {
+        navigate('/user');
+      } else {
+        alert('Sikertelen bejelentkezés! Ellenőrizd az adataidat.');
+      }
     } else {
       alert('Kérlek, töltsd ki az összes mezőt!');
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // reCAPTCHA validation
@@ -99,8 +116,15 @@ const Login: React.FC = () => {
     }
 
     if (username && email && password && confirmPassword) {
-      alert('Sikeres regisztráció! Most már bejelentkezhetsz.');
-      setFormType('login');
+      setIsSubmitting(true);
+      const success = await register(username, email, password);
+      setIsSubmitting(false);
+      
+      if (success) {
+        navigate('/user');
+      } else {
+        alert('Sikertelen regisztráció! Próbáld újra.');
+      }
     } else {
       alert('Kérlek, töltsd ki az összes mezőt!');
     }

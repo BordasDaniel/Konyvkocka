@@ -5,7 +5,7 @@
 /* profile-hero removed per design; spacing handled via navbar height */
 
 .profile-bar{
-  padding: 1.4rem;
+  padding: 2rem 2.5rem;
   /* ensure profile area sits below fixed navbar on all viewports */
   margin-top: calc(var(--navbar-height, 64px) + 12px);
   border-radius: 0.8rem;
@@ -18,11 +18,12 @@
 }
 
 .avatar{
-  width: 110px;
-  height: 110px;
+  width: 140px;
+  height: 140px;
   border-radius: 12px;
   overflow: hidden;
-  border: 4px solid var(--border-color);;
+  border: 4px solid var(--border-color);
+  flex-shrink: 0;
 }
 .avatar img{ width:100%; height:100%; object-fit:cover; display:block }
 
@@ -54,31 +55,35 @@
   width: 64px; height: 64px; border-radius:50%;
   background: var(--primary); display:flex; align-items:center; justify-content:center;
   font-weight:800; color: var(--bg); box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  font-size: 1.5rem;
 }
 
-.profile-bar h2{ color: var(--h1Text); font-weight:700 }
+.profile-bar h2{ color: var(--h1Text); font-weight:700; font-size: 2rem; }
 .progress-level{ display:flex; align-items:center; gap:1rem }
 
 /* progress wrapper: responsive control for progress bar width */
-.progress-wrapper{ width:220px }
+.progress-wrapper{ width:180px }
 .progress-wrapper .progress{ height:10px }
-.progress-wrapper small{ display:block }
-@media (max-width:991px){ .progress-wrapper{ width:80% } }
-@media (max-width:767px){ .progress-wrapper{ width:80% } }
+.progress-wrapper small{ display:block; text-align: right; }
+@media (max-width:991px){ .progress-wrapper{ width:150px } }
+@media (max-width:767px){ .progress-wrapper{ width:120px } }
 
 /* subtle spacing for the badges row */
 .badge-row{ margin-top:0.5rem }
 
-/* Profile action buttons (Ã–sszes, KÃ¶nyv, Film/Sorozat, BeÃ¡llÃ­tÃ¡sok) */
-.profile-actions{ gap:0.5rem }
+/* Profile action buttons - függőleges elrendezés, teljes szélesség */
+.profile-actions{ gap:0.5rem; max-width: 500px; }
 .profile-actions .btn-action{
   border-radius: 999px;
-  padding: .35rem .75rem;
-  margin-right: .5rem;
-  background: rgba(255,255,255,0.02);
+  padding: 0.6rem 1.5rem;
+  background: rgba(255,255,255,0.04);
   color: var(--text) !important;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
   transition: all .18s ease-in-out;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.9rem;
 }
 .profile-actions .btn-action i{ vertical-align:middle }
 .profile-actions .btn-action.active, .profile-actions .btn-action:hover{
@@ -90,15 +95,16 @@
 }
 @media (max-width:575px){
   .profile-actions{ gap:0.35rem }
-  .profile-actions .btn-action{ padding:.28rem .6rem; margin-right:.35rem; font-size:0.92rem }
+  .profile-actions .btn-action{ padding:.5rem 1rem; font-size:0.85rem }
 }
 
 @media (max-width: 767px){
   /* keep positive spacing on mobile so content doesn't hide under the fixed navbar */
-  .profile-bar{ margin-top: calc(var(--navbar-height)) }
-  .avatar{ width:84px; height:84px }
-  .circle-level{ width:52px; height:52px; font-size:0.95rem }
+  .profile-bar{ margin-top: calc(var(--navbar-height)); padding: 1.25rem; }
+  .avatar{ width:100px; height:100px }
+  .circle-level{ width:52px; height:52px; font-size:1rem }
   .big-number{ font-size:1.6rem }
+  .profile-bar h2{ font-size: 1.5rem; }
 }
 
 /* subscriber crown next to username */
