@@ -42,7 +42,7 @@ function Navbar()
           <ul className="navbar-nav">
 
             <li className="nav-item">
-                <NavLink className="nav-link" to="/login"><i className="bi bi-person-circle"></i>Bejelentkezés</NavLink>
+                <NavLink className="nav-link" to="/login"><i className="bi bi-person-circle"></i> Bejelentkezés</NavLink>
             </li>
       
           </ul>
