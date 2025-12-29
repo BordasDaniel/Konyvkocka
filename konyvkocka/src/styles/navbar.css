@@ -205,3 +205,50 @@
 .navbar-custom .dropdown-menu.dropdown-menu-dark .dropdown-divider {
   border-color: rgba(255,255,255,0.08) !important;
 }
+
+/* Notification dot on navbar */
+.navbar-notification-dot {
+  position: absolute;
+  top: 0px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: #ff3b30; /* iOS-style red */
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+}
+
+/* Remove glow on profile (dropdown toggle) */
+.navbar-custom .nav-item.dropdown .dropdown-toggle:hover,
+.navbar-custom .nav-item.dropdown .dropdown-toggle:focus,
+.navbar-custom .nav-item.dropdown .dropdown-toggle:active {
+  box-shadow: none !important;
+  background: transparent !important;
+  outline: none !important;
+  filter: none !important;
+}
+
+.navbar-custom .nav-item.dropdown:hover {
+  box-shadow: none !important;
+}
+
+/* Notification badge on navbar */
+.navbar-notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  background: #ff3b30; /* flat red */
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: none;
+}
+
+/* removed glowing animation for badge */

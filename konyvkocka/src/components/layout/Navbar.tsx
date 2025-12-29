@@ -113,6 +113,28 @@ function Navbar() {
                   </li>
                   <li>
                     <NavLink
+                      to="/favorites"
+                      className="dropdown-item"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <i className="bi bi-heart-fill me-2"></i>Kedvencek
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/notifications"
+                      className="dropdown-item"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <span style={{ position: 'relative', display: 'inline-block' }}>
+                        <i className="bi bi-bell-fill me-2"></i>
+                        <span className="navbar-notification-dot"></span>
+                      </span>
+                      Értesítések
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
                       to="/user"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}
