@@ -43,7 +43,14 @@ const Search: React.FC = () => {
 			<div id="filterBackdrop" className={`filter-backdrop ${filterOpen ? 'active' : ''}`} onClick={closeFilter}></div>
 
 			<section className="search-hero py-5">
-				<div className="container">
+				<div className="container pt-5">
+					<div className="row justify-content-center mb-3">
+						<div className="col-lg-8 col-md-10 text-center">
+							<h1 className="text-uppercase fw-bold" style={{ color: 'var(--h1Text)' }}>Keresés</h1>
+							<p className="text-light mb-0">Fedezd fel könyvek, filmek és sorozatok széles választékát. Szűrj, találd meg a kedvenceidet.</p>
+						</div>
+					</div>
+
 					<div className="row justify-content-center">
 						<div className="col-lg-8 col-md-10">
 							<div className="search-wrap position-relative">
@@ -145,15 +152,18 @@ const Search: React.FC = () => {
 				</div>
 			</section>
 
-			<section className="search-results my-4">
+			<section className="search-results my-2">
 				<div className="container-fluid px-4">
 					<div className="results-grid">
-						<div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
-							{results.length === 0 ? (
-								<div className="col-12">
-									<p className="fw-bold text-center text-decoration-underline">Nincsenek találatok. Kezdd el a keresést a fenti mezőben.</p>
+						{results.length === 0 ? (
+							<div className="empty-state text-center">
+								<div>
+									<p className="empty-title mb-2">Nincsenek találatok.</p>
+									<p className="empty-subtitle mb-0">Kezdd el a keresést a fenti mezőben.</p>
 								</div>
-							) : (
+							</div>
+						) : (
+							<div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
 								<Card
 									data={results}
 									count={results.length}
@@ -162,8 +172,8 @@ const Search: React.FC = () => {
 									onCardClick={(c) => setSelectedCard(c)}
 									gridClass="col mb-4"
 								/>
-							)}
-						</div>
+							</div>
+						)}
 					</div>
 				</div>
 			</section>

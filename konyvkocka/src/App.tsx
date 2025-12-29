@@ -14,6 +14,7 @@ import Watch from './pages/Watch.tsx'
 import User from './pages/User.tsx'
 import ResetPassword from './pages/ResetPassword.tsx'
 import NotFound from './pages/NotFound.tsx'
+import Library from './pages/Library.tsx'
 
 function App() {
   
@@ -25,6 +26,7 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/library" element={<Library />} />
         <Route path="/news" element={<News />} />
         <Route path="/support" element={<Support />} />
         <Route path="/pay" element={<Payment />} />

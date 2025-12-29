@@ -104,6 +104,15 @@ function Navbar() {
                   </li>
                   <li>
                     <NavLink
+                      to="/library"
+                      className="dropdown-item"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <i className="bi bi-collection me-2"></i>Könyvtáram
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
                       to="/user"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}

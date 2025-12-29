@@ -48,11 +48,12 @@ html {
 }
 
 .search-hero{
-  padding-top: calc(var(--navbar-height) + 1.5rem);
+  padding-top: calc(var(--navbar-height) + 4.5rem);
   padding-bottom: 2.5rem;
   padding-left: 0.5rem;
   padding-right: 0.5rem;
 }
+
 
 .search-wrap{
   position: relative;
@@ -139,6 +140,7 @@ html {
   box-shadow: 0 20px 60px rgba(0,0,0,0.7);
   z-index: 9999; /* ensure sits above navbar */
 }
+
 
 .filter-panel .btn{
         background-color: var(--link);
@@ -411,4 +413,30 @@ button.btn-filter{ -webkit-appearance: none; appearance: none; }
   .button.btn-filter, button.btn-filter *, .btn-filter, .btn-filter * {
     top: 10%;
   }
+}
+
+/* Empty state centered (for both search and library pages) */
+.search-page .empty-state{
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--h1Text);
+  background: linear-gradient(180deg, rgba(6,6,6,0.24), rgba(12,12,12,0.18));
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 14px;
+  box-shadow: 0 16px 36px rgba(0,0,0,0.38);
+  padding: 2rem 1.5rem;
+  margin-top: 0.5rem;
+}
+.search-page .empty-title{
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--secondary);
+}
+.search-page .empty-subtitle{
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
 }
