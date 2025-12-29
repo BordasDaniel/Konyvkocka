@@ -33,6 +33,9 @@ const PageTitle = () => {
       case '/notifications':
         title = 'Értesítések | KönyvKocka';
         break;
+      case '/challenges':
+        title = 'Kihívások | KönyvKocka';
+        break;
       case '/support':
         title = 'Támogatás | KönyvKocka';
         break;

@@ -122,6 +122,15 @@ function Navbar() {
                   </li>
                   <li>
                     <NavLink
+                      to="/challenges"
+                      className="dropdown-item"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <i className="bi bi-trophy-fill me-2"></i>Kihívások
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
                       to="/notifications"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}

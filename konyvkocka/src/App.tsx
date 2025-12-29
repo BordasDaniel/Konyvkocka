@@ -17,6 +17,7 @@ import NotFound from './pages/NotFound.tsx'
 import Library from './pages/Library.tsx'
 import Favorites from './pages/Favorites.tsx'
 import Notifications from './pages/Notifications.tsx'
+import Challenges from './pages/Challenges.tsx'
 
 function App() {
   
@@ -31,6 +32,7 @@ function App() {
         <Route path="/library" element={<Library />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/challenges" element={<Challenges />} />
         <Route path="/news" element={<News />} />
         <Route path="/support" element={<Support />} />
         <Route path="/pay" element={<Payment />} />
