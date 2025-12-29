@@ -71,31 +71,38 @@
 /* subtle spacing for the badges row */
 .badge-row{ margin-top:0.5rem }
 
-/* Profile action buttons - függőleges elrendezés, teljes szélesség */
-.profile-actions{ gap:0.5rem; max-width: 500px; }
+/* Profile action buttons - 1x4 horizontal layout */
+.profile-actions{ 
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  overflow: visible;
+  padding: 0.25rem 0;
+}
 .profile-actions .btn-action{
   border-radius: 999px;
-  padding: 0.6rem 1.5rem;
+  padding: 0.38rem 0.75rem;
   background: rgba(255,255,255,0.04);
   color: var(--text) !important;
   border: 1px solid rgba(255,255,255,0.08);
   transition: all .18s ease-in-out;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-size: 0.9rem;
+  letter-spacing: 0.3px;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
-.profile-actions .btn-action i{ vertical-align:middle }
+.profile-actions .btn-action i{ vertical-align: middle; font-size: 0.9rem; }
 .profile-actions .btn-action.active, .profile-actions .btn-action:hover{
   background: linear-gradient(90deg, var(--secondary), var(--primary));
   color: var(--bg) !important;
-  transform: translateY(-1px);
-  box-shadow: 0 10px 26px rgba(0,0,0,0.45);
-  border-color: rgba(255,255,255,0.02);
+  box-shadow: 0 6px 18px rgba(194,157,89,0.28);
+  border-color: rgba(255,255,255,0.04);
 }
 @media (max-width:575px){
-  .profile-actions{ gap:0.35rem }
-  .profile-actions .btn-action{ padding:.5rem 1rem; font-size:0.85rem }
+  .profile-actions{ gap: 0.4rem; }
+  .profile-actions .btn-action{ padding: 0.32rem 0.6rem; font-size: 0.72rem; }
+  .profile-actions .btn-action i{ font-size: 0.8rem; }
 }
 
 @media (max-width: 767px){

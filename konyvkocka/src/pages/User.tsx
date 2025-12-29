@@ -534,35 +534,35 @@ const User: React.FC = () => {
 							<small>{profile.country}</small>
 						</div>
 
-						{/* Profile action buttons - egymás mellett, teljes szélesség */}
-						<div className="profile-actions d-flex flex-column gap-2">
+						{/* Profile action buttons - 2x2 grid layout */}
+						<div className="profile-actions">
 							<button
-								className={`btn btn-action w-100 ${activeView === 'all' ? 'active' : ''}`}
+								className={`btn btn-action ${activeView === 'all' ? 'active' : ''}`}
 								type="button"
 								onClick={() => setActiveView('all')}
 							>
-								<i className="bi bi-grid-fill me-2"></i>ÖSSZES
+								<i className="bi bi-grid-fill me-1"></i>ÖSSZES
 							</button>
 							<button
-								className={`btn btn-action w-100 ${activeView === 'book' ? 'active' : ''}`}
+								className={`btn btn-action ${activeView === 'book' ? 'active' : ''}`}
 								type="button"
 								onClick={() => setActiveView('book')}
 							>
-								<i className="bi bi-book-fill me-2"></i>KÖNYV
+								<i className="bi bi-book-fill me-1"></i>KÖNYVEK
 							</button>
 							<button
-								className={`btn btn-action w-100 ${activeView === 'media' ? 'active' : ''}`}
+								className={`btn btn-action ${activeView === 'media' ? 'active' : ''}`}
 								type="button"
 								onClick={() => setActiveView('media')}
 							>
-								<i className="bi bi-film me-2"></i>FILM/SOROZAT
+								<i className="bi bi-film me-1"></i>FILMEK
 							</button>
 							<button
-								className={`btn btn-action w-100 ${activeView === 'settings' ? 'active' : ''}`}
+								className={`btn btn-action ${activeView === 'settings' ? 'active' : ''}`}
 								type="button"
 								onClick={() => setActiveView('settings')}
 							>
-								<i className="bi bi-gear-fill me-2"></i>BEÁLLÍTÁSOK
+								<i className="bi bi-gear-fill me-1"></i>BEÁLLÍTÁSOK
 							</button>
 						</div>
 					</div>
