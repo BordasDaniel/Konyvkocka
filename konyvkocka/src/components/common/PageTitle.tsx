@@ -27,8 +27,8 @@ const PageTitle = () => {
       case '/library':
         title = 'Könyvtáram | KönyvKocka';
         break;
-      case '/favorites':
-        title = 'Kedvencek | KönyvKocka';
+      case '/history':
+        title = 'Előzmények | KönyvKocka';
         break;
       case '/notifications':
         title = 'Értesítések | KönyvKocka';

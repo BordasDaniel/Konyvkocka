@@ -93,6 +93,7 @@ function Navbar() {
                   )}
                 </button>
                 <ul className={`dropdown-menu dropdown-menu-end dropdown-menu-dark ${dropdownOpen ? 'show' : ''}`}>
+                  {/* Profil */}
                   <li>
                     <NavLink
                       to="/user"
@@ -102,6 +103,7 @@ function Navbar() {
                       <i className="bi bi-person-circle me-2"></i>Profil
                     </NavLink>
                   </li>
+                  {/* Könyvtáram */}
                   <li>
                     <NavLink
                       to="/library"
@@ -111,24 +113,17 @@ function Navbar() {
                       <i className="bi bi-collection me-2"></i>Könyvtáram
                     </NavLink>
                   </li>
+                  {/* Előzmények */}
                   <li>
                     <NavLink
-                      to="/favorites"
+                      to="/history"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}
                     >
-                      <i className="bi bi-heart-fill me-2"></i>Kedvencek
+                      <i className="bi bi-clock-history me-2"></i>Előzmény
                     </NavLink>
                   </li>
-                  <li>
-                    <NavLink
-                      to="/challenges"
-                      className="dropdown-item"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      <i className="bi bi-trophy-fill me-2"></i>Kihívások
-                    </NavLink>
-                  </li>
+                  {/* Értesítések (badge-el) */}
                   <li>
                     <NavLink
                       to="/notifications"
@@ -142,6 +137,18 @@ function Navbar() {
                       Értesítések
                     </NavLink>
                   </li>
+                  {/* Kihívások */}
+                  <li>
+                    <NavLink
+                      to="/challenges"
+                      className="dropdown-item"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <i className="bi bi-trophy-fill me-2"></i>Kihívások
+                    </NavLink>
+                  </li>
+                  <li><hr className="dropdown-divider" /></li>
+                  {/* Beállítások */}
                   <li>
                     <NavLink
                       to="/user"
@@ -152,7 +159,18 @@ function Navbar() {
                       <i className="bi bi-gear me-2"></i>Beállítások
                     </NavLink>
                   </li>
+                  {/* Előfizetés kezelése - TODO: később implementálni */}
+                  <li>
+                    <NavLink
+                      to="/pay"
+                      className="dropdown-item"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <i className="bi bi-credit-card me-2"></i>Előfizetés kezelése
+                    </NavLink>
+                  </li>
                   <li><hr className="dropdown-divider" /></li>
+                  {/* Kijelentkezés (piros) */}
                   <li>
                     <button
                       className="dropdown-item text-danger"

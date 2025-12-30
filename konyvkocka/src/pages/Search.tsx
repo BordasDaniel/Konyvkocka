@@ -46,7 +46,10 @@ const Search: React.FC = () => {
 				<div className="container pt-5">
 					<div className="row justify-content-center mb-3">
 						<div className="col-lg-8 col-md-10 text-center">
-							<h1 className="text-uppercase fw-bold" style={{ color: 'var(--h1Text)' }}>Keresés</h1>
+							<h1 className="fw-bold text-decoration-underline" style={{ color: 'var(--h1Text)' }}>
+								<i className="bi bi-search me-2"></i>
+								Keresés
+							</h1>
 							<p className="text-light mb-0">Fedezd fel könyvek, filmek és sorozatok széles választékát. Szűrj, találd meg a kedvenceidet.</p>
 						</div>
 					</div>

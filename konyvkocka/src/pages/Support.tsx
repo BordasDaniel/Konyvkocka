@@ -55,6 +55,7 @@ export default function Support() {
     <main className="py-5 mt-5">
       <div className="container py-5">
         <h1 className="mb-4 text-center display-6 fw-bold text-decoration-underline">
+          <i className="bi bi-question-circle me-2"></i>
           Gyakran ismételt kérdések
         </h1>
         <section className="faq-list">

@@ -142,7 +142,10 @@ export default function News() {
   return (
     <main className="mt-5">
       <div className="container py-5" style={{maxWidth: '1200px'}}>
-        <h1 className="mb-4 text-center display-6 fw-bold text-decoration-underline">Hírek</h1>
+        <h1 className="mb-4 text-center display-6 fw-bold text-decoration-underline">
+          <i className="bi bi-newspaper me-2"></i>
+          Hírek
+        </h1>
 
         {/* Filters / categories */}
         <div className="news-filters">

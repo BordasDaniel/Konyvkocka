@@ -15,7 +15,7 @@ import User from './pages/User.tsx'
 import ResetPassword from './pages/ResetPassword.tsx'
 import NotFound from './pages/NotFound.tsx'
 import Library from './pages/Library.tsx'
-import Favorites from './pages/Favorites.tsx'
+import History from './pages/History.tsx'
 import Notifications from './pages/Notifications.tsx'
 import Challenges from './pages/Challenges.tsx'
 
@@ -30,7 +30,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/search" element={<Search />} />
         <Route path="/library" element={<Library />} />
-        <Route path="/favorites" element={<Favorites />} />
+        <Route path="/history" element={<History />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/challenges" element={<Challenges />} />
         <Route path="/news" element={<News />} />

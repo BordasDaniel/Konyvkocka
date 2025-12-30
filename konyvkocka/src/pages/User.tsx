@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import '../styles/user.css';
 
 // ========================
@@ -312,9 +313,21 @@ const fetchPurchaseHistory = async (): Promise<PurchaseItem[]> => {
 
 type ViewType = 'all' | 'book' | 'media' | 'settings';
 
+interface LocationState {
+	view?: 'settings';
+}
+
 const User: React.FC = () => {
-	// Állapotok
-	const [activeView, setActiveView] = useState<ViewType>('all');
+	const location = useLocation();
+	const locationState = location.state as LocationState | null;
+
+	// Állapotok - activeView alapértelmezése a location.state alapján
+	const [activeView, setActiveView] = useState<ViewType>(() => {
+		if (locationState?.view === 'settings') {
+			return 'settings';
+		}
+		return 'all';
+	});
 	const [profile, setProfile] = useState<UserProfile | null>(null);
 	const [allStats, setAllStats] = useState<Record<string, ViewStats>>({});
 	const [books, setBooks] = useState<Book[]>([]);
@@ -337,6 +350,13 @@ const User: React.FC = () => {
 		notificationFrequency: 'weekly',
 		timezone: 'Europe/Budapest',
 	});
+
+	// Location state változásának figyelése (pl. navigáció a Beállításokhoz)
+	useEffect(() => {
+		if (locationState?.view === 'settings') {
+			setActiveView('settings');
+		}
+	}, [locationState]);
 
 	// Adatok betöltése
 	useEffect(() => {
