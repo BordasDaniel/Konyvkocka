@@ -1,0 +1,529 @@
+.subscription-page {
+  min-height: 100vh;
+  padding-bottom: 3rem;
+}
+
+/* Háttérkép - mint a többi oldalon */
+body:has(.subscription-page) {
+  background-image: url("../assets/img/carousel.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  min-height: 100vh;
+  background-position: 5%;
+}
+
+.subscription-hero {
+  padding: 2rem 0 1.5rem;
+  margin-top: 3rem;
+  text-align: center;
+}
+
+.subscription-hero h1 {
+  color: var(--h1Text);
+  background: rgba(12,10,8,0.28);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(194,157,89,0.08);
+  text-underline-offset: 10px;
+  text-decoration-color: var(--secondary);
+  display: block;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.subscription-hero h1 i {
+  color: var(--secondary);
+}
+
+.subscription-content {
+  padding: 1rem 0;
+}
+
+/* ======================== */
+/* ELŐFIZETÉS STÁTUSZ KÁRTYA */
+/* ======================== */
+
+.subscription-status-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.status-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.status-info {
+  flex: 1;
+}
+
+.status-info h2 {
+  color: var(--text);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.status-type {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.status-days {
+  background: linear-gradient(135deg, var(--secondary), #c7a000);
+  border-radius: 16px;
+  padding: 1rem 1.5rem;
+  text-align: center;
+  color: #000;
+}
+
+.days-number {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.days-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.status-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.detail-item i {
+  font-size: 1.25rem;
+  color: var(--secondary);
+  width: 30px;
+}
+
+.detail-item div {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.detail-value {
+  font-size: 0.95rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.status-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-upgrade {
+  background-color: var(--primary);
+  color: var(--bg);
+  border: none;
+  padding: .5rem 1rem;
+  border-radius: 6px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all .25s ease;
+  text-decoration: none;
+}
+
+.btn-upgrade:hover {
+  background-color: var(--secondary);
+  color: var(--bg);
+  box-shadow: 0 4px 12px rgba(194,157,89,.35);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  transform: translateY(-2px);
+}
+
+.btn-toggle-renew {
+  background-color: var(--primary);
+  color: var(--bg);
+  border: none;
+  padding: .5rem 1rem;
+  border-radius: 6px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all .25s ease;
+  text-decoration: none;
+}
+
+.btn-toggle-renew:hover {
+  background-color: var(--secondary);
+  color: var(--bg);
+  box-shadow: 0 4px 12px rgba(194,157,89,.35);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  transform: translateY(-2px);
+}
+
+.btn-cancel {
+  background-color: var(--primary);
+  color: var(--bg);
+  border: none;
+  padding: .5rem 1rem;
+  border-radius: 6px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all .25s ease;
+  text-decoration: none;
+}
+
+.btn-cancel:hover {
+  background-color: var(--secondary);
+  color: var(--bg);
+  box-shadow: 0 4px 12px rgba(194,157,89,.35);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  transform: translateY(-2px);
+}
+
+/* ======================== */
+/* VÁSÁRLÁSI ELŐZMÉNYEK */
+/* ======================== */
+
+.purchase-history-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.purchase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.purchase-header h3 {
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.purchase-header h3 i {
+  color: var(--secondary);
+}
+
+.purchase-filters {
+  display: flex;
+  flex-wrap: nowrap;
+  column-gap: 0.6rem;
+  row-gap: 0.5rem;
+  background: rgba(12, 10, 8, 0.32);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 0.65rem 0.9rem;
+}
+
+.purchase-filters .filter-btn {
+  border-radius: 999px;
+  padding: .38rem .85rem;
+  margin: 0;
+  background: rgba(255,255,255,0.03);
+  color: var(--text) !important;
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease, color .18s ease, border-color .18s ease, text-decoration .18s ease;
+  white-space: nowrap;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.purchase-filters .filter-btn i {
+  vertical-align: middle;
+}
+
+.purchase-filters .filter-btn:hover,
+.purchase-filters .filter-btn.active {
+  background: linear-gradient(90deg, rgba(230,192,124,0.95), rgba(194,157,89,0.92));
+  color: var(--bg) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(194,157,89,0.28), inset 0 0 0 currentColor;
+  border-color: rgba(255,255,255,0.04);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+.filter-btn.active{
+    text-decoration: none !important;
+}
+
+.purchase-table-wrapper {
+  overflow-x: auto;
+}
+
+.purchase-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.purchase-table th {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.purchase-table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.purchase-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.purchase-table .badge {
+  font-size: 0.75rem;
+  padding: 0.35em 0.65em;
+}
+
+.btn-invoice {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-invoice:hover {
+  background: var(--secondary);
+  color: #000;
+}
+
+.purchase-footer {
+  padding: 1rem 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.purchase-summary {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--text);
+}
+
+.purchase-summary strong {
+  color: var(--secondary);
+  font-size: 1.1rem;
+}
+
+/* ======================== */
+/* KUPON KÁRTYA */
+/* ======================== */
+
+.coupon-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.coupon-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.coupon-header h3 {
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.coupon-header h3 i {
+  color: var(--secondary);
+}
+
+.coupon-content {
+  padding: 1.5rem 2rem;
+}
+
+.coupon-input-group {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.coupon-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.coupon-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.coupon-input:focus {
+  outline: none;
+  border-color: var(--secondary);
+}
+
+.btn-apply-coupon {
+  background-color: var(--primary);
+  color: var(--bg);
+  border: none;
+  padding: .5rem 1rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all .25s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-apply-coupon:hover {
+  background-color: var(--secondary);
+  color: var(--bg);
+  box-shadow: 0 4px 12px rgba(194,157,89,.35);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  transform: translateY(-2px);
+}
+
+.coupon-hint {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.coupon-hint i {
+  color: var(--secondary);
+}
+
+/* ======================== */
+/* RESZPONZÍV */
+/* ======================== */
+
+@media (max-width: 768px) {
+  .subscription-status-card {
+    padding: 1.5rem;
+  }
+
+  .status-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .status-days {
+    width: 100%;
+    padding: 1.5rem;
+  }
+
+  .days-number {
+    font-size: 3rem;
+  }
+
+  .status-details {
+    grid-template-columns: 1fr;
+  }
+
+  .status-actions {
+    flex-direction: column;
+  }
+
+  .status-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .purchase-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .purchase-filters {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .purchase-table th,
+  .purchase-table td {
+    padding: 0.75rem 1rem;
+  }
+
+  .coupon-input-group {
+    flex-direction: column;
+  }
+}

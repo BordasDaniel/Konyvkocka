@@ -18,6 +18,7 @@ import Library from './pages/Library.tsx'
 import History from './pages/History.tsx'
 import Notifications from './pages/Notifications.tsx'
 import Challenges from './pages/Challenges.tsx'
+import Subscription from './pages/Subscription.tsx'
 
 function App() {
   
@@ -33,6 +34,7 @@ function App() {
         <Route path="/history" element={<History />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/challenges" element={<Challenges />} />
+        <Route path="/subscription" element={<Subscription />} />
         <Route path="/news" element={<News />} />
         <Route path="/support" element={<Support />} />
         <Route path="/pay" element={<Payment />} />

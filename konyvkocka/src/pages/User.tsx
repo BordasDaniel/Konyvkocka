@@ -74,15 +74,6 @@ interface MedalGroup {
 	medals: Medal[];
 }
 
-interface PurchaseItem {
-	id: number;
-	date: string;
-	product: string;
-	type: 'subscription' | 'ebook' | 'audiobook';
-	price: string;
-	status: 'active' | 'completed' | 'expired';
-}
-
 interface UserSettings {
 	username: string;
 	email: string;
@@ -297,16 +288,6 @@ const fetchMedalGroups = async (): Promise<MedalGroup[]> => {
 	];
 };
 
-const fetchPurchaseHistory = async (): Promise<PurchaseItem[]> => {
-	// TODO: Lecserélni API hívásra: const response = await fetch('/api/user/purchases');
-	return [
-		{ id: 1, date: '2025-11-15', product: 'Premium előfizetés (1 hónap)', type: 'subscription', price: '2.990 Ft', status: 'active' },
-		{ id: 2, date: '2025-10-20', product: 'A szél árnyéka - eBook', type: 'ebook', price: '1.490 Ft', status: 'completed' },
-		{ id: 3, date: '2025-09-05', product: 'Film csomag (3 hónap)', type: 'subscription', price: '7.990 Ft', status: 'expired' },
-		{ id: 4, date: '2025-08-12', product: 'Az éjszaka titkai - Audiobook', type: 'audiobook', price: '2.290 Ft', status: 'completed' },
-	];
-};
-
 // ========================
 // KOMPONENS
 // ========================
@@ -332,7 +313,6 @@ const User: React.FC = () => {
 	const [allStats, setAllStats] = useState<Record<string, ViewStats>>({});
 	const [books, setBooks] = useState<Book[]>([]);
 	const [medalGroups, setMedalGroups] = useState<MedalGroup[]>([]);
-	const [purchases, setPurchases] = useState<PurchaseItem[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
 	// Collapse állapotok
@@ -364,19 +344,17 @@ const User: React.FC = () => {
 			setIsLoading(true);
 			try {
 				// TODO: Később ezek API hívások lesznek
-				const [profileData, statsData, booksData, medalsData, purchasesData] = await Promise.all([
+				const [profileData, statsData, booksData, medalsData] = await Promise.all([
 					fetchUserProfile(),
 					fetchViewStats(),
 					fetchBooks(),
 					fetchMedalGroups(),
-					fetchPurchaseHistory(),
 				]);
 
 				setProfile(profileData);
 				setAllStats(statsData);
 				setBooks(booksData);
 				setMedalGroups(medalsData);
-				setPurchases(purchasesData);
 
 				// Beállítások inicializálása profil adatokból
 				setSettings(prev => ({
@@ -433,7 +411,6 @@ const User: React.FC = () => {
 			profile,
 			stats: allStats,
 			books,
-			purchases,
 		};
 
 		const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -475,34 +452,6 @@ const User: React.FC = () => {
 				return <span className="badge badge-status bg-warning text-dark">Részben</span>;
 			case 'dropped':
 				return <span className="badge badge-status bg-danger">Félbehagyva</span>;
-			default:
-				return null;
-		}
-	};
-
-	// Vásárlás típus badge
-	const getPurchaseTypeBadge = (type: PurchaseItem['type']) => {
-		switch (type) {
-			case 'subscription':
-				return <span className="badge bg-warning text-dark">Előfizetés</span>;
-			case 'ebook':
-				return <span className="badge bg-info">eBook</span>;
-			case 'audiobook':
-				return <span className="badge bg-primary">Audiobook</span>;
-			default:
-				return null;
-		}
-	};
-
-	// Vásárlás státusz badge
-	const getPurchaseStatusBadge = (status: PurchaseItem['status']) => {
-		switch (status) {
-			case 'active':
-				return <span className="badge bg-success">Aktív</span>;
-			case 'completed':
-				return <span className="badge bg-success">Teljesítve</span>;
-			case 'expired':
-				return <span className="badge bg-secondary">Lejárt</span>;
 			default:
 				return null;
 		}
@@ -743,47 +692,6 @@ const User: React.FC = () => {
 							<button className="btn btn-outline-light btn-sm" type="button">
 								<i className="bi bi-facebook me-1"></i> Csatlakozás Facebook-kal
 							</button>
-						</div>
-					</div>
-
-					{/* Purchase History Section */}
-					<div className="about-panel p-4 mb-4">
-						<div className="d-flex align-items-center mb-3">
-							<i className="bi bi-receipt me-2" style={{ fontSize: '1.5rem', color: 'var(--secondary)' }}></i>
-							<h4 className="mb-0">Vásárlási előzmények</h4>
-						</div>
-						<table className="table purchase-table">
-							<thead>
-								<tr>
-									<th>Dátum</th>
-									<th>Termék</th>
-									<th>Típus</th>
-									<th>Ár</th>
-									<th>Státusz</th>
-									<th>Számla</th>
-								</tr>
-							</thead>
-							<tbody>
-								{purchases.map((purchase) => (
-									<tr key={purchase.id}>
-										<td>{purchase.date}</td>
-										<td>{purchase.product}</td>
-										<td>{getPurchaseTypeBadge(purchase.type)}</td>
-										<td>{purchase.price}</td>
-										<td>{getPurchaseStatusBadge(purchase.status)}</td>
-										<td>
-											<button className="btn btn-sm btn-outline-light">
-												<i className="bi bi-download"></i>
-											</button>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-						<div className="text-end mt-3">
-							<span className="purchase-total">
-								Összes költés: <strong>14.760 Ft</strong>
-							</span>
 						</div>
 					</div>
 

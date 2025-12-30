@@ -159,14 +159,14 @@ function Navbar() {
                       <i className="bi bi-gear me-2"></i>Beállítások
                     </NavLink>
                   </li>
-                  {/* Előfizetés kezelése - TODO: később implementálni */}
+                  {/* Vásárlások */}
                   <li>
                     <NavLink
-                      to="/pay"
+                      to="/subscription"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}
                     >
-                      <i className="bi bi-credit-card me-2"></i>Előfizetés kezelése
+                      <i className="bi bi-bag-check me-2"></i>Vásárlások
                     </NavLink>
                   </li>
                   <li><hr className="dropdown-divider" /></li>
