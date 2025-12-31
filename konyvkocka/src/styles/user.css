@@ -12,7 +12,7 @@
   border: 1px solid rgba(255,255,255,0.03);
   box-shadow: 0 18px 40px rgba(0,0,0,0.6);
   color: var(--text);
-  background: linear-gradient(rgba(6,6,6,0.36), rgba(6,6,6,0.24));
+  background: linear-gradient(rgba(0,0,0,0.62), rgba(0,0,0,0.44));
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -194,6 +194,42 @@
 .about-panel h6{ color: var(--secondary); margin-top:0.4rem }
 .settings-actions{ display:flex; justify-content:flex-end; align-items:center }
 .settings-actions .btn{ margin-left:0.45rem }
+
+.settings-hint{ color: rgba(255,255,255,0.8) !important; }
+
+/* File input: make the button match the site's glass theme */
+#settingsPanel input[type="file"].form-control{
+  background: linear-gradient(180deg, rgba(18, 18, 18, 0.55), rgba(10, 10, 10, 0.35));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 12px;
+  min-height: 48px;
+}
+
+#settingsPanel input[type="file"].form-control::file-selector-button{
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: var(--h1Text);
+  border-radius: 12px;
+  padding: 0.55rem 0.95rem;
+  margin-right: 0.85rem;
+}
+
+#settingsPanel input[type="file"].form-control::-webkit-file-upload-button{
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: var(--h1Text);
+  border-radius: 12px;
+  padding: 0.55rem 0.95rem;
+  margin-right: 0.85rem;
+}
+
+#settingsPanel input[type="file"].form-control::file-selector-button:hover,
+#settingsPanel input[type="file"].form-control::-webkit-file-upload-button:hover{
+  border-color: rgba(255, 167, 38, 0.55);
+}
 
 /* Improve select appearance inside panels (timezone, language, etc.) */
 .about-panel form select.form-select{

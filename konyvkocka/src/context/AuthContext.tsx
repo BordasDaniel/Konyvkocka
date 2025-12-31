@@ -58,6 +58,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		checkAuth();
 	}, []);
 
+	// Keep navbar/user state in sync when kk_user changes in-app.
+	useEffect(() => {
+		const refreshFromStorage = () => {
+			try {
+				const savedUser = localStorage.getItem('kk_user');
+				setUser(savedUser ? JSON.parse(savedUser) : null);
+			} catch (error) {
+				console.error('Failed to refresh user from storage:', error);
+			}
+		};
+
+		const onUserUpdated = () => refreshFromStorage();
+		const onStorage = (event: StorageEvent) => {
+			if (event.key === 'kk_user') {
+				refreshFromStorage();
+			}
+		};
+
+		window.addEventListener('kk_user_updated', onUserUpdated as EventListener);
+		window.addEventListener('storage', onStorage);
+		return () => {
+			window.removeEventListener('kk_user_updated', onUserUpdated as EventListener);
+			window.removeEventListener('storage', onStorage);
+		};
+	}, []);
+
 	// Bejelentkezés
 	const login = async (email: string, password: string): Promise<boolean> => {
 		try {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import '../styles/user.css';
 
@@ -77,6 +77,22 @@ interface MedalGroup {
 interface UserSettings {
 	username: string;
 	email: string;
+	avatarDataUrl: string | null;
+	profileVisibility: 'public' | 'friends' | 'private';
+	showCountryOnProfile: boolean;
+	showOnlineStatus: boolean;
+	allowFriendRequests: boolean;
+	allowMentions: boolean;
+	language: 'hu' | 'en';
+	textSize: 'small' | 'normal' | 'large';
+	reducedMotion: boolean;
+	highContrast: boolean;
+	autoplayMedia: boolean;
+	showMatureContent: boolean;
+	pushNotificationsEnabled: boolean;
+	newsletterEmails: boolean;
+	productUpdateEmails: boolean;
+	securityEmails: boolean;
 	currentPassword: string;
 	newPassword: string;
 	confirmPassword: string;
@@ -294,6 +310,8 @@ const fetchMedalGroups = async (): Promise<MedalGroup[]> => {
 
 type ViewType = 'all' | 'book' | 'media' | 'settings';
 
+type OpenSelectId = 'profileVisibility' | 'language' | 'textSize' | 'contrast' | null;
+
 interface LocationState {
 	view?: 'settings';
 }
@@ -301,6 +319,11 @@ interface LocationState {
 const User: React.FC = () => {
 	const location = useLocation();
 	const locationState = location.state as LocationState | null;
+	const [openSelect, setOpenSelect] = useState<OpenSelectId>(null);
+	const profileVisibilityRef = useRef<HTMLDivElement>(null);
+	const languageRef = useRef<HTMLDivElement>(null);
+	const textSizeRef = useRef<HTMLDivElement>(null);
+	const contrastRef = useRef<HTMLDivElement>(null);
 
 	// Állapotok - activeView alapértelmezése a location.state alapján
 	const [activeView, setActiveView] = useState<ViewType>(() => {
@@ -310,6 +333,7 @@ const User: React.FC = () => {
 		return 'all';
 	});
 	const [profile, setProfile] = useState<UserProfile | null>(null);
+	const [defaultAvatar, setDefaultAvatar] = useState<string>('');
 	const [allStats, setAllStats] = useState<Record<string, ViewStats>>({});
 	const [books, setBooks] = useState<Book[]>([]);
 	const [medalGroups, setMedalGroups] = useState<MedalGroup[]>([]);
@@ -323,6 +347,22 @@ const User: React.FC = () => {
 	const [settings, setSettings] = useState<UserSettings>({
 		username: '',
 		email: '',
+		avatarDataUrl: null,
+		profileVisibility: 'public',
+		showCountryOnProfile: true,
+		showOnlineStatus: true,
+		allowFriendRequests: true,
+		allowMentions: true,
+		language: 'hu',
+		textSize: 'normal',
+		reducedMotion: false,
+		highContrast: false,
+		autoplayMedia: true,
+		showMatureContent: false,
+		pushNotificationsEnabled: true,
+		newsletterEmails: true,
+		productUpdateEmails: true,
+		securityEmails: true,
 		currentPassword: '',
 		newPassword: '',
 		confirmPassword: '',
@@ -330,6 +370,83 @@ const User: React.FC = () => {
 		notificationFrequency: 'weekly',
 		timezone: 'Europe/Budapest',
 	});
+
+	const updateSetting = <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
+		setSettings(prev => ({
+			...prev,
+			[key]: value,
+		}));
+	};
+
+	const handleAvatarFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
+		if (!allowedTypes.has(file.type)) {
+			alert('Csak PNG, JPG vagy WEBP képet tölthetsz fel.');
+			e.target.value = '';
+			return;
+		}
+
+		const maxBytes = 2 * 1024 * 1024; // 2MB
+		if (file.size > maxBytes) {
+			alert('A kép túl nagy. Maximum 2MB lehet.');
+			e.target.value = '';
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onload = () => {
+			const dataUrl = typeof reader.result === 'string' ? reader.result : null;
+			if (!dataUrl) {
+				alert('Nem sikerült beolvasni a képet.');
+				return;
+			}
+			updateSetting('avatarDataUrl', dataUrl);
+			setProfile(prev => (prev ? { ...prev, avatar: dataUrl } : prev));
+		};
+		reader.readAsDataURL(file);
+	};
+
+	const handleResetAvatar = () => {
+		updateSetting('avatarDataUrl', null);
+		setProfile(prev => (prev ? { ...prev, avatar: defaultAvatar || prev.avatar } : prev));
+		if (defaultAvatar) {
+			syncAuthAvatar(defaultAvatar);
+		}
+	};
+
+	const syncAuthAvatar = (avatarUrl: string | null) => {
+		try {
+			const savedUser = localStorage.getItem('kk_user');
+			if (!savedUser) return;
+			const parsed = JSON.parse(savedUser) as { avatar?: string } & Record<string, unknown>;
+			const next = { ...parsed, avatar: avatarUrl ?? parsed.avatar };
+			localStorage.setItem('kk_user', JSON.stringify(next));
+			window.dispatchEvent(new Event('kk_user_updated'));
+		} catch (error) {
+			console.error('Failed to sync navbar avatar:', error);
+		}
+	};
+
+	useEffect(() => {
+		const clickAway = (event: MouseEvent) => {
+			const target = event.target as Node;
+			const inAny =
+				profileVisibilityRef.current?.contains(target) ||
+				languageRef.current?.contains(target) ||
+				textSizeRef.current?.contains(target) ||
+				contrastRef.current?.contains(target);
+
+			if (!inAny) {
+				setOpenSelect(null);
+			}
+		};
+
+		document.addEventListener('click', clickAway);
+		return () => document.removeEventListener('click', clickAway);
+	}, []);
 
 	// Location state változásának figyelése (pl. navigáció a Beállításokhoz)
 	useEffect(() => {
@@ -352,6 +469,7 @@ const User: React.FC = () => {
 				]);
 
 				setProfile(profileData);
+				setDefaultAvatar(profileData.avatar);
 				setAllStats(statsData);
 				setBooks(booksData);
 				setMedalGroups(medalsData);
@@ -366,11 +484,16 @@ const User: React.FC = () => {
 				// localStorage beállítások betöltése
 				const savedSettings = localStorage.getItem('kk_profile_settings');
 				if (savedSettings) {
-					const parsed = JSON.parse(savedSettings);
+					const parsed = JSON.parse(savedSettings) as Partial<UserSettings>;
 					setSettings(prev => ({
 						...prev,
 						...parsed,
+						username: profileData.username,
 					}));
+					if (parsed.avatarDataUrl && typeof parsed.avatarDataUrl === 'string') {
+						setProfile(prev => (prev ? { ...prev, avatar: parsed.avatarDataUrl as string } : prev));
+						syncAuthAvatar(parsed.avatarDataUrl as string);
+					}
 				}
 			} catch (error) {
 				console.error('Hiba az adatok betöltésekor:', error);
@@ -395,6 +518,22 @@ const User: React.FC = () => {
 		const payload = {
 			username: settings.username,
 			email: settings.email,
+			avatarDataUrl: settings.avatarDataUrl,
+			profileVisibility: settings.profileVisibility,
+			showCountryOnProfile: settings.showCountryOnProfile,
+			showOnlineStatus: settings.showOnlineStatus,
+			allowFriendRequests: settings.allowFriendRequests,
+			allowMentions: settings.allowMentions,
+			language: settings.language,
+			textSize: settings.textSize,
+			reducedMotion: settings.reducedMotion,
+			highContrast: settings.highContrast,
+			autoplayMedia: settings.autoplayMedia,
+			showMatureContent: settings.showMatureContent,
+			pushNotificationsEnabled: settings.pushNotificationsEnabled,
+			newsletterEmails: settings.newsletterEmails,
+			productUpdateEmails: settings.productUpdateEmails,
+			securityEmails: settings.securityEmails,
 			twoFactorEnabled: settings.twoFactorEnabled,
 			timezone: settings.timezone,
 			notificationFrequency: settings.notificationFrequency,
@@ -402,6 +541,7 @@ const User: React.FC = () => {
 
 		// TODO: API hívás: await fetch('/api/user/settings', { method: 'PUT', body: JSON.stringify(payload) });
 		localStorage.setItem('kk_profile_settings', JSON.stringify(payload));
+		syncAuthAvatar(settings.avatarDataUrl);
 		alert('Beállítások elmentve.');
 	};
 
@@ -498,10 +638,12 @@ const User: React.FC = () => {
 							)}
 							{profile.username}
 						</h2>
-						<div className="d-flex align-items-center gap-2 mb-3">
-							<img src={profile.countryFlag} alt={profile.country} />
-							<small>{profile.country}</small>
-						</div>
+						{settings.showCountryOnProfile && (
+							<div className="d-flex align-items-center gap-2 mb-3">
+								<img src={profile.countryFlag} alt={profile.country} />
+								<small>{profile.country}</small>
+							</div>
+						)}
 
 						{/* Profile action buttons - 2x2 grid layout */}
 						<div className="profile-actions">
@@ -524,7 +666,7 @@ const User: React.FC = () => {
 								type="button"
 								onClick={() => setActiveView('media')}
 							>
-								<i className="bi bi-film me-1"></i>FILMEK
+								<i className="bi bi-film me-1"></i>FILMEK/Sorozatok
 							</button>
 							<button
 								className={`btn btn-action ${activeView === 'settings' ? 'active' : ''}`}
@@ -558,7 +700,193 @@ const User: React.FC = () => {
 
 			{/* Settings Panel */}
 			{activeView === 'settings' && (
-				<div id="settingsPanel">
+				<div id="settingsPanel" className="mt-4">
+					{/* Profile Section */}
+					<div className="about-panel p-4 mb-4">
+						<div className="d-flex align-items-center mb-3">
+							<i className="bi bi-image me-2" style={{ fontSize: '1.5rem', color: 'var(--secondary)' }}></i>
+							<h4 className="mb-0">Profil</h4>
+						</div>
+						<div className="row align-items-start">
+							<div className="col-12 col-md-4 mb-3 mb-md-0">
+								<div className="d-flex align-items-center gap-3">
+									<div className="avatar" style={{ width: '96px', height: '96px' }}>
+										<img src={profile.avatar} alt="profilkép" />
+									</div>
+									<div>
+										<label className="form-label">Profilkép feltöltése</label>
+										<input
+											type="file"
+											className="form-control"
+											accept="image/png,image/jpeg,image/webp"
+											onChange={handleAvatarFileChange}
+										/>
+										<div className="d-flex gap-2 mt-2">
+											<button type="button" className="btn btn-outline-light btn-sm" onClick={handleResetAvatar}>
+												Visszaállítás
+											</button>
+											<small className="settings-hint d-block" style={{ lineHeight: 1.2 }}>
+												PNG/JPG/WEBP • max. 2MB
+											</small>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div className="col-12 col-md-8">
+								<div className="row">
+									<div className="col-md-6 mb-3">
+										<label className="form-label">Profil láthatósága</label>
+										<div className="custom-select-wrapper position-relative" ref={profileVisibilityRef}>
+											<button
+												className="form-select text-start"
+												type="button"
+												id="profileVisibilityDropdown"
+												aria-expanded={openSelect === 'profileVisibility'}
+												onClick={(e) => {
+													e.stopPropagation();
+													setOpenSelect(prev => (prev === 'profileVisibility' ? null : 'profileVisibility'));
+												}}
+											>
+												<span>
+													{settings.profileVisibility === 'public'
+														? 'Nyilvános'
+														: settings.profileVisibility === 'friends'
+															? 'Csak ismerősök'
+															: 'Privát'}
+												</span>
+											</button>
+											<div className={`custom-select-menu ${openSelect === 'profileVisibility' ? 'show' : ''}`}>
+												<div
+													className="country-item"
+													onClick={() => {
+														updateSetting('profileVisibility', 'public');
+														setOpenSelect(null);
+													}}
+												>
+													Nyilvános
+												</div>
+												<div
+													className="country-item"
+													onClick={() => {
+														updateSetting('profileVisibility', 'friends');
+														setOpenSelect(null);
+													}}
+												>
+													Csak ismerősök
+												</div>
+												<div
+													className="country-item"
+													onClick={() => {
+														updateSetting('profileVisibility', 'private');
+														setOpenSelect(null);
+													}}
+												>
+													Privát
+												</div>
+											</div>
+										</div>
+									</div>
+									<div className="col-md-6 mb-3">
+										<label className="form-label">Nyelv</label>
+										<div className="custom-select-wrapper position-relative" ref={languageRef}>
+											<button
+												className="form-select text-start"
+												type="button"
+												id="languageDropdown"
+												aria-expanded={openSelect === 'language'}
+												onClick={(e) => {
+													e.stopPropagation();
+													setOpenSelect(prev => (prev === 'language' ? null : 'language'));
+												}}
+											>
+												<span>{settings.language === 'hu' ? 'Magyar' : 'English'}</span>
+											</button>
+											<div className={`custom-select-menu ${openSelect === 'language' ? 'show' : ''}`}>
+												<div
+													className="country-item"
+													onClick={() => {
+														updateSetting('language', 'hu');
+														setOpenSelect(null);
+													}}
+												>
+													Magyar
+												</div>
+												<div
+													className="country-item"
+													onClick={() => {
+														updateSetting('language', 'en');
+														setOpenSelect(null);
+													}}
+												>
+													English
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div className="row">
+									<div className="col-12 col-md-6 mb-2">
+										<div className="form-check form-switch">
+											<input
+												className="form-check-input"
+												type="checkbox"
+												id="showCountryOnProfile"
+												checked={settings.showCountryOnProfile}
+												onChange={(e) => updateSetting('showCountryOnProfile', e.target.checked)}
+											/>
+											<label className="form-check-label" htmlFor="showCountryOnProfile">
+												Ország megjelenítése a profilon
+											</label>
+										</div>
+									</div>
+									<div className="col-12 col-md-6 mb-2">
+										<div className="form-check form-switch">
+											<input
+												className="form-check-input"
+												type="checkbox"
+												id="showOnlineStatus"
+												checked={settings.showOnlineStatus}
+												onChange={(e) => updateSetting('showOnlineStatus', e.target.checked)}
+											/>
+											<label className="form-check-label" htmlFor="showOnlineStatus">
+												Online státusz megjelenítése
+											</label>
+										</div>
+									</div>
+									<div className="col-12 col-md-6 mb-2">
+										<div className="form-check form-switch">
+											<input
+												className="form-check-input"
+												type="checkbox"
+												id="allowFriendRequests"
+												checked={settings.allowFriendRequests}
+												onChange={(e) => updateSetting('allowFriendRequests', e.target.checked)}
+											/>
+											<label className="form-check-label" htmlFor="allowFriendRequests">
+												Ismerősnek jelölés engedélyezése
+											</label>
+										</div>
+									</div>
+									<div className="col-12 col-md-6 mb-2">
+										<div className="form-check form-switch">
+											<input
+												className="form-check-input"
+												type="checkbox"
+												id="allowMentions"
+												checked={settings.allowMentions}
+												onChange={(e) => updateSetting('allowMentions', e.target.checked)}
+											/>
+											<label className="form-check-label" htmlFor="allowMentions">
+												Megemlítések (@) engedélyezése
+											</label>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
 					{/* Account Settings Section */}
 					<div className="about-panel p-4 mb-4">
 						<div className="d-flex align-items-center mb-3">
@@ -581,7 +909,7 @@ const User: React.FC = () => {
 										type="email"
 										className="form-control"
 										value={settings.email}
-										onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+										onChange={(e) => updateSetting('email', e.target.value)}
 									/>
 								</div>
 							</div>
@@ -603,7 +931,7 @@ const User: React.FC = () => {
 										type="password"
 										className="form-control"
 										value={settings.currentPassword}
-										onChange={(e) => setSettings({ ...settings, currentPassword: e.target.value })}
+										onChange={(e) => updateSetting('currentPassword', e.target.value)}
 									/>
 								</div>
 								<div className="col-md-4 mb-3">
@@ -612,7 +940,7 @@ const User: React.FC = () => {
 										type="password"
 										className="form-control"
 										value={settings.newPassword}
-										onChange={(e) => setSettings({ ...settings, newPassword: e.target.value })}
+										onChange={(e) => updateSetting('newPassword', e.target.value)}
 									/>
 								</div>
 								<div className="col-md-4 mb-3">
@@ -621,7 +949,7 @@ const User: React.FC = () => {
 										type="password"
 										className="form-control"
 										value={settings.confirmPassword}
-										onChange={(e) => setSettings({ ...settings, confirmPassword: e.target.value })}
+										onChange={(e) => updateSetting('confirmPassword', e.target.value)}
 									/>
 								</div>
 							</div>
@@ -633,7 +961,7 @@ const User: React.FC = () => {
 									type="checkbox"
 									id="settingsTwoFactor"
 									checked={settings.twoFactorEnabled}
-									onChange={(e) => setSettings({ ...settings, twoFactorEnabled: e.target.checked })}
+									onChange={(e) => updateSetting('twoFactorEnabled', e.target.checked)}
 								/>
 								<label className="form-check-label" htmlFor="settingsTwoFactor">
 									Kétlépcsős azonosítás (2FA) engedélyezése
@@ -655,7 +983,7 @@ const User: React.FC = () => {
 									<select
 										className="form-select"
 										value={settings.notificationFrequency}
-										onChange={(e) => setSettings({ ...settings, notificationFrequency: e.target.value as UserSettings['notificationFrequency'] })}
+										onChange={(e) => updateSetting('notificationFrequency', e.target.value as UserSettings['notificationFrequency'])}
 									>
 										<option value="immediate">Azonnal</option>
 										<option value="daily">Napi</option>
@@ -668,12 +996,207 @@ const User: React.FC = () => {
 									<select
 										className="form-select"
 										value={settings.timezone}
-										onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
+										onChange={(e) => updateSetting('timezone', e.target.value)}
 									>
 										<option value="Europe/Budapest">Europe/Budapest (GMT+1)</option>
 										<option value="Europe/London">Europe/London (GMT+0)</option>
 										<option value="America/New_York">America/New_York (GMT-5)</option>
 									</select>
+								</div>
+							</div>
+							<hr style={{ borderColor: 'rgba(255,255,255,0.06)' }} className="my-4" />
+							<h6 className="mb-3" style={{ color: 'var(--h1Text)' }}>Értesítések</h6>
+							<div className="row">
+								<div className="col-12 col-md-6 mb-2">
+									<div className="form-check form-switch">
+										<input
+											className="form-check-input"
+											type="checkbox"
+											id="pushNotificationsEnabled"
+											checked={settings.pushNotificationsEnabled}
+											onChange={(e) => updateSetting('pushNotificationsEnabled', e.target.checked)}
+										/>
+										<label className="form-check-label" htmlFor="pushNotificationsEnabled">
+											Push / böngésző értesítések
+										</label>
+									</div>
+								</div>
+								<div className="col-12 col-md-6 mb-2">
+									<div className="form-check form-switch">
+										<input
+											className="form-check-input"
+											type="checkbox"
+											id="newsletterEmails"
+											checked={settings.newsletterEmails}
+											onChange={(e) => updateSetting('newsletterEmails', e.target.checked)}
+										/>
+										<label className="form-check-label" htmlFor="newsletterEmails">
+											Hírlevél e-mailek
+										</label>
+									</div>
+								</div>
+								<div className="col-12 col-md-6 mb-2">
+									<div className="form-check form-switch">
+										<input
+											className="form-check-input"
+											type="checkbox"
+											id="productUpdateEmails"
+											checked={settings.productUpdateEmails}
+											onChange={(e) => updateSetting('productUpdateEmails', e.target.checked)}
+										/>
+										<label className="form-check-label" htmlFor="productUpdateEmails">
+											Termékfrissítések e-mailben
+										</label>
+									</div>
+								</div>
+								<div className="col-12 col-md-6 mb-2">
+									<div className="form-check form-switch">
+										<input
+											className="form-check-input"
+											type="checkbox"
+											id="securityEmails"
+											checked={settings.securityEmails}
+											disabled
+										/>
+										<label className="form-check-label" htmlFor="securityEmails">
+											Biztonsági e-mailek (kötelező)
+										</label>
+									</div>
+								</div>
+							</div>
+							<hr style={{ borderColor: 'rgba(255,255,255,0.06)' }} className="my-4" />
+							<h6 className="mb-3" style={{ color: 'var(--h1Text)' }}>Megjelenés és kisegítő lehetőségek</h6>
+							<div className="row">
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Betűméret</label>
+									<div className="custom-select-wrapper position-relative" ref={textSizeRef}>
+										<button
+											className="form-select text-start"
+											type="button"
+											id="textSizeDropdown"
+											aria-expanded={openSelect === 'textSize'}
+											onClick={(e) => {
+												e.stopPropagation();
+												setOpenSelect(prev => (prev === 'textSize' ? null : 'textSize'));
+											}}
+										>
+											<span>
+												{settings.textSize === 'small' ? 'Kicsi' : settings.textSize === 'large' ? 'Nagy' : 'Normál'}
+											</span>
+										</button>
+										<div className={`custom-select-menu ${openSelect === 'textSize' ? 'show' : ''}`}>
+											<div
+												className="country-item"
+												onClick={() => {
+													updateSetting('textSize', 'small');
+													setOpenSelect(null);
+												}}
+											>
+												Kicsi
+											</div>
+											<div
+												className="country-item"
+												onClick={() => {
+													updateSetting('textSize', 'normal');
+													setOpenSelect(null);
+												}}
+											>
+												Normál
+											</div>
+											<div
+												className="country-item"
+												onClick={() => {
+													updateSetting('textSize', 'large');
+													setOpenSelect(null);
+												}}
+											>
+												Nagy
+											</div>
+										</div>
+									</div>
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Kontraszt</label>
+									<div className="custom-select-wrapper position-relative" ref={contrastRef}>
+										<button
+											className="form-select text-start"
+											type="button"
+											id="contrastDropdown"
+											aria-expanded={openSelect === 'contrast'}
+											onClick={(e) => {
+												e.stopPropagation();
+												setOpenSelect(prev => (prev === 'contrast' ? null : 'contrast'));
+											}}
+										>
+											<span>{settings.highContrast ? 'Magas kontraszt' : 'Normál'}</span>
+										</button>
+										<div className={`custom-select-menu ${openSelect === 'contrast' ? 'show' : ''}`}>
+											<div
+												className="country-item"
+												onClick={() => {
+													updateSetting('highContrast', false);
+													setOpenSelect(null);
+												}}
+											>
+												Normál
+											</div>
+											<div
+												className="country-item"
+												onClick={() => {
+													updateSetting('highContrast', true);
+													setOpenSelect(null);
+												}}
+											>
+												Magas kontraszt
+											</div>
+										</div>
+									</div>
+								</div>
+								<div className="col-12 col-md-6 mb-2">
+									<div className="form-check form-switch">
+										<input
+											className="form-check-input"
+											type="checkbox"
+											id="reducedMotion"
+											checked={settings.reducedMotion}
+											onChange={(e) => updateSetting('reducedMotion', e.target.checked)}
+										/>
+										<label className="form-check-label" htmlFor="reducedMotion">
+											Kevesebb animáció (reduced motion)
+										</label>
+									</div>
+								</div>
+							</div>
+							<hr style={{ borderColor: 'rgba(255,255,255,0.06)' }} className="my-4" />
+							<h6 className="mb-3" style={{ color: 'var(--h1Text)' }}>Tartalom</h6>
+							<div className="row">
+								<div className="col-12 col-md-6 mb-2">
+									<div className="form-check form-switch">
+										<input
+											className="form-check-input"
+											type="checkbox"
+											id="autoplayMedia"
+											checked={settings.autoplayMedia}
+											onChange={(e) => updateSetting('autoplayMedia', e.target.checked)}
+										/>
+										<label className="form-check-label" htmlFor="autoplayMedia">
+											Videók automatikus lejátszása
+										</label>
+									</div>
+								</div>
+								<div className="col-12 col-md-6 mb-2">
+									<div className="form-check form-switch">
+										<input
+											className="form-check-input"
+											type="checkbox"
+											id="showMatureContent"
+											checked={settings.showMatureContent}
+											onChange={(e) => updateSetting('showMatureContent', e.target.checked)}
+										/>
+										<label className="form-check-label" htmlFor="showMatureContent">
+											18+ tartalmak megjelenítése
+										</label>
+									</div>
 								</div>
 							</div>
 						</form>
