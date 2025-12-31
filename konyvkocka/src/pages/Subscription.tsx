@@ -23,6 +23,7 @@ interface PurchaseItem {
   type: 'subscription' | 'ebook' | 'audiobook';
   price: string;
   status: 'active' | 'completed' | 'expired';
+  cover?: string;
 }
 
 // ========================
@@ -44,12 +45,12 @@ const fetchSubscriptionInfo = async (): Promise<SubscriptionInfo> => {
 const fetchPurchaseHistory = async (): Promise<PurchaseItem[]> => {
   // TODO: API hívásra cserélni
   return [
-    { id: 1, date: '2025-11-15', product: 'Premium előfizetés (1 hónap)', type: 'subscription', price: '2.990 Ft', status: 'active' },
-    { id: 2, date: '2025-10-20', product: 'A szél árnyéka - eBook', type: 'ebook', price: '1.490 Ft', status: 'completed' },
-    { id: 3, date: '2025-09-05', product: 'Film csomag (3 hónap)', type: 'subscription', price: '7.990 Ft', status: 'expired' },
-    { id: 4, date: '2025-08-12', product: 'Az éjszaka titkai - Audiobook', type: 'audiobook', price: '2.290 Ft', status: 'completed' },
-    { id: 5, date: '2025-07-01', product: 'Premium előfizetés (1 hónap)', type: 'subscription', price: '2.990 Ft', status: 'expired' },
-    { id: 6, date: '2025-06-15', product: 'Dűne - eBook', type: 'ebook', price: '1.990 Ft', status: 'completed' },
+    { id: 1, date: '2025-11-15', product: 'Premium előfizetés (1 hónap)', type: 'subscription', price: '2.990 Ft', status: 'active', cover: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400' },
+    { id: 2, date: '2025-10-20', product: 'A szél árnyéka - eBook', type: 'ebook', price: '1.490 Ft', status: 'completed', cover: 'https://moly.hu/system/covers/big/covers_582574.jpg' },
+    { id: 3, date: '2025-09-05', product: 'Film csomag (3 hónap)', type: 'subscription', price: '7.990 Ft', status: 'expired', cover: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400' },
+    { id: 4, date: '2025-08-12', product: 'Az éjszaka titkai - Audiobook', type: 'audiobook', price: '2.290 Ft', status: 'completed', cover: 'https://s01.static.libri.hu/cover/56/3/828911_4.jpg' },
+    { id: 5, date: '2025-07-01', product: 'Premium előfizetés (1 hónap)', type: 'subscription', price: '2.990 Ft', status: 'expired', cover: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400' },
+    { id: 6, date: '2025-06-15', product: 'Dűne - eBook', type: 'ebook', price: '1.990 Ft', status: 'completed', cover: 'https://marvin.bline.hu/product_images/920/ID250-141842.JPG' },
   ];
 };
 
@@ -131,6 +132,35 @@ const Subscription: React.FC = () => {
       case 'expired':
         return <span className="badge bg-secondary">Lejárt</span>;
     }
+  };
+
+  // Számla letöltése
+  const handleDownloadInvoice = (purchase: PurchaseItem) => {
+    // TODO: Valódi API hívás a számlához: const response = await fetch(`/api/invoices/${purchase.id}`);
+    // Dummy számla generálás szöveges fájlként
+    const invoiceContent = `
+KÖNYVKOCKA - SZÁMLA
+
+Számlaszám: INV-${purchase.id}-${new Date(purchase.date).getFullYear()}
+Dátum: ${new Date(purchase.date).toLocaleDateString('hu-HU')}
+
+Termék: ${purchase.product}
+Típus: ${purchase.type}
+Ár: ${purchase.price}
+Státusz: ${purchase.status}
+
+Köszönjük a vásárlást!
+    `;
+    
+    const blob = new Blob([invoiceContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `szamla-${purchase.id}-${new Date(purchase.date).getTime()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // Előfizetés típus infó
@@ -257,14 +287,15 @@ const Subscription: React.FC = () => {
                     <i className="bi bi-arrow-up-circle"></i>
                     Csomag váltás
                   </button>
-                  <button className="btn-toggle-renew">
-                    <i className="bi bi-arrow-repeat"></i>
-                    {subscription?.autoRenew ? 'Megújítás kikapcsolása' : 'Megújítás bekapcsolása'}
-                  </button>
-                  <button className="btn-cancel">
-                    <i className="bi bi-x-circle"></i>
-                    Előfizetés lemondása
-                  </button>
+                  {subscription?.autoRenew && (
+                    <button 
+                      className="btn-cancel"
+                      onClick={() => setSubscription(prev => prev ? { ...prev, autoRenew: false } : null)}
+                    >
+                      <i className="bi bi-x-circle"></i>
+                      Előfizetés lemondása
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -320,12 +351,23 @@ const Subscription: React.FC = () => {
                     filteredPurchases.map(purchase => (
                       <tr key={purchase.id}>
                         <td>{new Date(purchase.date).toLocaleDateString('hu-HU')}</td>
-                        <td>{purchase.product}</td>
+                        <td>
+                          <div className="product-cell">
+                            {purchase.cover && (
+                              <img src={purchase.cover} alt={purchase.product} className="product-cover" />
+                            )}
+                            <span>{purchase.product}</span>
+                          </div>
+                        </td>
                         <td>{getTypeBadge(purchase.type)}</td>
                         <td>{purchase.price}</td>
                         <td>{getStatusBadge(purchase.status)}</td>
                         <td>
-                          <button className="btn-invoice" title="Számla letöltése">
+                          <button 
+                            className="btn-invoice" 
+                            title="Számla letöltése"
+                            onClick={() => handleDownloadInvoice(purchase)}
+                          >
                             <i className="bi bi-download"></i>
                           </button>
                         </td>

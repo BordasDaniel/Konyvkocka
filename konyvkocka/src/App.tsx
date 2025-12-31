@@ -19,6 +19,7 @@ import History from './pages/History.tsx'
 import Notifications from './pages/Notifications.tsx'
 import Challenges from './pages/Challenges.tsx'
 import Subscription from './pages/Subscription.tsx'
+import Leaderboard from './pages/Leaderboard.tsx'
 
 function App() {
   
@@ -36,6 +37,7 @@ function App() {
         <Route path="/challenges" element={<Challenges />} />
         <Route path="/subscription" element={<Subscription />} />
         <Route path="/news" element={<News />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/support" element={<Support />} />
         <Route path="/pay" element={<Payment />} />
         <Route path="/reader" element={<Reader />} />

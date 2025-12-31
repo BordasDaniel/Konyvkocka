@@ -42,6 +42,12 @@ const PageTitle = () => {
       case '/pay':
         title = 'Fizetés | KönyvKocka';
         break;
+      case '/subscription':
+        title = 'Vásárlások | KönyvKocka';
+        break;
+      case '/leaderboard':
+        title = 'Ranglista | KönyvKocka';
+        break;
       case '/reader':
         title = 'Olvasó | KönyvKocka';
         break;

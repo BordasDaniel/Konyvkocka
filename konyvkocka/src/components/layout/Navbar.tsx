@@ -59,6 +59,9 @@ function Navbar() {
             <li className="nav-item">
               <NavLink to="/news" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Hírek</NavLink>
             </li>
+            <li className="nav-item">
+              <NavLink to="/leaderboard" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Ranglista</NavLink>
+            </li>
           </ul>
 
           {/* Jobb oldali elemek */}

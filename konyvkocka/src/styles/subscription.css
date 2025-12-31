@@ -267,12 +267,10 @@ body:has(.subscription-page) {
   flex-wrap: nowrap;
   column-gap: 0.6rem;
   row-gap: 0.5rem;
-  background: rgba(12, 10, 8, 0.32);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
   padding: 0.65rem 0.9rem;
+  flex: 1;
+  justify-content: flex-end;
+  min-width: 400px;
 }
 
 .purchase-filters .filter-btn {
@@ -342,6 +340,21 @@ body:has(.subscription-page) {
 .purchase-table .badge {
   font-size: 0.75rem;
   padding: 0.35em 0.65em;
+}
+
+.product-cell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.product-cover {
+  width: 48px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
 }
 
 .btn-invoice {
