@@ -27,14 +27,17 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        # CSERÉLD KI 'IKTProject2025'-re vagy ami a mappa neve!
-        run: npm install
+        # Az 'npm ci' helyett 'npm install'-t használunk, 
+        # és kényszerítjük a platform-specifikus függőségek frissítését
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
         working-directory: ./konyvkocka 
 
       - name: Build project
         run: npm run build
         working-directory: ./konyvkocka
-
+        
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
