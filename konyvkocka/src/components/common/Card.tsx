@@ -223,7 +223,7 @@ const Card: React.FC<CardProps> = ({
               <div className="card-body">
                 <h5 className="card-title">Továbbiak</h5>
                 <p className="card-text">Fedezd fel további ajánlatainkat és kategóriáinkat a teljes kínálatért.</p>
-                <button className="btn view-btn" onClick={() => window.location.href = '/kereses'}>
+                <button className="btn view-btn" onClick={() => window.location.href = '#/kereses'}>
                   Érdekel
                 </button>
               </div>

@@ -569,7 +569,7 @@ const User: React.FC = () => {
 		// TODO: API hívás: await fetch('/api/auth/logout', { method: 'POST' });
 		localStorage.removeItem('kk_session');
 		alert('Kijelentkezve. Átirányítás a bejelentkezéshez.');
-		window.location.href = '/belepes';
+		window.location.href = '#/belepes';
 	};
 
 	// Fiók törlése
@@ -579,7 +579,7 @@ const User: React.FC = () => {
 			localStorage.removeItem('kk_profile_settings');
 			localStorage.removeItem('kk_session');
 			alert('Fiók törlése szimulálva. Átirányítás a kezdőlapra.');
-			window.location.href = '/';
+			window.location.href = '#/';
 		}
 	};
 
