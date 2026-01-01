@@ -95,7 +95,7 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 
 	const handleEpisodeClick = () => {
 		if (card.reader) {
-			window.location.href = card.reader;
+			window.location.href = `#${card.reader}`;
 		}
 	};
 
@@ -174,7 +174,7 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 															if (isLoggedIn) {
 																handleSubmit(new Event('submit') as any);
 															} else {
-															window.location.href = '/belepes';
+														window.location.href = '#/belepes';
 															}
 														}}
 													>

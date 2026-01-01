@@ -21,7 +21,7 @@ const Reader: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [bookTitle, setBookTitle] = useState<string>('Könyv címe');
   const [bookAuthor, setBookAuthor] = useState<string>('Szerző neve');
-  const [bookCover, setBookCover] = useState<string>('');
+  const [bookCover] = useState<string>('');
   const [totalPages, setTotalPages] = useState<number>(0);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
@@ -32,9 +32,15 @@ const Reader: React.FC = () => {
   const renderTaskRef = useRef<any>(null);
   const pendingScrollRatio = useRef<number | null>(null);
 
+  // Get base URL from Vite config for proper asset path in production
+  const baseUrl = import.meta.env.BASE_URL || '/';
+  
   // Get PDF URL from query parameter or use default
   const urlParams = new URLSearchParams(window.location.search);
-  const pdfUrl = urlParams.get('pdf') || '/assets/pdf/Antoine_de_Saint_Exupery_A_kis_herceg_1.pdf';
+  const relativePdfPath = urlParams.get('pdf') || 'assets/pdf/Antoine_de_Saint_Exupery_A_kis_herceg_1.pdf';
+  const pdfUrl = relativePdfPath.startsWith('http') 
+    ? relativePdfPath 
+    : `${baseUrl}${relativePdfPath.replace(/^\//, '')}`;
 
   useEffect(() => {
     // Load PDF.js library

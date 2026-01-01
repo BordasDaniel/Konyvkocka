@@ -19,34 +19,59 @@ const ResetPassword: React.FC = () => {
 
   useEffect(() => {
     // Load reCAPTCHA script
-    const script = document.createElement('script');
-    script.src = 'https://www.google.com/recaptcha/api.js';
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
+    const existingScript = document.querySelector('script[src*="recaptcha"]');
+    
+    const loadRecaptcha = () => {
+      const script = document.createElement('script');
+      script.src = 'https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit';
+      script.async = true;
+      script.defer = true;
+      
+      // OnLoad callback to ensure grecaptcha is available
+      (window as any).onRecaptchaLoad = () => {
+        console.log('reCAPTCHA loaded');
+      };
+      
+      document.body.appendChild(script);
+      
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+      };
     };
+    
+    if (!existingScript) {
+      return loadRecaptcha();
+    }
   }, []);
 
   useEffect(() => {
-    // Render reCAPTCHA
-    const timer = setTimeout(() => {
-      if (typeof window.grecaptcha !== 'undefined') {
+    // Render reCAPTCHA with retry logic
+    let retryCount = 0;
+    const maxRetries = 10;
+    
+    const tryRenderCaptcha = () => {
+      if (typeof window.grecaptcha !== 'undefined' && window.grecaptcha.render) {
         const container = document.getElementById('recaptcha-container-register');
+        
         if (container && container.childElementCount === 0) {
           try {
             window.grecaptcha.render('recaptcha-container-register', {
               'sitekey': '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI' // Test key
             });
+            console.log('reCAPTCHA rendered');
           } catch (e) {
-            // Already rendered
+            console.log('reCAPTCHA render error:', e);
           }
         }
+      } else if (retryCount < maxRetries) {
+        retryCount++;
+        setTimeout(tryRenderCaptcha, 200);
       }
-    }, 100);
-
+    };
+    
+    const timer = setTimeout(tryRenderCaptcha, 100);
     return () => clearTimeout(timer);
   }, []);
 
@@ -57,7 +82,7 @@ const ResetPassword: React.FC = () => {
     e.preventDefault();
     setMessage('');
 
-    const emailHidden = (document.getElementById('emailHidden') as HTMLInputElement)?.value.trim();
+    // const emailHidden = (document.getElementById('emailHidden') as HTMLInputElement)?.value.trim();
     const newPassword = (document.getElementById('newPassword') as HTMLInputElement)?.value;
     const confirmPassword = (document.getElementById('confirmPassword') as HTMLInputElement)?.value;
 
