@@ -39,6 +39,46 @@ const defaultSlides: Slide[] = [
     trailer: 'https://www.youtube.com/embed/sY1S34973zA',
     episodes: ['1: Teljes film'],
     rating: 5.0
+  },
+  {
+    id: 'inception',
+    img: 'https://m.media-amazon.com/images/I/91KkWf50SoL._AC_SY679_.jpg',
+    title: 'Eredet',
+    tags: ['Sci-Fi', 'Akció', 'PG-13'],
+    desc: 'Egy csapat profi "álomtolvaj" megbízást kap: nem ellopni, hanem elültetni egy gondolatot – a tét pedig mindennél nagyobb.',
+    trailer: 'https://www.youtube.com/embed/YoHD9XEInc0',
+    episodes: ['1: Teljes film'],
+    rating: 4.7
+  },
+  {
+    id: 'interstellar',
+    img: 'https://m.media-amazon.com/images/I/91kFYg4fX3L._AC_SY679_.jpg',
+    title: 'Csillagok között',
+    tags: ['Sci-Fi', 'Kaland', 'PG-13'],
+    desc: 'Egy űrexpedíció a túlélésért indul, miközben az idő és a tér a legnagyobb ellenféllé válik.',
+    trailer: 'https://www.youtube.com/embed/zSWdZVtXT7E',
+    episodes: ['1: Teljes film'],
+    rating: 4.8
+  },
+  {
+    id: 'shawshank',
+    img: 'https://m.media-amazon.com/images/I/51NiGlapXlL._AC_.jpg',
+    title: 'A remény rabjai',
+    tags: ['Dráma', 'Börtönfilm', 'R'],
+    desc: 'Barátság, kitartás és remény a falak mögött – egy történet, ami évtizedeken át velünk marad.',
+    trailer: 'https://www.youtube.com/embed/6hB3S9bIaco',
+    episodes: ['1: Teljes film'],
+    rating: 4.9
+  },
+  {
+    id: 'lotr-fellowship',
+    img: 'https://m.media-amazon.com/images/M/MV5BNzIxMDQ2YTctNDY4MC00ZTRhLTk4ODQtMTVlOWY4NTdiYmMwXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg',
+    title: 'A Gyűrű Szövetsége',
+    tags: ['Fantasy', 'Kaland', 'PG-13'],
+    desc: 'Egy váratlan küldetés indul a Gyűrűvel: barátság, áldozat és epikus utazás Középföldén.',
+    trailer: 'https://www.youtube.com/embed/V75dMMIW2B4',
+    episodes: ['1: Teljes film'],
+    rating: 4.8
   }
 ]
 
@@ -46,6 +86,7 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
   const [slides, setSlides] = useState<Slide[]>(slidesProp ?? [])
   const [activeIndex, setActiveIndex] = useState(0)
   const carouselRef = useRef<HTMLDivElement | null>(null)
+  const carouselInstanceRef = useRef<any>(null)
 
   useEffect(() => {
     if (slidesProp && slidesProp.length) setSlides(slidesProp)
@@ -89,54 +130,61 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
   useEffect(() => {
     const el = carouselRef.current
     if (!el || !slides.length) return
-    
-    // Ensure Bootstrap is loaded
-    if (typeof (window as any).bootstrap === 'undefined') {
-      console.warn('Bootstrap is not loaded')
-      return
-    }
-    
-    try {
-      const Carousel = (window as any).bootstrap.Carousel
-      const carouselInstance = Carousel.getOrCreateInstance(el, {
-        interval: interval,
-        ride: 'carousel',
-        pause: 'hover',
-        wrap: true
-      })
-      
-      return () => {
-        carouselInstance?.dispose()
+    let cancelled = false
+    let tries = 0
+    let retryTimer: number | undefined
+
+    const init = () => {
+      if (cancelled) return
+      const Carousel = (window as any).bootstrap?.Carousel
+
+      // If Bootstrap loads after mount, retry a few times.
+      if (!Carousel) {
+        tries += 1
+        if (tries <= 20) {
+          retryTimer = window.setTimeout(init, 150)
+        }
+        return
       }
-    } catch (e) {
-      console.error('Error initializing carousel:', e)
+
+      try {
+        const inst = Carousel.getOrCreateInstance(el, {
+          interval,
+          ride: 'carousel',
+          pause: false,
+          wrap: true
+        })
+        carouselInstanceRef.current = inst
+        inst?.cycle?.()
+      } catch (e) {
+        // swallow to avoid breaking the page; next retry (if any) can recover
+      }
+    }
+
+    init()
+
+    return () => {
+      cancelled = true
+      if (retryTimer) window.clearTimeout(retryTimer)
+      carouselInstanceRef.current?.dispose?.()
+      carouselInstanceRef.current = null
     }
   }, [slides, interval])
 
   const goTo = (i: number) => {
     const el = carouselRef.current
-    if (!el) {
-      console.log('Carousel element not found')
-      return
-    }
-    
-    console.log('Going to slide', i)
-    
+
+    if (!el) return
+
     try {
       const Carousel = (window as any).bootstrap?.Carousel
-      if (!Carousel) {
-        console.error('Bootstrap.Carousel not found')
-        return
-      }
-      
-      const inst = Carousel.getOrCreateInstance(el)
-      console.log('Carousel instance:', inst)
-      
-      if (inst) {
-        inst.to(i)
-      }
+      const inst = carouselInstanceRef.current ?? (Carousel ? Carousel.getOrCreateInstance(el) : null)
+      if (!inst) return
+      inst.to(i)
+      // Ensure autoplay continues after manual navigation.
+      inst.cycle?.()
     } catch (e) {
-      console.error('Error in goTo:', e)
+      // ignore
     }
   }
 
