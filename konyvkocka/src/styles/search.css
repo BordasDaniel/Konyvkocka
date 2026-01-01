@@ -1,0 +1,442 @@
+﻿/* search.css - styles for kereses.html search hero */
+:root{
+  --search-height: 56px;
+  --search-bg: rgba(18,18,18,0.48);
+  --search-border: rgba(255,255,255,0.04);
+  --filter-width: 300px;
+}
+
+body{
+  background-image: url("../assets/img/carousel.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: 2%;
+  color: var(--text);
+  overflow-x: hidden;
+  position: relative;
+  min-height: 100vh;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+/* Backdrop for filter panel */
+.filter-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  z-index: 9998;
+  display: none;
+}
+
+.filter-backdrop.active {
+  display: block;
+}
+
+.container h1{
+  color: var(--h1Text);
+  background: rgba(12,10,8,0.28);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(194,157,89,0.08);
+  text-underline-offset: 10px;
+}
+
+.search-hero{
+  padding-top: calc(var(--navbar-height) + 4.5rem);
+  padding-bottom: 2.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+
+.search-wrap{
+  position: relative;
+}
+
+.search-input{
+  height: var(--search-height);
+  background: linear-gradient(180deg, rgba(18,18,18,0.55), rgba(10,10,10,0.35));
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text);
+  padding-left: 4rem !important; /* space for filter button */
+  padding-right: 2.5rem !important; /* no search button, smaller right padding */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  margin-top: 5vh;
+  border-radius: 12px;
+  min-height: 48px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 12px rgba(0,0,0,.25);
+  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.search-input:focus,
+.search-input:active,
+.search-input:focus-visible{
+  background: linear-gradient(180deg, rgba(22,22,22,0.6), rgba(12,12,12,0.42)) !important;
+  color: var(--text) !important;
+  border-color: rgba(255,167,38,0.55) !important;
+  box-shadow: 0 0 0 3px rgba(255,167,38,.15), 0 2px 18px rgba(0,0,0,.35) !important;
+  outline: none !important;
+}
+
+/* Placeholder color: make white so it's visible on dark background */
+.search-input::placeholder{
+  color: #ffffff;
+  opacity: 0.85;
+}
+
+.btn-filter{
+  left: 0.2rem;
+  top: 4%;
+  transform: translateY(-50%);
+  width: 3.2rem;
+  height: 3.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50% !important;
+  background: rgba(12,12,12,0.5);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.03);
+  z-index: 5;
+  cursor: pointer;
+}
+
+/* keep appearance identical when clicked/active/focused */
+.btn-filter:focus,
+.btn-filter:active,
+.btn-filter:focus-visible{
+  background: rgba(12,12,12,0.5) !important;
+  color: var(--text) !important;
+  border-color: rgba(255,255,255,0.03) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* remove mobile tap highlight */
+.btn-filter{ -webkit-tap-highlight-color: transparent; }
+/* right search button removed (UI uses Enter / other trigger) */
+
+/* right search button removed (UI uses Enter / other trigger) */
+
+.filter-panel{
+  /* modal-like centered panel */
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(90vw, 1000px);
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, rgba(6,6,6,0.96), rgba(12,12,12,0.94));
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 0.6rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  z-index: 9999; /* ensure sits above navbar */
+}
+
+
+.filter-panel .btn{
+        background-color: var(--link);
+        color: var(--bg);
+        border: none;
+        padding: 0.6rem 1.2rem;
+        font-size: 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        margin-right: 0.5rem;
+}
+
+
+.filter-panel .btn:hover {
+        color: var(--bg);
+        box-shadow: 0 4px 12px rgba(194,157,89,0.4);
+        text-decoration: none;
+        transition: 0.3s;
+        color: var(--text);
+}
+
+.reset
+{
+    background-color: var(--border-color) !important;
+}
+
+.filter-inner{
+  padding: 0.5rem 0.75rem;
+  color: var(--text);
+}
+
+.filter-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* Desktop layout optimization */
+@media (min-width: 992px) {
+  .filter-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+  .filter-group {
+    padding: 0.5rem;
+  }
+  .filter-inner {
+    padding: 1.25rem 1.5rem;
+  }
+  /* Make genres span full width on desktop for better readability */
+  .filter-genres {
+    grid-column: 1 / -1;
+  }
+  .genres-columns {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem 1.25rem;
+  }
+  .filter-panel {
+    width: min(92vw, 1100px);
+  }
+  .filter-panel-header h5 {
+    font-size: 1.25rem;
+  }
+}
+
+.filter-group h6{ margin-bottom: 0.5rem; color: var(--secondary); font-size: 0.95rem; }
+.filter-group{ padding: 0.35rem; }
+.filter-group .form-check-label {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  max-width: 100%;
+}
+
+/* Genres layout: 4 columns per row, wrapping to new row */
+.genres-columns{ 
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem 0.75rem;
+  width: 100%;
+}
+.genres-columns .form-check {
+  margin-bottom: 0;
+}
+
+.filter-panel-header{ 
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  position: relative;
+}
+.filter-panel-header .btn-close {
+  filter: invert(1);
+  opacity: 0.8;
+}
+.filter-panel-header .btn-close:hover {
+  opacity: 1;
+}
+.filter-panel-footer{ 
+  border-top: 1px solid rgba(255,255,255,0.03); 
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* responsive */
+@media (max-width: 991.98px){
+  .filter-grid{ grid-template-columns: 1fr 1fr; }
+  .genres-columns{ 
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 575.98px){
+  /* Two filters per row on mobile: KorhatÃ¡rok+TÃ­pusok, RendezÃ©s+EgyÃ©b, MÅ±fajok full width */
+  .filter-grid{ 
+    grid-template-columns: 1fr 1fr; 
+    gap: 0.5rem;
+  }
+  /* Make genres span both columns */
+  .filter-genres {
+    grid-column: 1 / -1;
+  }
+  .filter-panel{ 
+    width: calc(100vw - 1rem);
+    max-width: calc(100vw - 1rem);
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .filter-group{ padding: 0.25rem; }
+  .genres-columns{ 
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.35rem;
+  }
+}
+
+/* Force .btn-filter and its contents to remain visually identical in all states */
+button.btn-filter,
+button.btn-filter *,
+.btn-filter,
+.btn-filter * {
+  color: var(--text) !important;
+  border-color: rgba(255,255,255,0.03) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transform: none !important;
+}
+
+/* Override interactive pseudo-classes */
+button.btn-filter:focus,
+button.btn-filter:active,
+button.btn-filter:hover,
+button.btn-filter:focus-visible,
+button.btn-filter:focus-within,
+.btn-filter:focus,
+.btn-filter:active,
+.btn-filter:hover,
+.btn-filter:focus-visible,
+.btn-filter:focus-within {
+  background: rgba(12,12,12,0.5) !important;
+  color: var(--text) !important;
+  border-color: rgba(255,255,255,0.03) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transform: none !important;
+}
+
+/* Disable default button appearance on some platforms */
+button.btn-filter{ -webkit-appearance: none; appearance: none; }
+
+/* Ensure no pseudo-element change */
+.btn-filter::before, .btn-filter::after { background: transparent !important; }
+
+/* Small screen adjustments */
+@media (max-width: 767.98px){
+  .search-input{ padding-left: 3.6rem; padding-right: 2rem; }
+  .btn-filter{ width: 2.8rem; height: 2.8rem; }
+  .filter-panel{ 
+    width: calc(100vw - 1rem);
+    max-width: calc(100vw - 1rem);
+  }
+  .search-hero{
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .filter-inner{
+    padding: 0.5rem;
+  }
+}
+
+/* Results area: reserve vertical space for cards */
+.search-results .results-grid{
+  min-height: 40vh;
+  padding: 2rem 1rem;
+  backdrop-filter: blur(6px);
+  border: 2px solid var(--border-color);
+  margin: 1.5rem auto;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.12);
+}
+
+.search-results .results-grid p {
+  width: 100%;
+  text-align: center;
+  margin: 0;
+}
+
+.search-results .card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--overlay);
+  border: none;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.search-results .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+
+.search-results .card-img-top {
+  width: 100%;
+  height: 340px;
+  object-fit: cover;
+  object-position: center top;
+  border-bottom: 2px solid var(--primary);
+  transition: filter 0.3s ease;
+}
+
+@media (max-width: 1199.98px) {
+  .search-results .card-img-top { height: 320px; }
+}
+
+@media (max-width: 991.98px) {
+  .search-results .card-img-top { height: 300px; }
+}
+
+@media (max-width: 575.98px) {
+  .search-results .card-img-top { height: 260px; }
+}
+
+.search-results .card-body {
+  background: var(--overlay);
+  backdrop-filter: blur(6px);
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.search-results .card-title {
+  color: var(--secondary);
+  font-weight: bold;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.search-results .btn {
+  width: 100%;
+  margin-top: auto;
+}
+
+
+
+@media (max-width: 768px){
+  .button.btn-filter, button.btn-filter *, .btn-filter, .btn-filter * {
+    top: 10%;
+  }
+}
+
+/* Empty state centered (for both search and library pages) */
+.search-page .empty-state{
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--h1Text);
+  background: linear-gradient(180deg, rgba(6,6,6,0.24), rgba(12,12,12,0.18));
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 14px;
+  box-shadow: 0 16px 36px rgba(0,0,0,0.38);
+  padding: 2rem 1.5rem;
+  margin-top: 0.5rem;
+}
+.search-page .empty-title{
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--secondary);
+}
+.search-page .empty-subtitle{
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
