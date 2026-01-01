@@ -25,22 +25,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          # cache: 'npm'
 
       - name: Install dependencies
-        run: cd konyvkocka && npm install
+        # CSERÉLD KI 'IKTProject2025'-re vagy ami a mappa neve!
+        run: npm install
+        working-directory: ./konyvkocka 
 
       - name: Build project
         run: npm run build
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+        working-directory: ./konyvkocka
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Ez a legfontosabb: a 'dist' mappát töltjük fel, nem a gyökeret!
-          path: './dist'
+          # Itt is meg kell adni az utat a dist mappához!
+          path: './konyvkocka/dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
