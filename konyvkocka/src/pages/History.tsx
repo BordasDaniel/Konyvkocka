@@ -194,9 +194,9 @@ const History: React.FC = () => {
   // Folytatás kezelése
   const handleContinue = (item: HistoryItem) => {
     if (item.type === 'book') {
-      navigate('/reader', { state: { bookId: item.id } });
+      navigate('/olvaso', { state: { bookId: item.id } });
     } else {
-      navigate('/watch', { state: { mediaId: item.id } });
+      navigate('/nezes', { state: { mediaId: item.id } });
     }
   };
 

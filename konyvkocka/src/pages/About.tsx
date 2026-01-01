@@ -68,7 +68,7 @@ function About(): React.JSX.Element {
           </ul>
         </div>
         <div className="pricing-cta">
-          <Link to="/pay" className="btn fw-bold">Előfizetek</Link>
+          <Link to="/fizetes" className="btn fw-bold">Őfizetek</Link>
         </div>
       </div>
     </div>

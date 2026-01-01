@@ -183,7 +183,7 @@ Köszönjük a vásárlást!
           <i className="bi bi-lock" style={{ fontSize: '4rem', color: 'var(--secondary)' }}></i>
           <h2 className="mt-3">Bejelentkezés szükséges</h2>
           <p className="text-muted">Az előfizetés kezeléséhez be kell jelentkezned.</p>
-          <button className="btn btn-primary mt-3" onClick={() => navigate('/login')}>
+          <button className="btn btn-primary mt-3" onClick={() => navigate('/belepes')}>
             Bejelentkezés
           </button>
         </div>
@@ -277,13 +277,13 @@ Köszönjük a vásárlást!
 
             <div className="status-actions">
               {subscription?.type === 'free' ? (
-                <button className="btn-upgrade" onClick={() => navigate('/pay')}>
+                <button className="btn-upgrade" onClick={() => navigate('/fizetes')}>
                   <i className="bi bi-arrow-up-circle"></i>
                   Váltás Premiumra
                 </button>
               ) : (
                 <>
-                  <button className="btn-upgrade" onClick={() => navigate('/pay')}>
+                  <button className="btn-upgrade" onClick={() => navigate('/fizetes')}>
                     <i className="bi bi-arrow-up-circle"></i>
                     Csomag váltás
                   </button>

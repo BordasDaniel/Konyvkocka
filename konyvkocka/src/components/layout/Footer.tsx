@@ -18,9 +18,9 @@ function Footer() {
                   <h4>Gyors linkek</h4>
                   <ul className="footer-links">
                       <li><NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Kezdőlap</NavLink></li>
-                      <li><NavLink to="/search" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Keresés</NavLink></li>
-                      <li><NavLink to="/support" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Támogatás</NavLink></li>
-                      <li><NavLink to="/about" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Rólunk</NavLink></li>
+                      <li><NavLink to="/kereses" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Keresés</NavLink></li>
+                      <li><NavLink to="/tamogatas" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Támogatás</NavLink></li>
+                      <li><NavLink to="/rolunk" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Rólunk</NavLink></li>
                   </ul>
               </div>
         <div className="col-md-4 mb-4 px-5">

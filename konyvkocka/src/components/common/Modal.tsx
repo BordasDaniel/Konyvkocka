@@ -174,7 +174,7 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 															if (isLoggedIn) {
 																handleSubmit(new Event('submit') as any);
 															} else {
-																window.location.href = '/login';
+															window.location.href = '/belepes';
 															}
 														}}
 													>

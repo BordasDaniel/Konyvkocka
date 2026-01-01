@@ -21,6 +21,7 @@ const Reader: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [bookTitle, setBookTitle] = useState<string>('Könyv címe');
   const [bookAuthor, setBookAuthor] = useState<string>('Szerző neve');
+  const [bookCover, setBookCover] = useState<string>('');
   const [totalPages, setTotalPages] = useState<number>(0);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
@@ -77,6 +78,25 @@ const Reader: React.FC = () => {
     }
   }, [pdfDoc, pageNum, scale, rotation]);
 
+  // Body scroll letiltása amikor a sidebar nyitva van mobilon
+  useEffect(() => {
+    if (window.innerWidth <= 768 && sidebarShow) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [sidebarShow]);
+
   const loadPDF = async (url: string) => {
     setLoading(true);
     setError(null);
@@ -99,6 +119,9 @@ const Reader: React.FC = () => {
         setBookTitle(metadata.info.Title || 'Ismeretlen cím');
         setBookAuthor(metadata.info.Author || 'Ismeretlen szerző');
       }
+      
+      // A borító URL-t a backend fog majd szolgáltatni
+      // Egyelőre nincs borító, csak az ikon jelenik meg
 
       setLoading(false);
     } catch (err) {
@@ -125,6 +148,8 @@ const Reader: React.FC = () => {
 
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      
+      if (!ctx) return;
       
       // Only resize if necessary to avoid flickering, but here we need it for zoom
       canvas.height = viewport.height;
@@ -269,6 +294,9 @@ const Reader: React.FC = () => {
 
   return (
     <div className="reader-container">
+      {/* Overlay mobilon amikor a sidebar nyitva van */}
+      {sidebarShow && <div className="sidebar-overlay" onClick={closeSidebar}></div>}
+      
       {/* Sidebar */}
       <aside className={`reader-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${sidebarShow ? 'show' : ''}`} id="readerSidebar">
         <div className="sidebar-header">
@@ -279,7 +307,11 @@ const Reader: React.FC = () => {
         
         <div className="book-info">
           <div className="book-cover" id="bookCover">
-            <i className="bi bi-book-fill"></i>
+            {bookCover ? (
+              <img src={bookCover} alt="Könyv borító" />
+            ) : (
+              <i className="bi bi-book-fill"></i>
+            )}
           </div>
           <h3 className="book-title">{bookTitle}</h3>
           <p className="book-author">{bookAuthor}</p>
@@ -360,7 +392,7 @@ const Reader: React.FC = () => {
           <button className="btn-action" onClick={downloadPdf}>
             <i className="bi bi-download me-2"></i> Letöltés
           </button>
-          <a href="/search" className="btn-action btn-outline">
+          <a href="/kereses" className="btn-action btn-outline">
             <i className="bi bi-arrow-left me-2"></i> Vissza
           </a>
         </div>
@@ -402,7 +434,7 @@ const Reader: React.FC = () => {
               <i className="bi bi-exclamation-triangle-fill text-warning" style={{ fontSize: '3rem' }}></i>
               <h3 className="mt-3">Hiba történt</h3>
               <p>{error}</p>
-              <a href="/search" className="btn btn-outline-light mt-3">
+              <a href="/kereses" className="btn btn-outline-light mt-3">
                 <i className="bi bi-arrow-left me-2"></i> Vissza a kereséshez
               </a>
             </div>

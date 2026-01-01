@@ -461,6 +461,12 @@
     align-items: flex-start;
   }
 
+  .filter-buttons.status-filters {
+    border-left: none;
+    padding-left: 0;
+    margin-left: 0;
+  }
+
   .history-item {
     flex-direction: column;
     align-items: flex-start;

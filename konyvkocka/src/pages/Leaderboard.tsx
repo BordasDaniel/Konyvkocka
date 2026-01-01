@@ -313,6 +313,32 @@ export default function Leaderboard() {
   const [locationFilter, setLocationFilter] = useState<LocationFilter>('world');
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>(MOCK_LEADERBOARD);
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{
+    username: string;
+    avatar: string;
+    countryFlag: string;
+    isSubscriber: boolean;
+  } | null>(null);
+
+  // Mock function - később lecserélni API hívásra
+  const fetchCurrentUser = async () => {
+    // TODO: API hívás a jelenlegi felhasználó adataiért
+    return {
+      username: 'BordasDaniel',
+      avatar: 'https://i.pravatar.cc/150?img=12',
+      countryFlag: 'https://flagcdn.com/w20/hu.png',
+      isSubscriber: true,
+    };
+  };
+
+  // Aktuális felhasználó betöltése
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      const userData = await fetchCurrentUser();
+      setCurrentUser(userData);
+    };
+    loadCurrentUser();
+  }, []);
 
   // Szűrés alkalmazása
   useEffect(() => {
@@ -439,6 +465,81 @@ export default function Leaderboard() {
                 {getLocationLabel(filter)}
               </button>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Aktuális felhasználó pozíció */}
+      <div className="current-user-position mb-4">
+        <div className="current-user-label">
+          <i className="bi bi-person-fill me-2"></i>
+          Te a ranglistán:
+        </div>
+        <div className="current-user-row">
+          {/* Helyezés */}
+          <div className="lb-col lb-rank">
+            <span className="rank-number">#42</span>
+          </div>
+
+          {/* Játékos info */}
+          <div className="lb-col lb-player">
+            <img 
+              src={currentUser?.avatar || 'https://i.pravatar.cc/150?img=99'} 
+              alt={currentUser?.username || 'User'} 
+              className="player-avatar"
+            />
+            <img 
+              src={currentUser?.countryFlag || 'https://flagcdn.com/w20/hu.png'} 
+              alt="HU" 
+              className="player-flag"
+            />
+            <span className="player-name">
+              {currentUser?.username || 'Betöltés...'}
+              {currentUser?.isSubscriber && (
+                <svg
+                  className="subscriber-crown"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                >
+                  <path fill="currentColor" d="M2 17l2-7 4 4 5-9 5 9 4-4 2 7H2z" />
+                </svg>
+              )}
+            </span>
+          </div>
+
+          {/* Pontok */}
+          <div className="lb-col lb-points">
+            <span className="points-value">3,303</span>
+          </div>
+
+          {/* Könyvek */}
+          <div className="lb-col lb-stats">
+            <i className="bi bi-book stat-icon"></i>
+            17,735
+          </div>
+
+          {/* Média */}
+          <div className="lb-col lb-stats">
+            <i className="bi bi-film stat-icon"></i>
+            3,200
+          </div>
+
+          {/* Befejezési arány */}
+          <div className="lb-col lb-stats hide-mobile">
+            <span className="completion-rate">98.3%</span>
+          </div>
+
+          {/* Szint */}
+          <div className="lb-col lb-stats hide-mobile">
+            <span className="level-badge">Lv.98</span>
+          </div>
+
+          {/* Sorozat */}
+          <div className="lb-col lb-streak hide-tablet">
+            <i className="bi bi-fire streak-icon"></i>
+            746 nap
           </div>
         </div>
       </div>

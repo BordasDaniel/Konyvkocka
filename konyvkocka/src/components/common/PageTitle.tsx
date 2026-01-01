@@ -12,52 +12,52 @@ const PageTitle = () => {
       case '/':
         title = 'Kezdőlap | KönyvKocka';
         break;
-      case '/about':
+      case '/rolunk':
         title = 'Rólunk | KönyvKocka';
         break;
-      case '/login':
+      case '/belepes':
         title = 'Bejelentkezés | KönyvKocka';
         break;
-      case '/search':
+      case '/kereses':
         title = 'Keresés | KönyvKocka';
         break;
-      case '/news':
+      case '/hirek':
         title = 'Hírek | KönyvKocka';
         break;
-      case '/library':
+      case '/konyvtaram':
         title = 'Könyvtáram | KönyvKocka';
         break;
-      case '/history':
+      case '/elozmenyeim':
         title = 'Előzmények | KönyvKocka';
         break;
-      case '/notifications':
+      case '/ertesitesek':
         title = 'Értesítések | KönyvKocka';
         break;
-      case '/challenges':
+      case '/kihivasok':
         title = 'Kihívások | KönyvKocka';
         break;
-      case '/support':
+      case '/tamogatas':
         title = 'Támogatás | KönyvKocka';
         break;
-      case '/pay':
+      case '/fizetes':
         title = 'Fizetés | KönyvKocka';
         break;
-      case '/subscription':
+      case '/vasarlas':
         title = 'Vásárlások | KönyvKocka';
         break;
-      case '/leaderboard':
+      case '/ranglista':
         title = 'Ranglista | KönyvKocka';
         break;
-      case '/reader':
+      case '/olvaso':
         title = 'Olvasó | KönyvKocka';
         break;
-      case '/watch':
+      case '/nezes':
         title = 'Videók | KönyvKocka';
         break;
-      case '/user':
+      case '/profil':
         title = 'Profil | KönyvKocka';
         break;
-      case '/reset-password':
+      case '/jelszo-visszaallitas':
         title = 'Jelszó visszaállítás | KönyvKocka';
         break;
       default:

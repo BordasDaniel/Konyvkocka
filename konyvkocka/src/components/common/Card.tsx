@@ -44,7 +44,7 @@ export const mockCards: CardData[] = [
     desc: 'Egy csoport asztronauta átutazik egy féreglyukon, hogy új otthont találjon az emberiség számára.',
     trailer: 'https://www.youtube.com/embed/zSWdZVtXT7E',
     episodes: ['1: Teljes film'],
-    reader: '/watch',
+    reader: '/nezes',
     type: 'movie'
   },
   {
@@ -56,7 +56,7 @@ export const mockCards: CardData[] = [
     desc: 'Antoine de Saint-Exupéry időtlen klasszikusa a barátságról, szeretetről és az élet nagy kérdéseiről.',
     trailer: 'https://www.youtube.com/embed/5rOiW8yX5Z0',
     episodes: ['Olvasás'],
-    reader: '/reader',
+    reader: '/olvaso',
     type: 'book'
   },
   {
@@ -222,7 +222,7 @@ const Card: React.FC<CardProps> = ({
               <div className="card-body">
                 <h5 className="card-title">Továbbiak</h5>
                 <p className="card-text">Fedezd fel további ajánlatainkat és kategóriáinkat a teljes kínálatért.</p>
-                <button className="btn view-btn" onClick={() => window.location.href = '/search'}>
+                <button className="btn view-btn" onClick={() => window.location.href = '/kereses'}>
                   Érdekel
                 </button>
               </div>

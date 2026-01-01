@@ -53,11 +53,14 @@ const mockNotifications: Notification[] = [
 
 const Notifications: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [filter, setFilter] = useState<'all' | 'unread' | 'challenge' | 'friend' | 'system' | 'purchase'>('all');
 
-  const filteredNotifications = notifications.filter(n => 
-    filter === 'all' || (filter === 'unread' && !n.isRead)
-  );
+  const filteredNotifications = notifications.filter(n => {
+    if (filter === 'all') return true;
+    if (filter === 'unread') return !n.isRead;
+    if (filter === 'purchase') return n.type === 'system'; // Vásárlási értesítések a system-hez rendelve
+    return n.type === filter;
+  });
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -88,11 +91,11 @@ const Notifications: React.FC = () => {
   return (
     <div className="notifications-page">
       <section className="notifications-hero py-5">
-        <div className="container p-5">
+        <div className="container-fluid p-3 p-lg-5 px-4 px-lg-5">
           {/* Header */}
-          <div className="row justify-content-center mb-4">
-            <div className="col-lg-10 col-md-12">
-              <div className="text-center mb-4">
+          <div className="row mb-4">
+            <div className="col-12">
+              <div className="text-center mb-4 pt-5">
                 <h1 className="text-uppercase fw-bold mb-2" style={{ color: 'var(--h1Text)' }}>
                   <i className="bi bi-bell-fill me-3" style={{ color: 'var(--secondary)' }}></i>
                   Értesítések
@@ -113,13 +116,37 @@ const Notifications: React.FC = () => {
                   className={`btn btn-action ${filter === 'all' ? 'active' : ''}`}
                   onClick={() => setFilter('all')}
                 >
-                  <i className="bi bi-list-ul me-2"></i>Összes ({notifications.length})
+                  <i className="bi bi-grid-fill me-2"></i>Minden ({notifications.length})
                 </button>
                 <button
                   className={`btn btn-action ${filter === 'unread' ? 'active' : ''}`}
                   onClick={() => setFilter('unread')}
                 >
                   <i className="bi bi-envelope-fill me-2"></i>Olvasatlan ({unreadCount})
+                </button>
+                <button
+                  className={`btn btn-action ${filter === 'system' ? 'active' : ''}`}
+                  onClick={() => setFilter('system')}
+                >
+                  <i className="bi bi-gear-fill me-2"></i>Rendszer
+                </button>
+                <button
+                  className={`btn btn-action ${filter === 'challenge' ? 'active' : ''}`}
+                  onClick={() => setFilter('challenge')}
+                >
+                  <i className="bi bi-trophy-fill me-2"></i>Kihívás
+                </button>
+                <button
+                  className={`btn btn-action ${filter === 'friend' ? 'active' : ''}`}
+                  onClick={() => setFilter('friend')}
+                >
+                  <i className="bi bi-people-fill me-2"></i>Barát
+                </button>
+                <button
+                  className={`btn btn-action ${filter === 'purchase' ? 'active' : ''}`}
+                  onClick={() => setFilter('purchase')}
+                >
+                  <i className="bi bi-cart-fill me-2"></i>Vásárlás
                 </button>
                 {unreadCount > 0 && (
                   <button
@@ -134,8 +161,8 @@ const Notifications: React.FC = () => {
           </div>
 
           {/* Notifications List */}
-          <div className="row justify-content-center">
-            <div className="col-lg-10 col-md-12">
+          <div className="row">
+            <div className="col-12">
               {filteredNotifications.length === 0 ? (
                 <div className="empty-state text-center">
                   <div>

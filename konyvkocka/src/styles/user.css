@@ -61,6 +61,23 @@
 .profile-bar h2{ color: var(--h1Text); font-weight:700; font-size: 2rem; }
 .progress-level{ display:flex; align-items:center; gap:1rem }
 
+/* Profile header layout: identity + filters + level */
+.profile-header{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "top level"
+    "filters level";
+  align-items: center;
+  column-gap: 1rem;
+  row-gap: 0.75rem;
+}
+
+.profile-header-top{ grid-area: top; display:flex; align-items:center; gap:1rem; min-width: 0; }
+.profile-identity{ min-width: 0; }
+.profile-header-filters{ grid-area: filters; }
+.profile-header-level{ grid-area: level; justify-self: end; }
+
 /* progress wrapper: responsive control for progress bar width */
 .progress-wrapper{ width:180px }
 .progress-wrapper .progress{ height:10px }
@@ -100,9 +117,44 @@
   border-color: rgba(255,255,255,0.04);
 }
 @media (max-width:575px){
-  .profile-actions{ gap: 0.4rem; }
-  .profile-actions .btn-action{ padding: 0.32rem 0.6rem; font-size: 0.72rem; }
-  .profile-actions .btn-action i{ font-size: 0.8rem; }
+  .profile-header{
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "top"
+      "filters"
+      "level";
+    row-gap: 0.9rem;
+  }
+
+  .profile-header-top{
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .profile-identity h2{ font-size: 1.4rem; }
+
+  .profile-header-filters{ justify-self: center; width: 100%; }
+  .profile-header-level{ justify-self: center; }
+  .profile-header-level .progress-level{ justify-content: center; }
+
+  /* Profile filters: stack vertically on phones */
+  .profile-actions{
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .profile-actions .btn-action{
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.72rem;
+    line-height: 1.15;
+  }
+  .profile-actions .btn-action i{ font-size: 0.85rem; }
 }
 
 @media (max-width: 767px){
@@ -112,6 +164,43 @@
   .circle-level{ width:52px; height:52px; font-size:1rem }
   .big-number{ font-size:1.6rem }
   .profile-bar h2{ font-size: 1.5rem; }
+}
+
+@media (max-width: 575px){
+  /* Settings upload: prevent file input overflow on narrow screens */
+  #settingsPanel .settings-upload-row{
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  #settingsPanel .settings-upload-row .avatar{
+    align-self: flex-start;
+  }
+
+  #settingsPanel input[type="file"].form-control{
+    width: 100%;
+    max-width: 100%;
+    font-size: 0.9rem;
+  }
+
+  #settingsPanel input[type="file"].form-control::file-selector-button{
+    padding: 0.45rem 0.75rem;
+    margin-right: 0.65rem;
+  }
+
+  #settingsPanel input[type="file"].form-control::-webkit-file-upload-button{
+    padding: 0.45rem 0.75rem;
+    margin-right: 0.65rem;
+  }
+
+  #settingsPanel .settings-upload-actions{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #settingsPanel .settings-upload-actions .btn{
+    width: 100%;
+  }
 }
 
 /* subscriber crown next to username */

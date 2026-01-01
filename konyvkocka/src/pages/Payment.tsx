@@ -154,7 +154,7 @@ function Payment(): React.JSX.Element {
     const handleModalButton = () => {
         if (modalState.success) {
             localStorage.setItem('kk_session', 'demo')
-            navigate('/user')
+            navigate('/profil')
         } else {
             setModalState(prev => ({ ...prev, open: false }))
         }
@@ -190,7 +190,14 @@ function Payment(): React.JSX.Element {
     const countryLabel = billing.country ? countryNameMap[billing.country] ?? billing.country : 'Válassz…'
 
     return (
-        <>
+        <main className="payment-page">
+            <div className="container-fluid px-4 pt-2">
+                <h1 className="mb-4 text-center display-6 fw-bold text-decoration-underline">
+                    <i className="bi bi-credit-card me-2"></i>
+                    Fizetés
+                </h1>
+            </div>
+
             {/* Stepper */}
             <div className="stepper container">
                 {[1, 2, 3].map(idx => (
@@ -204,7 +211,7 @@ function Payment(): React.JSX.Element {
                 ))}
             </div>
 
-            <main className="container-fluid px-4 py-4">
+            <div className="container-fluid px-4 py-4">
                 {/* STEP 1 */}
                 <section id="step-1" className={`about-panel p-3 mt-2 ${step !== 1 ? 'd-none' : ''}`}>
                     <div className="d-flex justify-content-between align-items-center mb-2 step1-header">
@@ -262,7 +269,7 @@ function Payment(): React.JSX.Element {
                             Kiválasztott csomag: <strong>{summaryPlanLabel}</strong> • Várható összeg: <strong>{summaryPlanPrice}</strong>
                         </div>
                         <div className="pay-actions">
-                            <Link to="/about" className="btn btn-outline-light"><i className="bi bi-arrow-left" /> Vissza</Link>
+                            <Link to="/rolunk" className="btn btn-outline-light"><i className="bi bi-arrow-left" /> Vissza</Link>
                             <button id="to-step-2" className="btn btn-kk" onClick={() => goToStep(2)} disabled={!selectedPlan}>
                                 Tovább <i className="bi bi-arrow-right" />
                             </button>
@@ -342,7 +349,7 @@ function Payment(): React.JSX.Element {
                         <div className="d-flex justify-content-between align-items-center mt-3">
                             <button type="button" className="btn btn-outline-light" id="back-1" onClick={() => goToStep(1)}><i className="bi bi-arrow-left" /> Vissza</button>
                             <div className="pay-actions">
-                                <button id="to-step-3" className="btn btn-kk" type="submit">Tovább a fizetéshez <i className="bi bi-arrow-right" /></button>
+                                <button id="to-step-3" className="btn btn-kk" type="submit">Fizetéshez <i className="bi bi-arrow-right" /></button>
                             </div>
                         </div>
                     </form>
@@ -408,7 +415,7 @@ function Payment(): React.JSX.Element {
                         <Link to="/" className="btn btn-secondary">Mégsem</Link>
                     </div>
                 </section>
-            </main>
+            </div>
 
             {/* Payment Result Modal */}
             <div className={`payment-modal ${modalState.open ? 'show' : ''}`} id="paymentModal">
@@ -440,7 +447,7 @@ function Payment(): React.JSX.Element {
                     </button>
                 </div>
             </div>
-        </>
+        </main>
     )
 }
 

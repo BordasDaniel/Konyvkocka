@@ -292,11 +292,11 @@ const Challenges: React.FC = () => {
   return (
     <div className="challenges-page">
       <section className="challenges-hero py-5">
-        <div className="container-fluid p-5 px-4 px-lg-5">
+        <div className="container-fluid p-3 p-lg-5 px-4 px-lg-5">
           {/* Header */}
           <div className="row mb-4">
             <div className="col-12">
-              <div className="text-center mb-4">
+              <div className="text-center mb-4 pt-5">
                 <h1 className="text-uppercase fw-bold mb-2" style={{ color: 'var(--h1Text)' }}>
                   <i className="bi bi-trophy-fill me-3" style={{ color: 'var(--secondary)' }}></i>
                   Kihívások

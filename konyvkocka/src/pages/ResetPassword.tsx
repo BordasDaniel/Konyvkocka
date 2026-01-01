@@ -104,7 +104,7 @@ const ResetPassword: React.FC = () => {
 
     // Redirect after 2 seconds
     setTimeout(() => {
-      navigate('/login');
+      navigate('/belepes');
     }, 2000);
   };
 

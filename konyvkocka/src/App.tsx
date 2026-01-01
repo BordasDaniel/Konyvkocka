@@ -28,22 +28,22 @@ function App() {
       <PageTitle />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/library" element={<Library />} />
-        <Route path="/history" element={<History />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/challenges" element={<Challenges />} />
-        <Route path="/subscription" element={<Subscription />} />
-        <Route path="/news" element={<News />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/support" element={<Support />} />
-        <Route path="/pay" element={<Payment />} />
-        <Route path="/reader" element={<Reader />} />
-        <Route path="/watch" element={<Watch />} />
-        <Route path="/user" element={<User />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/rolunk" element={<About />} />
+        <Route path="/belepes" element={<Login />} />
+        <Route path="/kereses" element={<Search />} />
+        <Route path="/konyvtaram" element={<Library />} />
+        <Route path="/elozmenyeim" element={<History />} />
+        <Route path="/ertesitesek" element={<Notifications />} />
+        <Route path="/kihivasok" element={<Challenges />} />
+        <Route path="/vasarlas" element={<Subscription />} />
+        <Route path="/hirek" element={<News />} />
+        <Route path="/ranglista" element={<Leaderboard />} />
+        <Route path="/tamogatas" element={<Support />} />
+        <Route path="/fizetes" element={<Payment />} />
+        <Route path="/olvaso" element={<Reader />} />
+        <Route path="/nezes" element={<Watch />} />
+        <Route path="/profil" element={<User />} />
+        <Route path="/jelszo-visszaallitas" element={<ResetPassword />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>

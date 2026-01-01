@@ -1,12 +1,16 @@
 /* pay.css - Checkout page styles */
 
+.payment-page {
+  padding-top: calc(var(--navbar-height) + 1rem);
+}
+
 /* Stepper */
 .stepper {
   display: flex;
   gap: 12px;
   align-items: center;
   justify-content: center;
-  margin-top: 5.5rem;
+  margin-top: 0.75rem;
 }
 
 .step {

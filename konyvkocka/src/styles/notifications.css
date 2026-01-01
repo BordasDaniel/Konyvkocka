@@ -25,6 +25,22 @@
   overflow-x: auto;
 }
 
+@media (max-width: 575px) {
+  .notifications-filters {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    justify-content: center;
+    padding: 0.6rem 0.75rem;
+    column-gap: 0.55rem;
+  }
+  
+  .notifications-page .btn-action {
+    flex: 0 0 auto;
+    padding: 0.32rem 0.65rem;
+    font-size: 0.9rem;
+  }
+}
+
 .notifications-page .btn-action {
   border-radius: 999px;
   padding: 0.38rem 0.85rem;

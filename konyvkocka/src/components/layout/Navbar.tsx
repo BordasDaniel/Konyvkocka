@@ -48,19 +48,19 @@ function Navbar() {
               <NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Kezdőlap</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/search" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Keresés</NavLink>
+              <NavLink to="/kereses" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Keresés</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/support" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Támogatás</NavLink>
+              <NavLink to="/tamogatas" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Támogatás</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/about" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Rólunk</NavLink>
+              <NavLink to="/rolunk" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Rólunk</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/news" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Hírek</NavLink>
+              <NavLink to="/hirek" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Hírek</NavLink>
             </li>
             <li className="nav-item">
-              <NavLink to="/leaderboard" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Ranglista</NavLink>
+              <NavLink to="/ranglista" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Ranglista</NavLink>
             </li>
           </ul>
 
@@ -99,7 +99,7 @@ function Navbar() {
                   {/* Profil */}
                   <li>
                     <NavLink
-                      to="/user"
+                      to="/profil"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}
                     >
@@ -109,7 +109,7 @@ function Navbar() {
                   {/* Könyvtáram */}
                   <li>
                     <NavLink
-                      to="/library"
+                      to="/konyvtaram"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}
                     >
@@ -119,7 +119,7 @@ function Navbar() {
                   {/* Előzmények */}
                   <li>
                     <NavLink
-                      to="/history"
+                      to="/elozmenyeim"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}
                     >
@@ -129,7 +129,7 @@ function Navbar() {
                   {/* Értesítések (badge-el) */}
                   <li>
                     <NavLink
-                      to="/notifications"
+                      to="/ertesitesek"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}
                     >
@@ -143,7 +143,7 @@ function Navbar() {
                   {/* Kihívások */}
                   <li>
                     <NavLink
-                      to="/challenges"
+                      to="/kihivasok"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}
                     >
@@ -154,7 +154,7 @@ function Navbar() {
                   {/* Beállítások */}
                   <li>
                     <NavLink
-                      to="/user"
+                      to="/profil"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}
                       state={{ view: 'settings' }}
@@ -165,7 +165,7 @@ function Navbar() {
                   {/* Vásárlások */}
                   <li>
                     <NavLink
-                      to="/subscription"
+                      to="/vasarlas"
                       className="dropdown-item"
                       onClick={() => setDropdownOpen(false)}
                     >
@@ -187,7 +187,7 @@ function Navbar() {
             ) : (
               // Nem bejelentkezett - bejelentkezés link
               <li className="nav-item">
-                <NavLink className="nav-link" to="/login">
+                <NavLink className="nav-link" to="/belepes">
                   <i className="bi bi-person-circle"></i> Bejelentkezés
                 </NavLink>
               </li>

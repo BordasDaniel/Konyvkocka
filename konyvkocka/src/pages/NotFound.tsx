@@ -69,7 +69,7 @@ export default function NotFound() {
               {/* Additional Help */}
               <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
                 <p className="small mb-2" style={{ color: 'rgba(224, 224, 224, 0.5)' }}>Segíthetünk?</p>
-                <Link to="/support" className="text-decoration-none" style={{ 
+                <Link to="/tamogatas" className="text-decoration-none" style={{ 
                   color: 'var(--secondary)',
                   fontSize: '0.95rem',
                   fontWeight: '500',

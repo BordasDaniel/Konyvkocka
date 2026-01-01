@@ -23,7 +23,7 @@ const Login: React.FC = () => {
   // Ha már be van jelentkezve, irányítsuk át a profil oldalra
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/user');
+      navigate('/profil');
     }
   }, [isAuthenticated, navigate]);
 
@@ -83,7 +83,7 @@ const Login: React.FC = () => {
       setIsSubmitting(false);
       
       if (success) {
-        navigate('/user');
+        navigate('/profil');
       } else {
         alert('Sikertelen bejelentkezés! Ellenőrizd az adataidat.');
       }
@@ -121,7 +121,7 @@ const Login: React.FC = () => {
       setIsSubmitting(false);
       
       if (success) {
-        navigate('/user');
+        navigate('/profil');
       } else {
         alert('Sikertelen regisztráció! Próbáld újra.');
       }

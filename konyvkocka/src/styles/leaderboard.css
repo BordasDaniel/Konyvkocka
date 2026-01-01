@@ -129,6 +129,102 @@ main {
 }
 
 /* ========================
+   CURRENT USER POSITION
+   ======================== */
+
+.current-user-position {
+  background: linear-gradient(rgba(12, 12, 12, 0.45), rgba(12, 12, 12, 0.32));
+  border: 2px solid var(--secondary);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), 0 0 20px rgba(194, 157, 89, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+@media (max-width: 767px) {
+  .current-user-position {
+    overflow-x: auto;
+  }
+}
+
+.current-user-label {
+  padding: 0.6rem 1.25rem;
+  background: linear-gradient(90deg, rgba(194, 157, 89, 0.15), rgba(230, 192, 124, 0.08));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 700;
+  color: var(--secondary);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 767px) {
+  .current-user-label {
+    min-width: 600px;
+    background: rgba(194, 157, 89, 0.15);
+  }
+}
+
+.current-user-row {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(90deg, rgba(194, 157, 89, 0.08), rgba(194, 157, 89, 0.03) 80%, transparent);
+}
+
+@media (max-width: 767px) {
+  .current-user-row {
+    min-width: 600px;
+    background: rgba(194, 157, 89, 0.08);
+  }
+}
+
+.current-user-row .lb-col {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.current-user-row .player-name {
+  color: var(--secondary);
+  font-weight: 700;
+}
+
+.current-user-row .points-value {
+  color: var(--secondary);
+  font-weight: 800;
+}
+
+@media (max-width: 991px) {
+  .current-user-row .hide-tablet {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .current-user-row .hide-mobile {
+    display: none !important;
+  }
+  
+  .current-user-label {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  .current-user-row {
+    padding: 0.85rem 1rem;
+  }
+}
+
+@media (max-width: 575px) {
+  .current-user-row .lb-col {
+    font-size: 0.8rem;
+  }
+}
+
+/* ========================
    LEADERBOARD TABLE
    ======================== */
 
@@ -142,6 +238,12 @@ main {
   overflow: hidden;
 }
 
+@media (max-width: 767px) {
+  .leaderboard-container {
+    overflow-x: auto;
+  }
+}
+
 .leaderboard-header {
   display: flex;
   align-items: center;
@@ -153,6 +255,13 @@ main {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+@media (max-width: 767px) {
+  .leaderboard-header,
+  .leaderboard-row {
+    min-width: 600px;
+  }
 }
 
 .leaderboard-list {
@@ -201,6 +310,7 @@ main {
   align-items: center;
   gap: 0.5rem;
   font-weight: 700;
+  margin-right: 0.75rem;
 }
 
 .lb-player {
@@ -209,6 +319,7 @@ main {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  margin-right: 0.75rem;
 }
 
 .lb-points {
@@ -451,7 +562,13 @@ main {
   }
 
   .lb-rank {
-    width: 55px;
+    width: 70px;
+    margin-right: 1rem;
+  }
+
+  .lb-player {
+    min-width: 140px;
+    margin-right: 1rem;
   }
 
   .lb-points {

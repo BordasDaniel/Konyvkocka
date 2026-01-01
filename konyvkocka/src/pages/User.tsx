@@ -144,7 +144,7 @@ const fetchViewStats = async (): Promise<Record<string, ViewStats>> => {
 				labelReviewsSent: 'Összes vélemény:',
 			},
 			sections: {
-				readSectionTitle: 'Összes megtekintett tartalom',
+				readSectionTitle: 'Legutóbb megtekintett tartalom',
 				readSectionSubtitle: '124 film, 89 sorozat, 8 könyv teljes • 57 könyv részben • 23 folyamatban',
 				readSectionActivity: 'Utolsó aktivitás: 2 nappal ezelőtt',
 				readSectionButton: 'Mutasd a tartalmakat',
@@ -175,7 +175,7 @@ const fetchViewStats = async (): Promise<Record<string, ViewStats>> => {
 				labelReviewsSent: 'Könyv vélemények:',
 			},
 			sections: {
-				readSectionTitle: 'Olvasott könyvek',
+				readSectionTitle: 'Legutóbb olvasott könyvek',
 				readSectionSubtitle: '8 befejezve • 57 olvasás alatt • 7 félbehagyva • 357 tervben • 513 archivált',
 				readSectionActivity: 'Utolsó könyv: 1 nappal ezelőtt',
 				readSectionButton: 'Mutasd a könyveket',
@@ -206,7 +206,7 @@ const fetchViewStats = async (): Promise<Record<string, ViewStats>> => {
 				labelReviewsSent: 'Film/Sorozat vélemények:',
 			},
 			sections: {
-				readSectionTitle: 'Megtekintett filmek és sorozatok',
+				readSectionTitle: 'Legutóbb megtekintett filmek és sorozatok',
 				readSectionSubtitle: '124 film befejezve • 89 sorozat befejezve • 23 folyamatban • 12 félbehagyva',
 				readSectionActivity: 'Utoljára nézett: tegnap',
 				readSectionButton: 'Mutasd a filmeket/sorozatokat',
@@ -569,7 +569,7 @@ const User: React.FC = () => {
 		// TODO: API hívás: await fetch('/api/auth/logout', { method: 'POST' });
 		localStorage.removeItem('kk_session');
 		alert('Kijelentkezve. Átirányítás a bejelentkezéshez.');
-		window.location.href = '/login';
+		window.location.href = '/belepes';
 	};
 
 	// Fiók törlése
@@ -613,89 +613,91 @@ const User: React.FC = () => {
 		<main className="container-fluid px-4 px-lg-5">
 			{/* Profile Bar */}
 			<div className="profile-bar">
-				<div className="row align-items-center">
-					<div className="col-auto">
-						<div className="avatar">
-							<img src={profile.avatar} alt="avatar" />
-						</div>
-					</div>
-					<div className="col">
-						<h2 className="mb-1">
-							{profile.isSubscriber && (
-								<svg
-									className="subscriber-crown"
-									xmlns="http://www.w3.org/2000/svg"
-									viewBox="0 0 24 24"
-									width="20"
-									height="20"
-									role="img"
-									aria-label="Előfizető"
-									focusable="false"
-								>
-									<title>Előfizető</title>
-									<path fill="currentColor" d="M2 17l2-7 4 4 5-9 5 9 4-4 2 7H2z" />
-								</svg>
-							)}
-							{profile.username}
-						</h2>
-						{settings.showCountryOnProfile && (
-							<div className="d-flex align-items-center gap-2 mb-3">
-								<img src={profile.countryFlag} alt={profile.country} />
-								<small>{profile.country}</small>
+					<div className="profile-header">
+						<div className="profile-header-top">
+							<div className="avatar">
+								<img src={profile.avatar} alt="avatar" />
 							</div>
-						)}
+							<div className="profile-identity">
+								<h2 className="mb-1">
+									{profile.isSubscriber && (
+										<svg
+											className="subscriber-crown"
+											xmlns="http://www.w3.org/2000/svg"
+											viewBox="0 0 24 24"
+											width="20"
+											height="20"
+											role="img"
+											aria-label="Előfizető"
+											focusable="false"
+										>
+											<title>Előfizető</title>
+											<path fill="currentColor" d="M2 17l2-7 4 4 5-9 5 9 4-4 2 7H2z" />
+										</svg>
+									)}
+									{profile.username}
+								</h2>
+								{settings.showCountryOnProfile && (
+									<div className="d-flex align-items-center gap-2 mb-0">
+										<img src={profile.countryFlag} alt={profile.country} />
+										<small>{profile.country}</small>
+									</div>
+								)}
+							</div>
+						</div>
 
-						{/* Profile action buttons - 2x2 grid layout */}
-						<div className="profile-actions">
-							<button
-								className={`btn btn-action ${activeView === 'all' ? 'active' : ''}`}
-								type="button"
-								onClick={() => setActiveView('all')}
-							>
-								<i className="bi bi-grid-fill me-1"></i>ÖSSZES
-							</button>
-							<button
-								className={`btn btn-action ${activeView === 'book' ? 'active' : ''}`}
-								type="button"
-								onClick={() => setActiveView('book')}
-							>
-								<i className="bi bi-book-fill me-1"></i>KÖNYVEK
-							</button>
-							<button
-								className={`btn btn-action ${activeView === 'media' ? 'active' : ''}`}
-								type="button"
-								onClick={() => setActiveView('media')}
-							>
-								<i className="bi bi-film me-1"></i>FILMEK/Sorozatok
-							</button>
-							<button
-								className={`btn btn-action ${activeView === 'settings' ? 'active' : ''}`}
-								type="button"
-								onClick={() => setActiveView('settings')}
-							>
-								<i className="bi bi-gear-fill me-1"></i>BEÁLLÍTÁSOK
-							</button>
-						</div>
-					</div>
-					<div className="col-auto text-end">
-						<div className="progress-level justify-content-end">
-							<div className="progress-wrapper">
-								<div className="progress" style={{ height: '10px', background: 'rgba(255,255,255,0.03)' }}>
-									<div
-										className="progress-bar"
-										role="progressbar"
-										style={{ width: `${profile.levelProgress}%` }}
-										aria-valuenow={profile.levelProgress}
-										aria-valuemin={0}
-										aria-valuemax={100}
-									></div>
-								</div>
-								<small className="fw-bold text-light">Felhasználói szint</small>
+						<div className="profile-header-filters">
+							<div className="profile-actions">
+								<button
+									className={`btn btn-action ${activeView === 'all' ? 'active' : ''}`}
+									type="button"
+									onClick={() => setActiveView('all')}
+								>
+									<i className="bi bi-grid-fill me-1"></i>ÖSSZES
+								</button>
+								<button
+									className={`btn btn-action ${activeView === 'book' ? 'active' : ''}`}
+									type="button"
+									onClick={() => setActiveView('book')}
+								>
+									<i className="bi bi-book-fill me-1"></i>KÖNYVEK
+								</button>
+								<button
+									className={`btn btn-action ${activeView === 'media' ? 'active' : ''}`}
+									type="button"
+									onClick={() => setActiveView('media')}
+								>
+									<i className="bi bi-film me-1"></i>FILMEK/Sorozatok
+								</button>
+								<button
+									className={`btn btn-action ${activeView === 'settings' ? 'active' : ''}`}
+									type="button"
+									onClick={() => setActiveView('settings')}
+								>
+									<i className="bi bi-gear-fill me-1"></i>BEÁLLÍTÁSOK
+								</button>
 							</div>
-							<div className="circle-level">{profile.level}</div>
+						</div>
+
+						<div className="profile-header-level">
+							<div className="progress-level justify-content-end">
+								<div className="progress-wrapper">
+									<div className="progress" style={{ height: '10px', background: 'rgba(255,255,255,0.03)' }}>
+										<div
+											className="progress-bar"
+											role="progressbar"
+											style={{ width: `${profile.levelProgress}%` }}
+											aria-valuenow={profile.levelProgress}
+											aria-valuemin={0}
+											aria-valuemax={100}
+										></div>
+									</div>
+									<small className="fw-bold text-light">Felhasználói szint</small>
+								</div>
+								<div className="circle-level">{profile.level}</div>
+							</div>
 						</div>
 					</div>
-				</div>
 			</div>
 
 			{/* Settings Panel */}
@@ -709,7 +711,7 @@ const User: React.FC = () => {
 						</div>
 						<div className="row align-items-start">
 							<div className="col-12 col-md-4 mb-3 mb-md-0">
-								<div className="d-flex align-items-center gap-3">
+								<div className="d-flex align-items-center gap-3 settings-upload-row">
 									<div className="avatar" style={{ width: '96px', height: '96px' }}>
 										<img src={profile.avatar} alt="profilkép" />
 									</div>
@@ -721,7 +723,7 @@ const User: React.FC = () => {
 											accept="image/png,image/jpeg,image/webp"
 											onChange={handleAvatarFileChange}
 										/>
-										<div className="d-flex gap-2 mt-2">
+										<div className="d-flex gap-2 mt-2 settings-upload-actions">
 											<button type="button" className="btn btn-outline-light btn-sm" onClick={handleResetAvatar}>
 												Visszaállítás
 											</button>
@@ -1290,7 +1292,7 @@ const User: React.FC = () => {
 							</div>
 						</div>
 
-						<div className="col-lg-4">
+						<div className="col-lg-4 mt-3 mt-lg-0">
 							<div className="stat-card about-panel">
 								<h5 className="mb-3 fw-bold" style={{ color: 'var(--secondary)' }}>Felhasználói statisztikák</h5>
 								<ul className="list-unstyled">

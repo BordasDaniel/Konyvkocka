@@ -22,7 +22,7 @@ const DEFAULT_ARTICLES: NewsArticleData[] = [
     date: '2025.10.30.',
     tags: 'Új funkció',
     excerpt: 'Elkészült a watch oldal, ahol beágyazott lejátszóval, reszponzív 16:9 képaránnyal és az oldal többi részéhez illő glass dizájnnal nézhetők a videók.',
-    link: '/watch',
+    link: '/nezes',
     linkText: 'Megnyitás'
   },
   {
@@ -32,7 +32,7 @@ const DEFAULT_ARTICLES: NewsArticleData[] = [
     date: '2025.10.28.',
     tags: 'Frissítés',
     excerpt: 'A PDF olvasó a zoom után megőrzi a pozíciót, a nézet tetejére igazít, és mobilon a csúszka elrejthető, a +/− gombok és a pinch továbbra is működnek.',
-    link: '/reader',
+    link: '/olvaso',
     linkText: 'Részletek'
   },
   {
@@ -42,7 +42,7 @@ const DEFAULT_ARTICLES: NewsArticleData[] = [
     date: '2025.10.21.',
     tags: 'Közlemény',
     excerpt: 'A fizetési modál siker/sikertelen visszajelzéssel és tranzakciós azonosítóval érkezik. A formok glass stílust kaptak, az országválasztó stabilabb lett.',
-    link: '/pay',
+    link: '/fizetes',
     linkText: 'Bővebben'
   }
 ];
