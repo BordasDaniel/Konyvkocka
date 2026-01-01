@@ -43,18 +43,18 @@ const Watch: React.FC = () => {
     // fetchVideoFromAPI();
   }, []);
 
-  const fetchVideoFromAPI = async () => {
-    try {
-      // Példa: const response = await fetch('/api/videos/current');
-      // const data = await response.json();
-      // setVideoUrl(data.videoUrl);
-      // setTitle(data.title);
-      // setTags(data.tags);
-      // setDescription(data.description);
-    } catch (err) {
-      console.error('Video fetch error:', err);
-    }
-  };
+  // const fetchVideoFromAPI = async () => {
+  //   try {
+  //     // Példa: const response = await fetch('/api/videos/current');
+  //     // const data = await response.json();
+  //     // setVideoUrl(data.videoUrl);
+  //     // setTitle(data.title);
+  //     // setTags(data.tags);
+  //     // setDescription(data.description);
+  //   } catch (err) {
+  //     console.error('Video fetch error:', err);
+  //   }
+  // };
 
   const handleRefresh = () => {
     window.location.reload();

@@ -57,7 +57,7 @@ const ResetPassword: React.FC = () => {
     e.preventDefault();
     setMessage('');
 
-    const emailHidden = (document.getElementById('emailHidden') as HTMLInputElement)?.value.trim();
+    // const emailHidden = (document.getElementById('emailHidden') as HTMLInputElement)?.value.trim();
     const newPassword = (document.getElementById('newPassword') as HTMLInputElement)?.value;
     const confirmPassword = (document.getElementById('confirmPassword') as HTMLInputElement)?.value;
 
