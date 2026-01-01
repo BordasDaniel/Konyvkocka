@@ -21,7 +21,7 @@ const Reader: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [bookTitle, setBookTitle] = useState<string>('Könyv címe');
   const [bookAuthor, setBookAuthor] = useState<string>('Szerző neve');
-  const [bookCover, setBookCover] = useState<string>('');
+  const [bookCover] = useState<string>('');
   const [totalPages, setTotalPages] = useState<number>(0);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
