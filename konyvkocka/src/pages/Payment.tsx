@@ -443,7 +443,7 @@ function Payment(): React.JSX.Element {
                         )}
                     </div>
                     <button className="btn btn-kk payment-modal-btn" id="modalBtn" type="button" onClick={handleModalButton}>
-                        Vissza a főoldalra
+                        Vissza a profilomhoz
                     </button>
                 </div>
             </div>

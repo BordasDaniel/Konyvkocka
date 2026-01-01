@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import showMoreCardImage from '../../assets/img/carousel.jpg';
 
 export interface CardData {
   id: string;
@@ -218,11 +219,11 @@ const Card: React.FC<CardProps> = ({
         {showMoreCard && (
           <div className={gridClass}>
             <div className="card">
-              <img src="/assets/img/carousel.jpg" className="card-img-top card-img-blur" alt="További tartalmak" />
+              <img src={showMoreCardImage} className="card-img-top card-img-blur" alt="További tartalmak" />
               <div className="card-body">
                 <h5 className="card-title">Továbbiak</h5>
                 <p className="card-text">Fedezd fel további ajánlatainkat és kategóriáinkat a teljes kínálatért.</p>
-                <button className="btn view-btn" onClick={() => window.location.href = '/kereses'}>
+                <button className="btn view-btn" onClick={() => window.location.href = '#/kereses'}>
                   Érdekel
                 </button>
               </div>
