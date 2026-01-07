@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Könyvkocka Project - V0.2 Snapshot Bemutató</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="presentation">
+        <!-- Progress Bar -->
+        <div class="progress-bar" id="progressBar"></div>
+        
+        <!-- Slide Counter -->
+        <div class="slide-counter" id="slideCounter">1 / 14</div>
+
+        <!-- Navigation Arrows -->
+        <div class="nav-arrows">
+            <div class="nav-arrow left" id="prevArrow" role="button" aria-label="Előző dia">‹</div>
+            <div class="nav-arrow right" id="nextArrow" role="button" aria-label="Következő dia">›</div>
+        </div>
+
+        <!-- Slide 1: Title Slide -->
+        <div class="slide active" data-slide="1">
+            <div class="slide-content">
+                <span class="slide-icon">📦</span>
+                <h1 class="slide-title"><span style="color: var(--color-primary);">Könyvkocka Project 2025</span> <span class="title-note">V0.2 Snapshot</span></h1>
+                <p class="slide-subtitle">Januári Bemutató - Frontend Stabilizálás</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: Project Overview -->
+        <div class="slide" data-slide="2">
+            <div class="slide-content">
+                <h2 class="slide-title">🎬 Projektünk</h2>
+                <ul class="bullet-list">
+                    <li>Netflix-inspirált streaming platform</li>
+                    <li>Filmek, sorozatok, könyvek egyaránt</li>
+                    <li>Ingyenes és prémium tartalom</li>
+                    <li>Választás könyv és film között</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 3: Tech Stack -->
+        <div class="slide" data-slide="3">
+            <div class="slide-content">
+                <h2 class="slide-title">⚙️ Technológiai Stack</h2>
+                <div class="cards-grid">
+                    <div class="card">
+                        <h3 class="card-title">💻 Frontend</h3>
+                        <p class="card-content">React + TypeScript<br>Vite Build Tool</p>
+                        <span class="card-status status-done">Aktív</span>
+                    </div>
+                    <div class="card">
+                        <h3 class="card-title">⚡ Backend</h3>
+                        <p class="card-content">ASP.NET<br>REST API</p>
+                        <span class="card-status">Fejlesztés alatt</span>
+                    </div>
+                    <div class="card">
+                        <h3 class="card-title">🗄️ Adatbázis</h3>
+                        <p class="card-content">MySQL</p>
+                        <span class="card-status status-done">Feltöltésre vár</span>
+                    </div>
+                    <div class="card">
+                        <h3 class="card-title">🛠️ Eszközök</h3>
+                        <p class="card-content">GitHub, Trello<br>VS Code<br>Visual Studio</p>
+                        <span class="card-status status-done">Aktív</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Frontend Development -->
+        <div class="slide" data-slide="4">
+            <div class="slide-content">
+                <h2 class="slide-title" style="margin-bottom: var(--space-32);">Frontend Fejlesztés</h2>
+                <div class="frontend-layout">
+                    <div class="frontend-left">
+                        <span class="slide-icon">💻</span>
+                        <div class="progress-container">
+                            <div class="progress-circle progress-80">
+                                <div class="progress-inner">80%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="frontend-right">
+                        <ul class="bullet-list">
+                            <li>React + TypeScript alapokra lett átalakítva (minden korábbi oldal újraírva)</li>
+                            <li>Állapotkezelés és struktúra előkészítve backend csatlakozáshoz</li>
+                            <li>LocalStorage-alapú autentikáció ideiglenes megoldásként</li>
+                            <li>Teljes reszponzivitás mobilon és asztali megjelenítésen</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Frontend Features -->
+        <div class="slide" data-slide="5">
+            <div class="slide-content">
+                <h2 class="slide-title">✅ Implementált Frontend Funkciók</h2>
+                <div class="plans-sections">
+                    <div class="plan-section">
+                        <h3>🏠 Alapstruktúra</h3>
+                        <ul>
+                            <li>Navbar, footer</li>
+                            <li>Főoldal: kártyák modál megnyitással</li>
+                            <li>Profilképes dropdown bejelentkezéskor</li>
+                        </ul>
+                    </div>
+                    <div class="plan-section">
+                        <h3>🔐 Autentikáció</h3>
+                        <ul>
+                            <li>Bejelentkezés / Regisztráció</li>
+                            <li>Elfelejtett jelszó / Visszaállítás</li>
+                            <li>Captcha támogatás</li>
+                        </ul>
+                    </div>
+                    <div class="plan-section">
+                        <h3>📄 Oldalak</h3>
+                        <ul>
+                            <li>Megtekintés / Olvasás oldal</li>
+                            <li>Könyvtáram / Előzmények</li>
+                            <li>Ranglista / Kihívások</li>
+                        </ul>
+                    </div>
+                    <div class="plan-section">
+                        <h3>💳 Egyéb</h3>
+                        <ul>
+                            <li>Keresés oldal szűrőkkel</li>
+                            <li>Vásárlások / Előfizetések</li>
+                            <li>Értesítések / Támogatás</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Database -->
+        <div class="slide" data-slide="6">
+            <div class="slide-content">
+                <h2 class="slide-title" style="margin-bottom: var(--space-32);">Adatbázis Fejlesztés</h2>
+                <div class="frontend-layout">
+                    <div class="frontend-left">
+                        <span class="slide-icon">🗄️</span>
+                        <div class="progress-container">
+                            <div class="progress-circle progress-85">
+                                <div class="progress-inner">85%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="frontend-right">
+                        <ul class="bullet-list">
+                            <li>MySQL adatbázis - teljes szerkezet elkészült</li>
+                            <li>Táblák és kapcsolatok definiálva, normalizálva</li>
+                            <li>Tesztadatok előkészítve, éles adatok feltöltésre várnak</li>
+                            <li>Backend integrációra előkészítve (API végpontokhoz)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Backend -->
+        <div class="slide" data-slide="7">
+            <div class="slide-content">
+                <h2 class="slide-title" style="margin-bottom: var(--space-32);">Backend Fejlesztés</h2>
+                <div class="frontend-layout">
+                    <div class="frontend-left">
+                        <span class="slide-icon">⚡</span>
+                        <div class="progress-container">
+                            <div class="progress-circle progress-25">
+                                <div class="progress-inner">25%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="frontend-right">
+                        <ul class="bullet-list">
+                            <li>ASP.NET Core REST API - tervezési fázis kész</li>
+                            <li>Összes végpont megtervezve és dokumentálva</li>
+                            <li>API struktúra és útvonalak definiálva</li>
+                            <li>Implementáció hamarosan elkezdődik</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Known Issues -->
+        <div class="slide" data-slide="8">
+            <div class="slide-content">
+                <h2 class="slide-title">⚠️ Ismert Hiányosságok</h2>
+                <ul class="bullet-list">
+                    <li>Backend és valódi adatbázis még nem csatlakozik</li>
+                    <li>LocalStorage csak ideiglenes megoldás (nem biztonságos)</li>
+                    <li>Email küldés továbbra sem elérhető</li>
+                    <li>Hibakezelés (error state-ek, visszajelzések) részben hiányos</li>
+                    <li>Egyes adatok statikusan mockolva vannak</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 9: Teamwork -->
+        <div class="slide" data-slide="9">
+            <div class="slide-content">
+                <h2 class="slide-title">👥 Csapatmunka &amp; Eszközök</h2>
+                <div class="team-grid"> 
+                    <div class="team-section">
+                        <h3>🔧 GitHub</h3>
+                        <p>Verziókezelés és kód menedzsment</p>
+                        <a href="https://github.com/bordasdaniel/IKTProject2025" target="_blank" class="btn">GitHub repo</a>
+                    </div>
+                    <div class="team-section">
+                        <h3>📋 Trello</h3>
+                        <p>Projekt feladatok és ütemezés</p>
+                        <a href="https://trello.com/w/iskolaiiktproject" target="_blank" class="btn">Trello tábla</a>
+                    </div>
+                </div>
+                <ul class="bullet-list" style="margin-top: var(--space-32);">
+                    <li><span class="highlight-text">Frontend Fejlesztő</span> - Bordás Dániel</li>
+                    <li><span class="highlight-text">Backend Fejlesztő</span> - Dudás Ádám</li>
+                    <li><span class="highlight-text">Adatbázis Kezelő</span> - Mihalik Hanna</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 10: GitHub -->
+        <div class="slide" data-slide="10">
+            <div class="slide-content">
+                <h2 class="slide-title">🔧 GitHub Repository</h2>
+                <div class="image-showcase">
+                    <img src="images/github.png" alt="GitHub Branches" class="showcase-image">
+                </div>
+                <p class="slide-text">
+                    A projekt verziókezelése GitHubon történik. Több branch-en dolgozunk párhuzamosan:<br>
+                    <code>develop</code>, <code>feature/*</code>, <code>backend</code> és <code>adatbazis</code>
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 11: Trello -->
+        <div class="slide" data-slide="11">
+            <div class="slide-content">
+                <h2 class="slide-title">📋 Trello Tábla</h2>
+                <div class="image-showcase">
+                    <img src="images/trello.png" alt="Trello Board" class="showcase-image">
+                </div>
+                <p class="slide-text">
+                    A feladatok nyomon követése Trello táblán történik.<br>
+                    Külön listák a feladatok állapotának megfelelően: <code>To Do</code>, <code>Doing</code>, <code>Done</code>
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 12: Future Plans -->
+        <div class="slide" data-slide="12">
+            <div class="slide-content">
+                <h2 class="slide-title">🚀 Következő Lépések</h2>
+                <div class="plans-sections">
+                    <div class="plan-section">
+                        <h3>🔗 Integráció</h3>
+                        <ul>
+                            <li>Adatbázis csatlakoztatása</li>
+                            <li>Backend végpontok (API) integrálása</li>
+                            <li>Valódi autentikáció bevezetése</li>
+                        </ul>
+                    </div>
+                    <div class="plan-section">
+                        <h3>💾 Adatkezelés</h3>
+                        <ul>
+                            <li>Adatok mentése adatbázisba</li>
+                            <li>Email értesítések bevezetése</li>
+                            <li>Hibakezelés javítása</li>
+                        </ul>
+                    </div>
+                    <div class="plan-section">
+                        <h3>🧪 Tesztelés</h3>
+                        <ul>
+                            <li>Integrációs tesztek (Frontend-Backend)</li>
+                            <li>API végpontok tesztelése</li>
+                            <li>Adatbázis műveletek validálása</li>
+                        </ul>
+                    </div>
+                    <div class="plan-section">
+                        <h3>✅ Finomhangolás</h3>
+                        <ul>
+                            <li>Teljesítmény optimalizálás</li>
+                            <li>Biztonsági audit</li>
+                            <li>Felhasználói visszajelzések</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+               <!-- Slide 13: Demo Button -->
+        <div class="slide" data-slide="13">
+            <div class="slide-content">
+                <span class="slide-icon">🎥</span>
+                <h2 class="slide-title">Demó</h2>
+                <p class="slide-subtitle">Frontend Bemutató - React + TypeScript</p>
+                <div class="demo-container">
+                    <a href="https://bordasdaniel.github.io/IKTProject2025/" target="_blank" class="demo-btn">V0.2 Demó megtekintése</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Thank You -->
+        <div class="slide" data-slide="14">
+            <div class="slide-content">
+                <span class="slide-icon">✨</span>
+                <h1 class="slide-title">Köszönjük a figyelmet!</h1>
+            </div>
+        </div>
+
+        <!-- Navigation Dots -->
+        <div class="nav-dots" id="navDots"></div>
+
+      
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
