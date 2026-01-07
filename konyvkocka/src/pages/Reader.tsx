@@ -398,7 +398,7 @@ const Reader: React.FC = () => {
           <button className="btn-action" onClick={downloadPdf}>
             <i className="bi bi-download me-2"></i> Letöltés
           </button>
-          <a href="/kereses" className="btn-action btn-outline">
+          <a href="#/kereses" className="btn-action btn-outline">
             <i className="bi bi-arrow-left me-2"></i> Vissza
           </a>
         </div>
@@ -440,7 +440,7 @@ const Reader: React.FC = () => {
               <i className="bi bi-exclamation-triangle-fill text-warning" style={{ fontSize: '3rem' }}></i>
               <h3 className="mt-3">Hiba történt</h3>
               <p>{error}</p>
-              <a href="/kereses" className="btn btn-outline-light mt-3">
+              <a href="#/kereses" className="btn btn-outline-light mt-3">
                 <i className="bi bi-arrow-left me-2"></i> Vissza a kereséshez
               </a>
             </div>
