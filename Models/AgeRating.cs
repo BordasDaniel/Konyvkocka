@@ -1,0 +1,19 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace KonyvkockaAPI.Models;
+
+public partial class AgeRating
+{
+    public int Id { get; set; }
+
+    public string Name { get; set; } = null!;
+
+    public int MinAge { get; set; }
+
+    public virtual ICollection<Book> Books { get; set; } = new List<Book>();
+
+    public virtual ICollection<Movie> Movies { get; set; } = new List<Movie>();
+
+    public virtual ICollection<Series> Series { get; set; } = new List<Series>();
+}

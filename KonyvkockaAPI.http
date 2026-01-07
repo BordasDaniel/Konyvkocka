@@ -1,0 +1,6 @@
+@KonyvkockaAPI_HostAddress = http://localhost:5208
+
+GET {{KonyvkockaAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
