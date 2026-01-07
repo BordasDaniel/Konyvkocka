@@ -106,6 +106,15 @@
         }
 
         /* Typography */
+        .logo {
+            max-width: 120px;
+            height: auto;
+            margin-bottom: var(--space-24);
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
         .slide-icon {
             font-size: 120px;
             margin-bottom: var(--space-32);
@@ -787,8 +796,8 @@
 
         .showcase-image {
             max-width: 100%;
-            max-height: 600px;
-            height: auto;
+            max-height: 700px;
+            height: 500px;
             border-radius: 12px;
             border: 2px solid rgba(194, 157, 89, 0.5);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
@@ -797,6 +806,14 @@
 
         .showcase-image:hover {
             transform: scale(1.02);
+        }
+
+        /* Large Image for EER Diagram */
+        .showcase-image.large-image {
+            max-width: 100%;
+            width: 100%;
+            max-height: none;
+            height: 600px;
         }
 
         .slide-text code {
