@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function About(): React.JSX.Element {
+    const { isAuthenticated } = useAuth();
+
     return (
         <>
         <main className="mt-5">
@@ -48,7 +51,11 @@ function About(): React.JSX.Element {
           </ul>
         </div>
         <div className="pricing-cta">
-          <button className="btn fw-bold" disabled>Regisztráció szükséges</button>
+          {isAuthenticated ? (
+            <button className="btn fw-bold" disabled>Jelenlegi csomag</button>
+          ) : (
+            <Link to="/belepes" className="btn fw-bold">Regisztráció szükséges</Link>
+          )}
         </div>
       </div>
 
@@ -68,7 +75,11 @@ function About(): React.JSX.Element {
           </ul>
         </div>
         <div className="pricing-cta">
-          <Link to="/fizetes" className="btn fw-bold">Előfizetek</Link>
+          {isAuthenticated ? (
+            <Link to="/fizetes" className="btn fw-bold">Előfizetek</Link>
+          ) : (
+            <button className="btn fw-bold" disabled>Bejelentkezés szükséges</button>
+          )}
         </div>
       </div>
     </div>
