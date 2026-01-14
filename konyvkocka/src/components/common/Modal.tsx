@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { CardData } from './Card';
+import { useAuth } from '../../context/AuthContext';
 import '../../styles/modal.css';
 
 interface Comment {
@@ -21,8 +22,7 @@ interface ModalProps {
 export default function Modal({ open, card, onClose }: ModalProps) {
 	const [comments, setComments] = useState<Comment[]>([]);
 	const [commentText, setCommentText] = useState('');
-
-	const isLoggedIn = useMemo(() => localStorage.getItem('isLoggedIn') === 'true', []);
+	const { isAuthenticated } = useAuth();
 
 	useEffect(() => {
 		if (open && card) {
@@ -82,7 +82,7 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!isLoggedIn) return;
+		if (!isAuthenticated) return;
 		const txt = commentText.trim();
 		if (!txt) return;
 		saveComment(card.title, txt);
@@ -164,21 +164,21 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 													placeholder="Írj egy hozzászólást..."
 													value={commentText}
 													onChange={(e) => setCommentText(e.target.value)}
-													disabled={!isLoggedIn}
+													disabled={!isAuthenticated}
 												></textarea>
 												<div className="d-flex justify-content-end mt-2">
 													<button 
 														type="button" 
 														className="btn"
 														onClick={() => {
-															if (isLoggedIn) {
+															if (isAuthenticated) {
 																handleSubmit(new Event('submit') as any);
 															} else {
 														window.location.href = '#/belepes';
 															}
 														}}
 													>
-														{isLoggedIn ? 'Küldés' : 'Jelentkezz be először'}
+														{isAuthenticated ? 'Közzététel' : 'Jelentkezz be először'}
 													</button>
 												</div>
 											</form>

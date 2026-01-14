@@ -262,6 +262,7 @@ const FAQ_CATEGORIES: FAQCategory[] = [
 
 export default function Support() {
   const [openItems, setOpenItems] = useState<Set<string>>(new Set());
+  const [activeCategory, setActiveCategory] = useState<string>(FAQ_CATEGORIES[0].id);
 
   const toggleItem = (id: string) => {
     setOpenItems(prev => {
@@ -277,6 +278,8 @@ export default function Support() {
 
   const isOpen = (id: string) => openItems.has(id);
 
+  const currentCategory = FAQ_CATEGORIES.find(c => c.id === activeCategory) || FAQ_CATEGORIES[0];
+
   return (
     <main className="py-5 mt-5">
       <div className="container py-5">
@@ -285,39 +288,75 @@ export default function Support() {
           Gyakran ismételt kérdések
         </h1>
 
-        {FAQ_CATEGORIES.map(category => (
-          <section key={category.id} className="faq-category">
-            <h2 className="faq-category-title">
-              {category.icon && <i className={`bi ${category.icon} me-2`}></i>}
+        {/* Kategória szűrők - kapszulák */}
+        <div className="faq-filters">
+          {FAQ_CATEGORIES.map(category => (
+            <button
+              key={category.id}
+              className={`btn btn-sm btn-action ${activeCategory === category.id ? 'active' : ''}`}
+              type="button"
+              onClick={() => {
+                setActiveCategory(category.id);
+                setOpenItems(new Set());
+              }}
+            >
+              {category.icon && <i className={`bi ${category.icon} me-1`}></i>}
               {category.title}
-            </h2>
+            </button>
+          ))}
+        </div>
 
-            <div className="faq-list">
-              {category.items.map(item => (
-                <article key={item.id} className="faq-item">
-                  <button
-                    className={`faq-question ${isOpen(item.id) ? 'open' : ''}`}
-                    aria-expanded={isOpen(item.id)}
-                    onClick={() => toggleItem(item.id)}
-                  >
-                    <span>{item.question}</span>
-                    <i className="bi bi-chevron-down ms-2 faq-caret"></i>
-                  </button>
-                  <div
-                    className="faq-answer"
-                    style={{
-                      maxHeight: isOpen(item.id) ? '1000px' : undefined
-                    }}
-                  >
-                    <div className="inner">
-                      <p>{item.answer}</p>
-                    </div>
+        {/* Aktív kategória kérdései */}
+        <section className="faq-category">
+          <h2 className="faq-category-title">
+            {currentCategory.icon && <i className={`bi ${currentCategory.icon} me-2`}></i>}
+            {currentCategory.title}
+            <span className="faq-count">{currentCategory.items.length} kérdés</span>
+          </h2>
+
+          <div className="faq-list">
+            {currentCategory.items.map((item, index) => (
+              <article 
+                key={item.id} 
+                className="faq-item"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <button
+                  className={`faq-question ${isOpen(item.id) ? 'open' : ''}`}
+                  aria-expanded={isOpen(item.id)}
+                  onClick={() => toggleItem(item.id)}
+                >
+                  <span className="faq-q-text">
+                    <span className="faq-number">{index + 1}.</span>
+                    {item.question}
+                  </span>
+                  <i className="bi bi-chevron-down ms-2 faq-caret"></i>
+                </button>
+                <div
+                  className="faq-answer"
+                  style={{
+                    maxHeight: isOpen(item.id) ? '1000px' : undefined
+                  }}
+                >
+                  <div className="inner">
+                    <p>{item.answer}</p>
                   </div>
-                </article>
-              ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* Segítség panel */}
+        <div className="faq-help-panel">
+          <div className="faq-help-content">
+            <i className="bi bi-envelope-paper"></i>
+            <div>
+              <h4>Nem találod a választ?</h4>
+              <p>Írj nekünk az <a href="mailto:info@konyvkocka.hu">info@konyvkocka.hu</a> címre és segítünk!</p>
             </div>
-          </section>
-        ))}
+          </div>
+        </div>
       </div>
     </main>
   );
