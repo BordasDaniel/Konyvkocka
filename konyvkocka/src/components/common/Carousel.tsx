@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 
 type Slide = {
   id: string
@@ -85,8 +85,8 @@ const defaultSlides: Slide[] = [
 export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000, onSlideClick }: Props) {
   const [slides, setSlides] = useState<Slide[]>(slidesProp ?? [])
   const [activeIndex, setActiveIndex] = useState(0)
-  const carouselRef = useRef<HTMLDivElement | null>(null)
-  const carouselInstanceRef = useRef<any>(null)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const timerRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (slidesProp && slidesProp.length) setSlides(slidesProp)
@@ -113,79 +113,61 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchUrl])
 
+  const goTo = useCallback((i: number) => {
+    if (isAnimating || slides.length === 0) return
+    setIsAnimating(true)
+    setActiveIndex(i)
+    setTimeout(() => setIsAnimating(false), 600)
+  }, [isAnimating, slides.length])
+
+  const goNext = useCallback(() => {
+    if (slides.length === 0) return
+    goTo((activeIndex + 1) % slides.length)
+  }, [activeIndex, slides.length, goTo])
+
+  const goPrev = useCallback(() => {
+    if (slides.length === 0) return
+    goTo((activeIndex - 1 + slides.length) % slides.length)
+  }, [activeIndex, slides.length, goTo])
+
+  // Auto-play timer
   useEffect(() => {
-    const el = carouselRef.current
-    if (!el) return
-    const handler = (ev: any) => {
-      const idx = typeof ev.to === 'number'
-        ? ev.to
-        : Array.from(el.querySelectorAll('.carousel-item')).findIndex(s => s.classList.contains('active'))
-      setActiveIndex(idx >= 0 ? idx : 0)
-    }
-    el.addEventListener('slid.bs.carousel', handler)
-    return () => el.removeEventListener('slid.bs.carousel', handler)
-  }, [slides])
-
-  // Initialize Bootstrap Carousel
-  useEffect(() => {
-    const el = carouselRef.current
-    if (!el || !slides.length) return
-    let cancelled = false
-    let tries = 0
-    let retryTimer: number | undefined
-
-    const init = () => {
-      if (cancelled) return
-      const Carousel = (window as any).bootstrap?.Carousel
-
-      // If Bootstrap loads after mount, retry a few times.
-      if (!Carousel) {
-        tries += 1
-        if (tries <= 20) {
-          retryTimer = window.setTimeout(init, 150)
-        }
-        return
-      }
-
-      try {
-        const inst = Carousel.getOrCreateInstance(el, {
-          interval,
-          ride: 'carousel',
-          pause: false,
-          wrap: true
-        })
-        carouselInstanceRef.current = inst
-        inst?.cycle?.()
-      } catch (e) {
-        // swallow to avoid breaking the page; next retry (if any) can recover
-      }
-    }
-
-    init()
+    if (slides.length <= 1) return
+    
+    timerRef.current = window.setInterval(() => {
+      setActiveIndex(prev => (prev + 1) % slides.length)
+    }, interval)
 
     return () => {
-      cancelled = true
-      if (retryTimer) window.clearTimeout(retryTimer)
-      carouselInstanceRef.current?.dispose?.()
-      carouselInstanceRef.current = null
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current)
+      }
     }
-  }, [slides, interval])
+  }, [slides.length, interval])
 
-  const goTo = (i: number) => {
-    const el = carouselRef.current
-
-    if (!el) return
-
-    try {
-      const Carousel = (window as any).bootstrap?.Carousel
-      const inst = carouselInstanceRef.current ?? (Carousel ? Carousel.getOrCreateInstance(el) : null)
-      if (!inst) return
-      inst.to(i)
-      // Ensure autoplay continues after manual navigation.
-      inst.cycle?.()
-    } catch (e) {
-      // ignore
+  // Reset timer when manually navigating
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current)
+      timerRef.current = window.setInterval(() => {
+        setActiveIndex(prev => (prev + 1) % slides.length)
+      }, interval)
     }
+  }, [slides.length, interval])
+
+  const handlePrev = () => {
+    goPrev()
+    resetTimer()
+  }
+
+  const handleNext = () => {
+    goNext()
+    resetTimer()
+  }
+
+  const handleDotClick = (i: number) => {
+    goTo(i)
+    resetTimer()
   }
 
   return (
@@ -193,18 +175,25 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
       <div
         id="contentCarousel"
         className="carousel slide carousel-fade w-100"
-        data-bs-ride="carousel"
         style={{ position: 'relative' }}
-        ref={carouselRef}
       >
         <div className="carousel-inner">
           {slides.map((s, idx) => (
             <div
               key={s.id}
-              className={`carousel-item ${idx === 0 ? 'active' : ''}`}
+              className={`carousel-item ${idx === activeIndex ? 'active' : ''}`}
+              style={{
+                opacity: idx === activeIndex ? 1 : 0,
+                transition: 'opacity 0.6s ease-in-out',
+                position: idx === activeIndex ? 'relative' : 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                zIndex: idx === activeIndex ? 1 : 0
+              }}
               data-bg={s.img}
             >
-              <div className="carousel-content">
+              <div className="carousel-content" style={{ transform: idx === activeIndex ? 'translateY(0)' : 'translateY(20px)', transition: 'transform 0.6s ease' }}>
                 <div className="carousel-text">
                   <div className="tags">{(s.tags || []).map(t => <span key={t}>{t}</span>)}</div>
                   <h2 className="mt-3">{s.title}</h2>
@@ -224,12 +213,22 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
           ))}
         </div>
 
-        <button className="carousel-control-prev" type="button" data-bs-target="#contentCarousel" data-bs-slide="prev">
+        <div 
+          className="carousel-control-prev" 
+          role="button"
+          onClick={handlePrev}
+          aria-label="Előző"
+        >
           <span className="carousel-control-prev-icon"></span>
-        </button>
-        <button className="carousel-control-next" type="button" data-bs-target="#contentCarousel" data-bs-slide="next">
+        </div>
+        <div 
+          className="carousel-control-next" 
+          role="button"
+          onClick={handleNext}
+          aria-label="Következő"
+        >
           <span className="carousel-control-next-icon"></span>
-        </button>
+        </div>
 
         <div id="carouselDots" className="carousel-dots" role="tablist" aria-label="Carousel pagination">
           {slides.map((_, i) => (
@@ -238,7 +237,7 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
               type="button"
               aria-label={`Slide ${i + 1} of ${slides.length || 1}`}
               className={i === activeIndex ? 'active' : ''}
-              onClick={() => goTo(i)}
+              onClick={() => handleDotClick(i)}
             />
           ))}
         </div>

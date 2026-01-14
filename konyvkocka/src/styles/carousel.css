@@ -20,6 +20,7 @@
       height: auto;
       padding-top: 0.5rem; /* slight breathing room for desktop */
       border-bottom: 2.5px solid var(--border-color)  ;
+      background-color: #1a1a1a; /* placeholder color while image loads */
       background-image: url("/assets/img/carousel.jpg");
       background-repeat: no-repeat;
       background-size: cover;
@@ -89,10 +90,12 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      background: var(--overlay);
-      backdrop-filter: blur(6px);
+      background: rgba(12, 12, 12, 0.85);
       border-radius: 20px;
       padding: 2rem;
+      position: relative;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(2px);
     }
 
     .tags span {
@@ -206,6 +209,9 @@
   box-shadow: 0 8px 20px rgba(0,0,0,0.5);
   z-index: 3;
   position: absolute;
+  cursor: pointer;
+  border: none;
+  user-select: none;
 }
 
 .carousel-control-prev-icon,
@@ -241,6 +247,11 @@
   background-color: var(--secondary);
   transform: scale(1.06);
   opacity: 1;
+}
+
+.carousel-control-prev:focus,
+.carousel-control-next:focus {
+  outline: none;
 }
 
 /* indicators use primary color */
