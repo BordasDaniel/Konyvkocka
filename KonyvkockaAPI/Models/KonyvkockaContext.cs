@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using KonyvkockaAPI.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace KonyvkockaAPI;
+namespace KonyvkockaAPI.Models;
 
 public partial class KonyvkockaContext : DbContext
 {
