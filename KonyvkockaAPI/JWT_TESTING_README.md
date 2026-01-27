@@ -232,5 +232,5 @@ const response = await fetch('http://localhost:5269/api/Protected/Data', {
 
 ---
 
-**Készítette:** GitHub Copilot  
+**Készítette:** Dudás Ádám / GitHub Copilot  
 **Dátum:** 2025-01-21

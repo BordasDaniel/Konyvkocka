@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KonyvkockaAPI
 {
-    public class Program
+    public class Startup
     {
         public static void Main(string[] args)
         {
