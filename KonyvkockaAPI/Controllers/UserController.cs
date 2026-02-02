@@ -151,7 +151,9 @@ namespace KonyvkockaAPI.Controllers
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
-                var query = _context.UserBooks
+                // Keep the query typed as IQueryable so we can apply additional filters
+                // after Include without IIncludableQueryable assignment issues.
+                IQueryable<UserBook> query = _context.UserBooks
                     .Where(ub => ub.UserId == userId)
                     .Include(ub => ub.Book);
 
@@ -172,7 +174,7 @@ namespace KonyvkockaAPI.Controllers
                         Rating = ub.Rating,
                         AddedAt = ub.AddedAt,
                         CompletedAt = ub.CompletedAt,
-                        CurrentPage = ub.CurrentPage,
+                        CurrentPage = ub.CurrentPage ?? 0,
                         Pages = ub.Book.PageNum,
                         Type = "book"
                     })
@@ -210,7 +212,8 @@ namespace KonyvkockaAPI.Controllers
                         Description = a.Description,
                         Icon = a.LogoUrl,
                         AchieveDate = a.AchieveDate,
-                        Rarity = a.Rarity,
+                        // Model uses bool, DTO expects int
+                        Rarity = a.Rarity ? 1 : 0,
                         Category = a.Category
                     })
                     .ToListAsync();
