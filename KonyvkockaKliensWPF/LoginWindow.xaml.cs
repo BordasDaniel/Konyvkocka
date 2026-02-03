@@ -12,7 +12,7 @@ namespace KonyvkockaKliensWPF
         public LoginWindow()
         {
             InitializeComponent();
-            _apiService = new ApiService();
+            _apiService = ApiService.Instance;
             UsernameTextBox.Focus();
         }
 

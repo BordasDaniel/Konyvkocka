@@ -1,18 +1,20 @@
+using KonyvkockaKliensWPF.Models;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Windows;
-using KonyvkockaKliensWPF.Models;
 
 namespace KonyvkockaKliensWPF.Services
 {
     public class ApiService
     {
+        private static ApiService? _instance;
         private readonly HttpClient _httpClient;
         private const string BaseUrl = "https://localhost:7058/api";
         private string? _authToken;
 
-        public ApiService()
+        private ApiService()
         {
             var handler = new HttpClientHandler
             {
@@ -30,6 +32,18 @@ namespace KonyvkockaKliensWPF.Services
                 new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
         }
 
+        public static ApiService Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new ApiService();
+                }
+                return _instance;
+            }
+        }
+
         public void SetAuthToken(string token)
         {
             _authToken = token;
@@ -44,7 +58,22 @@ namespace KonyvkockaKliensWPF.Services
             {
                 var request = new LoginRequestDto { Email = email, Password = password };
                 var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/Auth/login", request);
-                return response.IsSuccessStatusCode;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponseDto>(new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                    if (loginResponse != null && !string.IsNullOrEmpty(loginResponse.Token))
+                    {
+                        SetAuthToken(loginResponse.Token);
+                        return true;
+                    }
+                }
+
+                return false;
             }
             catch
             {
@@ -55,16 +84,23 @@ namespace KonyvkockaKliensWPF.Services
         // Regisztráció
         public async Task<bool> RegisterAsync(string username, string email, string password)
         {
-            var request = new RegisterRequestDto 
-            { 
-                Username = username, 
-                Email = email, 
-                Password = password,
-                CountryCode = "HU"
-            };
+            try
+            {
+                var request = new RegisterRequestDto 
+                { 
+                    Username = username, 
+                    Email = email, 
+                    Password = password,
+                    CountryCode = "HU"
+                };
 
             var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/Auth/register", request);
-            return response.IsSuccessStatusCode;
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         // Felhasználók listázása (alap DTO)
@@ -88,7 +124,7 @@ namespace KonyvkockaKliensWPF.Services
             {
                 System.Diagnostics.Debug.WriteLine($"Error fetching users: {ex.Message}");
             }
-                
+
             return new List<UserDto>();
         }
 
@@ -131,7 +167,6 @@ namespace KonyvkockaKliensWPF.Services
                 }
 
                 return response.IsSuccessStatusCode;
-                
             }
             catch (Exception ex)
             {
@@ -145,14 +180,24 @@ namespace KonyvkockaKliensWPF.Services
         {
             try
             {
-                var response = await _httpClient.PutAsJsonAsync($"{BaseUrl}/Users/FelhasznaloModositasa/{id}", user);
-                return response.IsSuccessStatusCode;
+                string toSend = JsonSerializer.Serialize(user, JsonSerializerOptions.Default);
+                var content = new StringContent(toSend, Encoding.UTF8, "application/json");
+                var response = await _httpClient.PutAsync($"{BaseUrl}/Users/FelhasznaloFrissitese/{id}", content);
+                if (!response.IsSuccessStatusCode)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error updating user {id}: {ex.Message}");
                 return false;
             }
+            
         }
     }
 }

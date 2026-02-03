@@ -8,16 +8,15 @@ namespace KonyvkockaKliensWPF
     public partial class MainWindow : Window
     {
         private readonly ApiService _apiService;
-        private List<UserDto> _users = new();
+        private List<UserDto> _users = [];
 
         public MainWindow()
         {
             InitializeComponent();
-            _apiService = new ApiService();
+            _apiService = ApiService.Instance;
             Loaded += MainWindow_Loaded;
 
             EditUserComboBox.SelectionChanged += EditUserComboBox_SelectionChanged;
-            DeleteUserComboBox.SelectionChanged += DeleteUserComboBox_SelectionChanged;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -131,17 +130,27 @@ namespace KonyvkockaKliensWPF
                 return;
             }
 
+            var userToReplace = await _apiService.GetUserByIdAsync(userId);
+
+            if (userToReplace == null)
+            {
+                MessageBox.Show("A felhasználó nem található!", "Hiba", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             try
             {
-                var user = new UserDetailDto
+                UserDetailDto user = new()
                 {
-                    Id = userId,
+                    Id = userToReplace.Id,
                     Username = EditUsernameTextBox.Text.Trim(),
                     Email = EditEmailTextBox.Text.Trim(),
-                    Level = int.TryParse(EditLevelTextBox.Text, out int level) ? level : 0,
-                    IsSubscriber = EditIsPremiumCheckBox.IsChecked ?? false,
                     Avatar = EditProfilePictureTextBox.Text.Trim(),
                     CountryCode = EditCountryTextBox.Text.Trim(),
+                    IsSubscriber = EditIsPremiumCheckBox.IsChecked ?? false,
+                    CreationDate = userToReplace.CreationDate,
+                    LastLoginDate = userToReplace.LastLoginDate,
+                    Level = int.TryParse(EditLevelTextBox.Text, out int level) ? level : 0,
                     BookPoints = int.TryParse(EditBookPointsTextBox.Text, out int bp) ? bp : 0,
                     SeriesPoints = int.TryParse(EditSeriesPointsTextBox.Text, out int sp) ? sp : 0,
                     MoviePoints = int.TryParse(EditFilmPointsTextBox.Text, out int mp) ? mp : 0,
@@ -150,9 +159,10 @@ namespace KonyvkockaKliensWPF
                     WatchTimeMin = int.TryParse(EditWatchingTimeTextBox.Text, out int wt) ? wt : 0
                 };
 
-                bool success = await _apiService.UpdateUserAsync(userId, user);
+                bool result = await _apiService.UpdateUserAsync(userId, user);
+                
 
-                if (success)
+                if (result)
                 {
                     MessageBox.Show("Felhasználó sikeresen módosítva!", "Siker", 
                         MessageBoxButton.OK, MessageBoxImage.Information);
@@ -190,22 +200,14 @@ namespace KonyvkockaKliensWPF
 
             if (result == MessageBoxResult.Yes)
             {
-                MessageBox.Show($"Felhasználó törlése: {userToDelete.Username}:{userToDelete.Id}");
                 try
                 {
                     bool success = await _apiService.DeleteUserAsync(userToDelete.Id);
 
                     if (success)
                     {
-                        MessageBox.Show("Felhasználó sikeresen törölve!", "Siker", 
-                            MessageBoxButton.OK, MessageBoxImage.Information);
                         DeleteUserComboBox.SelectedIndex = -1;
                         await LoadUsersAsync();
-                    }
-                    else
-                    {
-                        MessageBox.Show("Hiba történt a törlés közben!", "Hiba", 
-                            MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
                 catch (Exception ex)
@@ -215,9 +217,5 @@ namespace KonyvkockaKliensWPF
             }
         }
 
-        private void DeleteUserComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
-        }
     }
 }
