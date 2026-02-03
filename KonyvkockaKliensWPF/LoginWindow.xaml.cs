@@ -1,17 +1,18 @@
 using System.Windows;
 using System.Windows.Input;
+using KonyvkockaKliensWPF.Services;
 
 namespace KonyvkockaKliensWPF
 {
     public partial class LoginWindow : Window
     {
-        private const string ValidUsername = "admin";
-        private const string ValidPassword = "admin123";
+        private readonly ApiService _apiService;
         private int attemptsLeft = 3;
 
         public LoginWindow()
         {
             InitializeComponent();
+            _apiService = new ApiService();
             UsernameTextBox.Focus();
         }
 
@@ -36,44 +37,61 @@ namespace KonyvkockaKliensWPF
             }
         }
 
-        private void AttemptLogin()
+        private async void AttemptLogin()
         {
-            string username = UsernameTextBox.Text;
+            string email = UsernameTextBox.Text.Trim();
             string password = PasswordBox.Password;
 
-            if (username == ValidUsername && password == ValidPassword)
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
-                MainWindow mainWindow = new();
-                mainWindow.Show();
-                this.Close();
+                ErrorMessageTextBlock.Text = "Email és jelszó megadása kötelező!";
+                return;
             }
-            else
+
+            try
             {
-                attemptsLeft--;
-                
-                if (attemptsLeft > 0)
+                bool success = await _apiService.LoginAsync(email, password);
+
+                if (success)
                 {
-                    ErrorMessageTextBlock.Text = "Hibás felhasználónév vagy jelszó!";
-                    AttemptsTextBlock.Text = $"Hátralévő próbálkozások: {attemptsLeft}";
-                    PasswordBox.Clear();
-                    UsernameTextBox.Focus();
+                    MainWindow mainWindow = new();
+                    mainWindow.Show();
+                    this.Close();
                 }
                 else
                 {
-                    MessageBox.Show(
-                        "Túl sok sikertelen bejelentkezési próbálkozás!\nAz alkalmazás bezáródik.",
-                        "Bejelentkezés sikertelen",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
-                    Application.Current.Shutdown();
+                    attemptsLeft--;
+
+                    if (attemptsLeft > 0)
+                    {
+                        ErrorMessageTextBlock.Text = "Hibás email vagy jelszó!";
+                        AttemptsTextBlock.Text = $"Hátralévő próbálkozások: {attemptsLeft}";
+                        PasswordBox.Clear();
+                        UsernameTextBox.Focus();
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            "Túl sok sikertelen bejelentkezési próbálkozás!\nAz alkalmazás bezáródik.",
+                            "Bejelentkezés sikertelen",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                        Application.Current.Shutdown();
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                ErrorMessageTextBlock.Text = "Hiba a bejelentkezés során!";
+                MessageBox.Show($"Hiba: {ex.Message}\n\nEllenőrizd, hogy az API fut-e (https://localhost:7058)!", 
+                    "Kapcsolódási hiba", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
             base.OnClosing(e);
-            
+
             if (Application.Current.MainWindow == null || !Application.Current.MainWindow.IsVisible)
             {
                 MessageBox.Show(
@@ -86,3 +104,4 @@ namespace KonyvkockaKliensWPF
         }
     }
 }
+

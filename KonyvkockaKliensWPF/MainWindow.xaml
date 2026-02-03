@@ -92,35 +92,24 @@
                                    Foreground="#2E7D32"
                                    Margin="0,0,0,15"/>
 
-                        <ScrollViewer Grid.Row="1" 
-                                      HorizontalScrollBarVisibility="Auto"
-                                      VerticalScrollBarVisibility="Auto">
-                            <DataGrid x:Name="UsersDataGrid"
-                                      AutoGenerateColumns="False"
-                                      CanUserAddRows="False"
-                                      AlternatingRowBackground="#F1F8E9"
-                                      GridLinesVisibility="Horizontal"
-                                      HeadersVisibility="Column"
-                                      HorizontalScrollBarVisibility="Disabled"
-                                      VerticalScrollBarVisibility="Disabled"
-                                      MinRowHeight="30">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
-                                    <DataGridTextColumn Header="Felhasználónév" Binding="{Binding Username}" Width="140"/>
-                                    <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="200"/>
-                                    <DataGridTextColumn Header="Ország" Binding="{Binding Country}" Width="80"/>
-                                    <DataGridTextColumn Header="Profilkép" Binding="{Binding ProfilePicture}" Width="150"/>
-                                    <DataGridCheckBoxColumn Header="Prémium" Binding="{Binding IsPremium}" Width="80"/>
-                                    <DataGridTextColumn Header="Szint" Binding="{Binding Level}" Width="60"/>
-                                    <DataGridTextColumn Header="Könyv Pontok" Binding="{Binding BookPoints}" Width="110"/>
-                                    <DataGridTextColumn Header="Sorozat Pontok" Binding="{Binding SeriesPoints}" Width="120"/>
-                                    <DataGridTextColumn Header="Film Pontok" Binding="{Binding FilmPoints}" Width="100"/>
-                                    <DataGridTextColumn Header="Napi Sorozat" Binding="{Binding DayStreak}" Width="110"/>
-                                    <DataGridTextColumn Header="Olvasási idő (p)" Binding="{Binding ReadingTimeMinutes}" Width="130"/>
-                                    <DataGridTextColumn Header="Nézési idő (p)" Binding="{Binding WatchingTimeMinutes}" Width="120"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </ScrollViewer>
+                        <DataGrid IsEnabled="False" Grid.Row="1" 
+                                  x:Name="UsersDataGrid"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  AlternatingRowBackground="#F1F8E9"
+                                  GridLinesVisibility="Horizontal"
+                                  HeadersVisibility="Column"
+                                  MinRowHeight="35"
+                                  IsReadOnly="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
+                                <DataGridTextColumn Header="Felhasználónév" Binding="{Binding Username}" Width="*"/>
+                                <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="*"/>
+                                <DataGridCheckBoxColumn Header="Előfizető" Binding="{Binding IsSubscriber}" Width="90"/>
+                                <DataGridTextColumn Header="Szint" Binding="{Binding Level}" Width="60"/>
+                                <DataGridTextColumn Header="Utolsó belépés" Binding="{Binding LastLoginDate}" Width="180"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
                     </Grid>
                 </Border>
             </TabItem>
@@ -160,7 +149,8 @@
                                 FontWeight="Bold"
                                 Height="45"
                                 BorderThickness="0"
-                                Cursor="Hand"/>
+                                Cursor="Hand"
+                                Click="CreateUserButton_Click"/>
                     </StackPanel>
                 </Border>
             </TabItem>
@@ -176,37 +166,124 @@
                     </StackPanel>
                 </TabItem.Header>
                 <Border Background="#FFF3E0" Padding="20">
-                    <StackPanel MaxWidth="500" VerticalAlignment="Center">
-                        <TextBlock Text="Felhasználó adatainak módosítása" 
-                                   FontSize="22" 
-                                   FontWeight="Bold" 
-                                   Foreground="#E65100"
-                                   Margin="0,0,0,30"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel MaxWidth="600" HorizontalAlignment="Center">
+                            <TextBlock Text="Felhasználó adatainak módosítása" 
+                                       FontSize="22" 
+                                       FontWeight="Bold" 
+                                       Foreground="#E65100"
+                                       Margin="0,0,0,20"/>
 
-                        <TextBlock Text="Felhasználó kiválasztása:" Foreground="Black" Margin="0,0,0,5"/>
-                        <ComboBox x:Name="EditUserComboBox" Height="35" FontSize="14" Margin="0,0,0,20"/>
+                            <!-- Felhasználó kiválasztása -->
+                            <TextBlock Text="Felhasználó kiválasztása:" Foreground="Black" Margin="0,0,0,5" FontWeight="SemiBold"/>
+                            <ComboBox x:Name="EditUserComboBox" Height="35" FontSize="14" Margin="0,0,0,20"/>
 
-                        <TextBlock Text="Új felhasználónév:" Foreground="Black" Margin="0,0,0,5"/>
-                        <TextBox x:Name="EditUsernameTextBox" Height="35" FontSize="14" Margin="0,0,0,15"/>
+                            <!-- Két oszlopos elrendezés -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
 
-                        <TextBlock Text="Új email:" Foreground="Black" Margin="0,0,0,5"/>
-                        <TextBox x:Name="EditEmailTextBox" Height="35" FontSize="14" Margin="0,0,0,15"/>
+                                <!-- Bal oldal -->
+                                <!-- Felhasználónév -->
+                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,10">
+                                    <TextBlock Text="Felhasználónév:" Foreground="Black" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="EditUsernameTextBox" Height="35" FontSize="14"/>
+                                </StackPanel>
 
-                        <TextBlock Text="Új jogosultság:" Foreground="Black" Margin="0,0,0,5"/>
-                        <ComboBox x:Name="EditRoleComboBox" Height="35" FontSize="14" Margin="0,0,0,25">
-                            <ComboBoxItem Content="Admin"/>
-                            <ComboBoxItem Content="Felhasználó"/>
-                        </ComboBox>
+                                <!-- Email -->
+                                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,10">
+                                    <TextBlock Text="Email:" Foreground="Black" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="EditEmailTextBox" Height="35" FontSize="14"/>
+                                </StackPanel>
 
-                        <Button Content="Módosítások mentése" 
-                                Background="#FF9800" 
-                                Foreground="White"
-                                FontSize="16"
-                                FontWeight="Bold"
-                                Height="45"
-                                BorderThickness="0"
-                                Cursor="Hand"/>
-                    </StackPanel>
+                                <!-- Ország -->
+                                <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,0,10">
+                                    <TextBlock Text="Ország kód:" Foreground="Black" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="EditCountryTextBox" Height="35" FontSize="14"/>
+                                </StackPanel>
+
+                                <!-- Profilkép URL -->
+                                <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,0,0,10">
+                                    <TextBlock Text="Profilkép URL:" Foreground="Black" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="EditProfilePictureTextBox" Height="35" FontSize="14"/>
+                                </StackPanel>
+
+                                <!-- Prémium -->
+                                <StackPanel Grid.Row="4" Grid.Column="0" Margin="0,0,0,10">
+                                    <TextBlock Text="Prémium státusz:" Foreground="Black" Margin="0,0,0,5"/>
+                                    <CheckBox x:Name="EditIsPremiumCheckBox" 
+                                              Content="Prémium felhasználó" 
+                                              FontSize="14" 
+                                              VerticalContentAlignment="Center"
+                                              Height="35"/>
+                                </StackPanel>
+
+                                <!-- Szint -->
+                                <StackPanel Grid.Row="5" Grid.Column="0" Margin="0,0,0,10">
+                                    <TextBlock Text="Szint:" Foreground="Black" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="EditLevelTextBox" Height="35" FontSize="14"/>
+                                </StackPanel>
+
+                                <!-- Jobb oldal -->
+                                <!-- Könyv Pontok -->
+                                <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,10">
+                                    <TextBlock Text="Könyv Pontok:" Foreground="Black" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="EditBookPointsTextBox" Height="35" FontSize="14"/>
+                                </StackPanel>
+
+                                <!-- Sorozat Pontok -->
+                                <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,10">
+                                    <TextBlock Text="Sorozat Pontok:" Foreground="Black" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="EditSeriesPointsTextBox" Height="35" FontSize="14"/>
+                                </StackPanel>
+
+                                <!-- Film Pontok -->
+                                <StackPanel Grid.Row="2" Grid.Column="2" Margin="0,0,0,10">
+                                    <TextBlock Text="Film Pontok:" Foreground="Black" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="EditFilmPointsTextBox" Height="35" FontSize="14"/>
+                                </StackPanel>
+
+                                <!-- Napi Sorozat -->
+                                <StackPanel Grid.Row="3" Grid.Column="2" Margin="0,0,0,10">
+                                    <TextBlock Text="Napi Sorozat (streak):" Foreground="Black" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="EditDayStreakTextBox" Height="35" FontSize="14"/>
+                                </StackPanel>
+
+                                <!-- Olvasási idő -->
+                                <StackPanel Grid.Row="4" Grid.Column="2" Margin="0,0,0,10">
+                                    <TextBlock Text="Olvasási idő (perc):" Foreground="Black" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="EditReadingTimeTextBox" Height="35" FontSize="14"/>
+                                </StackPanel>
+
+                                <!-- Nézési idő -->
+                                <StackPanel Grid.Row="5" Grid.Column="2" Margin="0,0,0,10">
+                                    <TextBlock Text="Nézési idő (perc):" Foreground="Black" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="EditWatchingTimeTextBox" Height="35" FontSize="14"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Button Content="💾 Módosítások mentése" 
+                                    Background="#FF9800" 
+                                    Foreground="White"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Height="45"
+                                    Margin="0,20,0,0"
+                                    BorderThickness="0"
+                                    Cursor="Hand"/>
+                        </StackPanel>
+                    </ScrollViewer>
                 </Border>
             </TabItem>
 
@@ -254,7 +331,8 @@
                                 FontWeight="Bold"
                                 Height="45"
                                 BorderThickness="0"
-                                Cursor="Hand"/>
+                                Cursor="Hand"
+                                Click="DeleteUserButton_Click"/>
                     </StackPanel>
                 </Border>
             </TabItem>
