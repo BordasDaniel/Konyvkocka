@@ -31,7 +31,7 @@ public partial class KonyvkockaContext : DbContext
 
     public virtual DbSet<Genre> Genres { get; set; }
 
-    public virtual DbSet<Mail> Mail { get; set; }
+    public virtual DbSet<Mail> Mails { get; set; }
 
     public virtual DbSet<Movie> Movies { get; set; }
 
