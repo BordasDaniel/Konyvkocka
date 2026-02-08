@@ -21,11 +21,17 @@ public partial class User
 
     public bool Premium { get; set; }
 
+    public DateTime? PremiumExpiresAt { get; set; }
+
+    public string PermissionLevel { get; set; } = null!;
+
     public DateTime CreationDate { get; set; }
 
     public DateTime LastLoginDate { get; set; }
 
     public int Level { get; set; }
+
+    public int Xp { get; set; }
 
     public int BookPoints { get; set; }
 
@@ -39,7 +45,7 @@ public partial class User
 
     public int WatchTimeMin { get; set; }
 
-    public virtual ICollection<Achievement> Achievements { get; set; } = new List<Achievement>();
+    public DateTime? UpdatedAt { get; set; }
 
     public virtual ICollection<Mail> MailReceivers { get; set; } = new List<Mail>();
 
@@ -47,11 +53,19 @@ public partial class User
 
     public virtual ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
 
+    public virtual ICollection<SecurityAuditLog> SecurityAuditLogs { get; set; } = new List<SecurityAuditLog>();
+
+    public virtual ICollection<UserBadge> UserBadges { get; set; } = new List<UserBadge>();
+
     public virtual ICollection<UserBook> UserBooks { get; set; } = new List<UserBook>();
 
     public virtual ICollection<UserChallenge> UserChallenges { get; set; } = new List<UserChallenge>();
 
     public virtual ICollection<UserMovie> UserMovies { get; set; } = new List<UserMovie>();
 
+    public virtual UserRankCache? UserRankCache { get; set; }
+
     public virtual ICollection<UserSeries> UserSeries { get; set; } = new List<UserSeries>();
+
+    public virtual ICollection<UserTitle> UserTitles { get; set; } = new List<UserTitle>();
 }

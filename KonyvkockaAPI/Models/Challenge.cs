@@ -19,7 +19,9 @@ public partial class Challenge
 
     public int RewardXp { get; set; }
 
-    public string? RewardType { get; set; }
+    public int? RewardBadgeId { get; set; }
+
+    public int? RewardTitleId { get; set; }
 
     public string Difficulty { get; set; } = null!;
 
@@ -28,6 +30,10 @@ public partial class Challenge
     public bool IsRepeatable { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    public virtual Badge? RewardBadge { get; set; }
+
+    public virtual Title? RewardTitle { get; set; }
 
     public virtual ICollection<UserChallenge> UserChallenges { get; set; } = new List<UserChallenge>();
 }

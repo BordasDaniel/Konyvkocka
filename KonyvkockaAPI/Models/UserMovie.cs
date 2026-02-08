@@ -19,7 +19,11 @@ public partial class UserMovie
 
     public DateTime? CompletedAt { get; set; }
 
+    public int RemainingCompletions { get; set; }
+
     public DateTime? LastSeen { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
 
     public int? CurrentPosition { get; set; }
 

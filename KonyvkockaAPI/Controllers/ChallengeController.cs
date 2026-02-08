@@ -1,5 +1,4 @@
 ﻿using KonyvkockaAPI.DTO.Response;
-using KonyvkockaAPI.DTO.Request;
 using KonyvkockaAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KonyvkockaAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     [Authorize]
     public class ChallengeController : ControllerBase
@@ -21,44 +20,95 @@ namespace KonyvkockaAPI.Controllers
 
         /// <summary>
         /// Kihívások listája
-        /// GET /api/challenges
+        /// GET /Challenge?status={status}&type={type}
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetChallenges(
-            [FromQuery] string? type = null,
-            [FromQuery] string? difficulty = null,
-            [FromQuery] string? status = null)
+            [FromQuery] string? status = null,
+            [FromQuery] string? type = null)
         {
             try
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
-                var challenges = await _context.Challenges
+                var allChallenges = await _context.Challenges
                     .Where(c => c.IsActive == true)
-                    .Select(c => new ChallengeDTO
+                    .Include(c => c.RewardBadge)
+                    .Include(c => c.RewardTitle)
+                    .ToListAsync();
+
+                var userChallenges = await _context.UserChallenges
+                    .Where(uc => uc.UserId == userId)
+                    .ToListAsync();
+
+                var userChallengeDict = userChallenges.ToDictionary(uc => uc.ChallengeId);
+
+                var challengeDtos = allChallenges.Select(c =>
+                {
+                    userChallengeDict.TryGetValue(c.Id, out var uc);
+
+                    return new ChallengeDTO
                     {
                         Id = c.Id,
                         Title = c.Title,
                         Description = c.Description,
-                        Icon = c.IconUrl,
-                        Category = c.Type,
-                        Rarity = MapDifficultyToRarity(c.Difficulty),
-                        Rewards = new { xp = c.RewardXp },
-                        Progress = 0, // TODO: Get from user_challenge
-                        Goal = c.TargetValue,
-                        ProgressLabel = $"0/{c.TargetValue}",
-                        IsCompleted = false,
-                        ExpiresAt = null
-                    })
-                    .ToListAsync();
+                        Difficulty = c.Difficulty,
+                        Type = c.Type,
+                        TargetValue = c.TargetValue,
+                        CurrentValue = uc?.CurrentValue ?? 0,
+                        Status = uc?.Status ?? "NOT_STARTED",
+                        CompletedAt = uc?.CompletedAt,
+                        ClaimedAt = uc?.ClaimedAt,
+                        Rewards = new ChallengeRewardsDTO
+                        {
+                            Xp = c.RewardXp,
+                            Title = c.RewardTitle != null ? new ChallengeTitleRewardDTO
+                            {
+                                Id = c.RewardTitle.Id,
+                                Name = c.RewardTitle.Name,
+                                Rarity = c.RewardTitle.Rarity
+                            } : null,
+                            Badge = c.RewardBadge != null ? new ChallengeBadgeRewardDTO
+                            {
+                                Id = c.RewardBadge.Id,
+                                Name = c.RewardBadge.Name,
+                                IconURL = c.RewardBadge.IconUrl,
+                                Rarity = c.RewardBadge.Rarity
+                            } : null
+                        }
+                    };
+                }).ToList();
 
-                if (!string.IsNullOrEmpty(type))
-                    challenges = challenges.Where(c => c.Category.ToLower() == type.ToLower()).ToList();
+                // Counts számítása szűrés előtt
+                var counts = new
+                {
+                    all = challengeDtos.Count,
+                    active = challengeDtos.Count(c => c.Status == "NOT_STARTED" || c.Status == "IN_PROGRESS"),
+                    completed = challengeDtos.Count(c => c.Status == "COMPLETED" || c.Status == "CLAIMED"),
+                    events = challengeDtos.Count(c => c.Type == "EVENT")
+                };
 
-                if (!string.IsNullOrEmpty(difficulty))
-                    challenges = challenges.Where(c => c.Rarity.ToLower() == difficulty.ToLower()).ToList();
+                // Status szűrő
+                if (!string.IsNullOrEmpty(status) && status.ToLower() != "all")
+                {
+                    challengeDtos = status.ToLower() switch
+                    {
+                        "active" => challengeDtos.Where(c => c.Status == "NOT_STARTED" || c.Status == "IN_PROGRESS").ToList(),
+                        "completed" => challengeDtos.Where(c => c.Status == "COMPLETED" || c.Status == "CLAIMED").ToList(),
+                        "events" => challengeDtos.Where(c => c.Type == "EVENT").ToList(),
+                        _ => challengeDtos
+                    };
+                }
 
-                return Ok(new { challenges, total = challenges.Count });
+                // Type szűrő
+                if (!string.IsNullOrEmpty(type) && type.ToLower() != "all")
+                {
+                    challengeDtos = challengeDtos
+                        .Where(c => c.Type.Equals(type, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
+
+                return Ok(new { counts, challenges = challengeDtos });
             }
             catch (Exception ex)
             {
@@ -67,71 +117,109 @@ namespace KonyvkockaAPI.Controllers
         }
 
         /// <summary>
-        /// Kihívás frissítése (progress)
-        /// POST /api/challenges/{challengeId}/progress
+        /// DEBUG: User challenge státusz lekérdezése
+        /// GET /Challenge/{id}/status
         /// </summary>
-        [HttpPost("{challengeId}/progress")]
-        public async Task<IActionResult> UpdateChallengeProgress(int challengeId, KonyvkockaAPI.DTO.Request.UpdateProgressDTO dto)
+        [HttpGet("{id}/status")]
+        public async Task<IActionResult> GetChallengeStatus(int id)
         {
             try
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
+                var challenge = await _context.Challenges.FindAsync(id);
                 var userChallenge = await _context.UserChallenges
-                    .FirstOrDefaultAsync(uc => uc.UserId == userId && uc.ChallengeId == challengeId);
-
-                if (userChallenge == null)
-                {
-                    userChallenge = new UserChallenge
-                    {
-                        UserId = userId,
-                        ChallengeId = challengeId,
-                        CurrentValue = dto.Increment,
-                        Status = "IN_PROGRESS",
-                        StartedAt = DateTime.Now,
-                        LastUpdated = DateTime.Now
-                    };
-                    _context.UserChallenges.Add(userChallenge);
-                }
-                else
-                {
-                    userChallenge.CurrentValue += dto.Increment;
-                    userChallenge.LastUpdated = DateTime.Now;
-                }
-
-                await _context.SaveChangesAsync();
-
-                var challenge = await _context.Challenges.FindAsync(challengeId);
-                var isCompleted = userChallenge.CurrentValue >= challenge.TargetValue;
+                    .FirstOrDefaultAsync(uc => uc.UserId == userId && uc.ChallengeId == id);
 
                 return Ok(new
                 {
-                    challenge = new
+                    userId,
+                    challengeExists = challenge != null,
+                    challengeId = id,
+                    targetValue = challenge?.TargetValue,
+                    userChallengeExists = userChallenge != null,
+                    currentValue = userChallenge?.CurrentValue,
+                    status = userChallenge?.Status,
+                    completedAt = userChallenge?.CompletedAt,
+                    claimedAt = userChallenge?.ClaimedAt,
+                    canClaim = userChallenge != null && userChallenge.Status == "COMPLETED" && userChallenge.ClaimedAt == null
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Kihívás jutalom igénylése
+        /// POST /Challenge/{id}/claim
+        /// </summary>
+        [HttpPost("{id}/claim")]
+        public async Task<IActionResult> ClaimChallenge(int id)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+
+                var challenge = await _context.Challenges
+                    .Include(c => c.RewardBadge)
+                    .Include(c => c.RewardTitle)
+                    .FirstOrDefaultAsync(c => c.Id == id);
+
+                if (challenge == null)
+                {
+                    return NotFound(new { error = "Not Found", message = "Kihívás nem található" });
+                }
+
+                var userChallenge = await _context.UserChallenges
+                    .FirstOrDefaultAsync(uc => uc.UserId == userId && uc.ChallengeId == id);
+
+                if (userChallenge.ClaimedAt != null)
+                {
+                    return BadRequest(new { error = "Bad Request", message = "A kihívás jutalma már igényelve lett" });
+                }
+
+                if (userChallenge == null || userChallenge.Status != "COMPLETED")
+                {
+                    return NotFound(new { error = "Not Found", message = "Kihívás nem található" });
+                }
+
+                
+
+                // ClaimedAt beállítása – a DB trigger elvégzi a jutalmak kiosztását és a CLAIMED státusz beállítását
+                userChallenge.ClaimedAt = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Kihívás jutalom sikeresen igényelve!",
+                    challengeId = id,
+                    rewards = new
                     {
-                        id = challengeId,
-                        progress = userChallenge.CurrentValue,
-                        goal = challenge.TargetValue,
-                        isCompleted
+                        xp = challenge.RewardXp,
+                        title = challenge.RewardTitle != null ? new
+                        {
+                            id = challenge.RewardTitle.Id,
+                            name = challenge.RewardTitle.Name,
+                            rarity = challenge.RewardTitle.Rarity
+                        } : (object?)null,
+                        badge = challenge.RewardBadge != null ? new
+                        {
+                            id = challenge.RewardBadge.Id,
+                            name = challenge.RewardBadge.Name,
+                            iconURL = challenge.RewardBadge.IconUrl,
+                            rarity = challenge.RewardBadge.Rarity
+                        } : (object?)null
                     },
-                    message = "Előrehaladás frissítve"
+                    claimedAt = userChallenge.ClaimedAt
                 });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
             }
-        }
-
-        private string MapDifficultyToRarity(string difficulty)
-        {
-            return difficulty.ToUpper() switch
-            {
-                "EASY" => "common",
-                "MEDIUM" => "uncommon",
-                "HARD" => "rare",
-                "EPIC" => "legendary",
-                _ => "common"
-            };
         }
     }
 }

@@ -8,4 +8,10 @@ public partial class Tag
     public int Id { get; set; }
 
     public string Name { get; set; } = null!;
+
+    public virtual ICollection<Book> Books { get; set; } = new List<Book>();
+
+    public virtual ICollection<Movie> Movies { get; set; } = new List<Movie>();
+
+    public virtual ICollection<Series> Series { get; set; } = new List<Series>();
 }

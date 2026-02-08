@@ -13,7 +13,7 @@ using System.Text;
 
 namespace KonyvkockaAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     public class AuthController : Controller
     {
@@ -64,7 +64,9 @@ namespace KonyvkockaAPI.Controllers
                     Username = user.Username,
                     Email = user.Email,
                     Avatar = user.ProfilePic,
-                    IsSubscriber = user.Premium
+                    IsSubscriber = user.Premium,
+                    PermissionLevel = user.PermissionLevel,
+                    
                 };
 
                 return Ok(response);
@@ -77,6 +79,32 @@ namespace KonyvkockaAPI.Controllers
                     Message = "Érvénytelen vagy lejárt token"
                 });
             }
+        }
+
+        /// <summary>
+        /// DEBUG: Hash teszt - ÉLESBEN TÖRÖLNI!
+        /// POST /api/auth/debug-hash
+        /// </summary>
+        [HttpPost("debug-hash")]
+        public async Task<IActionResult> DebugHash(AuthLoginDTO loginDto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            string calculatedDoubleHash = CreateSHA256(loginDto.PasswordHash + user.PasswordSalt);
+
+            return Ok(new
+            {
+                email = user.Email,
+                storedSalt = user.PasswordSalt,
+                storedHash = user.PasswordHash,
+                clientSentHash = loginDto.PasswordHash,
+                serverCalculated = $"SHA256({loginDto.PasswordHash} + {user.PasswordSalt})",
+                match = user.PasswordHash == calculatedDoubleHash
+            });
         }
 
         /// <summary>
@@ -100,9 +128,11 @@ namespace KonyvkockaAPI.Controllers
                     });
                 }
 
-                // Jelszó ellenőrzése: password + salt → SHA256 → SHA256 (double hash)
-                string hash = CreateSHA256(loginDto.Password + user.PasswordSalt);
-                string doubleHash = CreateSHA256(hash);
+                // Hash ellenőrzése: 
+                // - Kliens küldi: SHA256(password)
+                // - Szerver számítja: SHA256(clientHash + storedSalt) = doubleHash
+                // - Összehasonlítjuk a tárolt doubleHash-sel
+                string doubleHash = CreateSHA256(loginDto.PasswordHash + user.PasswordSalt);
 
                 if (user.PasswordHash != doubleHash)
                 {
@@ -175,18 +205,17 @@ namespace KonyvkockaAPI.Controllers
                     });
                 }
 
-                // Salt és hash generálás
-                string salt = GenerateSalt();
-                string hash = CreateSHA256(registerDto.Password + salt);
-                string doubleHash = CreateSHA256(hash);
+                // A kliens küldi a hash-t (SHA256(password)) és a salt-ot
+                // A szerver újra hash-eli: SHA256(clientHash + clientSalt) = doubleHash
+                string doubleHash = CreateSHA256(registerDto.PasswordHash + registerDto.PasswordSalt);
 
                 var user = new User
                 {
                     Username = registerDto.Username,
                     Email = registerDto.Email,
                     PasswordHash = doubleHash,
-                    PasswordSalt = salt,
-                    CountryCode = registerDto.CountryCode,
+                    PasswordSalt = registerDto.PasswordSalt,
+                    CountryCode = "ZZ",
                     ProfilePic = "default_avatar.png",
                     Premium = false,
                     CreationDate = DateTime.Now,

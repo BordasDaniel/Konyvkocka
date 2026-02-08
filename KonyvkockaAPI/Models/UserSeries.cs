@@ -19,7 +19,11 @@ public partial class UserSeries
 
     public DateTime? CompletedAt { get; set; }
 
+    public int RemainingCompletions { get; set; }
+
     public DateTime? LastSeen { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
 
     public int? CurrentSeason { get; set; }
 

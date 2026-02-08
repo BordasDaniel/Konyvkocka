@@ -19,5 +19,7 @@ public partial class Episode
 
     public int Length { get; set; }
 
+    public DateTime? UpdatedAt { get; set; }
+
     public virtual Series Series { get; set; } = null!;
 }

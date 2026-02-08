@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace KonyvkockaAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     public class NewsController : ControllerBase
     {

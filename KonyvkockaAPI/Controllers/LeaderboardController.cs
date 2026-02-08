@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KonyvkockaAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     [Authorize]
     public class LeaderboardController : ControllerBase

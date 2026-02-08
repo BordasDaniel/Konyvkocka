@@ -9,7 +9,7 @@ public partial class Mail
 
     public int ReceiverId { get; set; }
 
-    public int? SenderId { get; set; }
+    public int SenderId { get; set; }
 
     public string Type { get; set; } = null!;
 
@@ -21,7 +21,9 @@ public partial class Mail
 
     public DateTime? CreatedAt { get; set; }
 
+    public DateTime? UpdatedAt { get; set; }
+
     public virtual User Receiver { get; set; } = null!;
 
-    public virtual User? Sender { get; set; }
+    public virtual User Sender { get; set; } = null!;
 }

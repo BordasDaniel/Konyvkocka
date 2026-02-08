@@ -8,5 +8,7 @@
         public string Email { get; set; }
         public string Avatar { get; set; }
         public bool IsSubscriber { get; set; }
+        public string PermissionLevel { get; set; }
+       
     }
 }

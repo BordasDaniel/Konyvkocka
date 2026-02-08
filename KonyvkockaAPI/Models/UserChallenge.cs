@@ -21,7 +21,7 @@ public partial class UserChallenge
 
     public DateTime? ClaimedAt { get; set; }
 
-    public DateTime? LastUpdated { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
     public virtual Challenge Challenge { get; set; } = null!;
 
