@@ -172,6 +172,20 @@ function Navbar() {
                       <i className="bi bi-bag-check me-2"></i>Vásárlások
                     </NavLink>
                   </li>
+                  {user.isAdmin && (
+                    <>
+                      <li><hr className="dropdown-divider" /></li>
+                      <li>
+                        <NavLink
+                          to="/admin"
+                          className="dropdown-item"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          <i className="bi bi-shield-lock me-2"></i>Admin
+                        </NavLink>
+                      </li>
+                    </>
+                  )}
                   <li><hr className="dropdown-divider" /></li>
                   {/* Kijelentkezés (piros) */}
                   <li>

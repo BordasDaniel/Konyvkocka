@@ -10,6 +10,7 @@ interface User {
 	email: string;
 	avatar: string;
 	isSubscriber: boolean;
+	isAdmin: boolean;
 }
 
 interface AuthContextType {
@@ -103,6 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 					email: email,
 					avatar: 'https://i.pinimg.com/236x/5a/bd/98/5abd985735a8fd4adcb0e795de6a1005.jpg',
 					isSubscriber: true,
+					isAdmin: true,
 				};
 
 				setUser(mockUser);
@@ -135,6 +137,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 					email: email,
 					avatar: 'https://i.pinimg.com/236x/5a/bd/98/5abd985735a8fd4adcb0e795de6a1005.jpg',
 					isSubscriber: false,
+					isAdmin: false,
 				};
 
 				setUser(mockUser);
