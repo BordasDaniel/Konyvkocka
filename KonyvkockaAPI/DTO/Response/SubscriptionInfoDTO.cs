@@ -1,14 +1,28 @@
-﻿namespace KonyvkockaAPI.DTO.Response
+namespace KonyvkockaAPI.DTO.Response
 {
     public class SubscriptionInfoDTO
     {
-        public string Type { get; set; }
-        public string Name { get; set; }
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
-        public bool AutoRenew { get; set; }
-        public string Price { get; set; }
-        public string Message { get; set; }
+        /// <summary>
+        /// "free" | "premium"
+        /// </summary>
+        public string Type { get; set; } = "free";
+
+        public string Name { get; set; } = null!;
+
+        public DateTime? ExpiresAt { get; set; }
+
+        public string? Message { get; set; }
     }
 
+    public class PurchaseItemDTO
+    {
+        public int Id { get; set; }
+        public DateTime? PurchaseDate { get; set; }
+        public int? Price { get; set; }
+
+        /// <summary>
+        /// Vásárlás státusza: "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED"
+        /// </summary>
+        public string? PurchaseStatus { get; set; }
+    }
 }

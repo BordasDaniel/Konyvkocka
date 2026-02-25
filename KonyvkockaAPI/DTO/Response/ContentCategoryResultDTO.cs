@@ -1,9 +1,13 @@
-﻿namespace KonyvkockaAPI.DTO.Response
+namespace KonyvkockaAPI.DTO.Response
 {
     public class ContentCategoryResultDTO
     {
-        public string Category { get; set; }
-        public List<object> Items { get; set; }
+        /// <summary>
+        /// Kategória neve: "latest" | "popular" | "top_rated" | "new_books" | "new_movies" | "new_series"
+        /// </summary>
+        public string Category { get; set; } = null!;
+
+        public List<ContentSearchItemDTO> Items { get; set; } = new();
         public int Total { get; set; }
     }
 }

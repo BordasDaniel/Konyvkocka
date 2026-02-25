@@ -1,24 +1,39 @@
-﻿namespace KonyvkockaAPI.DTO.Response
+namespace KonyvkockaAPI.DTO.Response
 {
     public class MovieDetailDTO
     {
         public int Id { get; set; }
         public string Type { get; set; } = "movie";
-        public string Title { get; set; }
+        public string Title { get; set; } = null!;
         public int Year { get; set; }
         public decimal Rating { get; set; }
-        public string Desc { get; set; }
-        public string Img { get; set; }
-        public string Trailer { get; set; }
+        public string Description { get; set; } = null!;
+
+        /// <summary>
+        /// Poszter API neve (PosterApiName)
+        /// </summary>
+        public string Img { get; set; } = null!;
+
+        public string StreamUrl { get; set; } = null!;
+        public string? TrailerUrl { get; set; }
+
+        /// <summary>
+        /// Film hossza percben
+        /// </summary>
+        public int Length { get; set; }
+
         public bool HasSubtitles { get; set; }
         public bool IsOriginalLanguage { get; set; }
         public bool IsOfflineAvailable { get; set; }
-        public object AgeRating { get; set; }
-        public List<string> Tags { get; set; }
-        public List<object> Authors { get; set; }
-        public List<EpisodeDTO> Episodes { get; set; }
-        public int TotalSeasons { get; set; }
-        public int TotalEpisodes { get; set; }
-        public object UserLibrary { get; set; }
+
+        public AgeRatingDTO? AgeRating { get; set; }
+        public List<string> Tags { get; set; } = new();
+        public List<AuthorDTO> Authors { get; set; } = new();
+        public List<GenreDTO> Genres { get; set; } = new();
+
+        /// <summary>
+        /// null ha nincs bejelentkezve vagy a tartalom nincs a könyvtárban
+        /// </summary>
+        public UserLibrarySnapshotDTO? UserLibrary { get; set; }
     }
 }

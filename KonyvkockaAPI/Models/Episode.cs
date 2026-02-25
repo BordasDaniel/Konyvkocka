@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace KonyvkockaAPI.Models;
@@ -15,11 +15,15 @@ public partial class Episode
 
     public string Title { get; set; } = null!;
 
+    /// <summary>
+    /// Stream URL – DB oszlopneve: StreamURL
+    /// </summary>
     public string StreamUrl { get; set; } = null!;
 
+    /// <summary>
+    /// Epizód hossza percben
+    /// </summary>
     public int Length { get; set; }
-
-    public DateTime? UpdatedAt { get; set; }
 
     public virtual Series Series { get; set; } = null!;
 }

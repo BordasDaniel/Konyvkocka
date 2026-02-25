@@ -1,168 +1,196 @@
-﻿//using KonyvkockaAPI.DTO.Response;
-//using KonyvkockaAPI.Models;
-//using Microsoft.AspNetCore.Authorization;
-//using Microsoft.AspNetCore.Mvc;
-//using Microsoft.EntityFrameworkCore;
+using KonyvkockaAPI.DTO.Response;
+using KonyvkockaAPI.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-//namespace KonyvkockaAPI.Controllers
-//{
-//    [Route("[controller]")]
-//    [ApiController]
-//    [Authorize]
-//    public class NotificationController : ControllerBase
-//    {
-//        private readonly KonyvkockaContext _context;
+namespace KonyvkockaAPI.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    [Authorize]
+    public class NotificationController : ControllerBase
+    {
+        private readonly KonyvkockaContext _context;
 
-//        public NotificationController(KonyvkockaContext context)
-//        {
-//            _context = context;
-//        }
+        public NotificationController(KonyvkockaContext context)
+        {
+            _context = context;
+        }
 
-//        /// <summary>
-//        /// Értesítések lekérése
-//        /// GET /api/notifications
-//        /// </summary>
-//        [HttpGet]
-//        public async Task<IActionResult> GetNotifications(
-//            [FromQuery] string? type = null,
-//            [FromQuery] bool? isRead = null,
-//            [FromQuery] int limit = 20,
-//            [FromQuery] int offset = 0)
-//        {
-//            try
-//            {
-//                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+        // ================================================================
+        // GET /api/notification
+        // Bejelentkezett user értesítései (mail tábla, ReceiverId alapján)
+        //
+        // Query paraméterek:
+        //   type     – szűrés típusra: ALL | SYSTEM | FRIEND | CHALLENGE | PURCHASE
+        //   unread   – ha true, csak az olvasatlan üzenetek
+        //   page     – oldalszám (alapértelmezett: 1)
+        //   pageSize – oldal mérete (alapértelmezett: 20, max: 100)
+        // ================================================================
+        [HttpGet]
+        public async Task<IActionResult> GetNotifications(
+            [FromQuery] string? type     = null,
+            [FromQuery] bool?   unread   = null,
+            [FromQuery] int     page     = 1,
+            [FromQuery] int     pageSize = 20)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
-//                var query = _context.Mails.Where(m => m.ReceiverId == userId);
+                if (page < 1) page = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-//                if (!string.IsNullOrEmpty(type) && type != "all")
-//                    query = query.Where(m => m.Type.ToLower() == type.ToLower());
+                var validTypes = new[] { "ALL", "SYSTEM", "FRIEND", "CHALLENGE", "PURCHASE" };
+                var normalizedType = type?.ToUpper();
 
-//                if (isRead.HasValue)
-//                    query = query.Where(m => m.IsRead == isRead.Value);
+                if (normalizedType != null && !validTypes.Contains(normalizedType))
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error   = "InvalidParameter",
+                        Message = $"Érvénytelen type érték. Lehetséges: {string.Join(", ", validTypes)}"
+                    });
 
-//                var notifications = await query
-//                    .OrderByDescending(m => m.CreatedAt)
-//                    .Skip(offset)
-//                    .Take(limit)
-//                    .Select(m => new NotificationDTO
-//                    {
-//                        Id = m.Id,
-//                        Type = m.Type.ToLower(),
-//                        Title = m.Subject,
-//                        Message = m.Message,
-//                        Timestamp = m.CreatedAt.GetValueOrDefault(DateTime.MinValue),
-//                        IsRead = m.IsRead.GetValueOrDefault(),
-//                        Icon = MapTypeToIcon(m.Type)
-//                    })
-//                    .ToListAsync();
+                var query = _context.Mails
+                    .Where(m => m.ReceiverId == userId)
+                    .Include(m => m.Sender)
+                    .AsQueryable();
 
-//                var total = await query.CountAsync();
-//                var unreadCount = await _context.Mails
-//                    .Where(m => m.ReceiverId == userId && m.IsRead != true)
-//                    .CountAsync();
+                // Típus szűrő – az "ALL" típusú üzenetek minden usernek szólnak,
+                // ezért type=ALL paraméter esetén az összes üzenetet adjuk vissza
+                if (normalizedType != null && normalizedType != "ALL")
+                    query = query.Where(m => m.Type == normalizedType);
 
-//                return Ok(new { notifications, unreadCount, total });
-//            }
-//            catch (Exception ex)
-//            {
-//                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
-//            }
-//        }
+                // Olvasatlan szűrő
+                if (unread == true)
+                    query = query.Where(m => m.IsRead == false || m.IsRead == null);
 
-//        /// <summary>
-//        /// Értesítés olvasottnak jelölése
-//        /// PUT /api/notifications/{notificationId}/read
-//        /// </summary>
-//        [HttpPut("{notificationId}/read")]
-//        public async Task<IActionResult> MarkAsRead(int notificationId)
-//        {
-//            try
-//            {
-//                var notification = await _context.Mails.FindAsync(notificationId);
-//                if (notification == null)
-//                    return NotFound();
+                var total      = await query.CountAsync();
+                var unreadCount = await _context.Mails
+                    .CountAsync(m => m.ReceiverId == userId && (m.IsRead == false || m.IsRead == null));
 
-//                notification.IsRead = true;
-//                await _context.SaveChangesAsync();
+                var notifications = await query
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(m => new NotificationDTO
+                    {
+                        Id             = m.Id,
+                        Type           = m.Type,
+                        Subject        = m.Subject,
+                        Message        = m.Message,
+                        IsRead         = m.IsRead ?? false,
+                        CreatedAt      = m.CreatedAt,
+                        SenderUsername = m.Sender != null ? m.Sender.Username : null
+                    })
+                    .ToListAsync();
 
-//                return Ok(new
-//                {
-//                    message = "Értesítés olvasottnak jelölve",
-//                    notification = new { id = notificationId, isRead = true }
-//                });
-//            }
-//            catch (Exception ex)
-//            {
-//                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
-//            }
-//        }
+                return Ok(new
+                {
+                    total,
+                    unreadCount,
+                    page,
+                    pageSize,
+                    notifications
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
 
-//        /// <summary>
-//        /// Összes értesítés olvasottnak jelölése
-//        /// PUT /api/notifications/read-all
-//        /// </summary>
-//        [HttpPut("read-all")]
-//        public async Task<IActionResult> MarkAllAsRead()
-//        {
-//            try
-//            {
-//                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
-//                var unreadMails = await _context.Mails
-//                    .Where(m => m.ReceiverId == userId && m.IsRead != true)
-//                    .ToListAsync();
+        // ================================================================
+        // PATCH /api/notification/{id}/read
+        // Egy értesítés olvasottnak jelölése
+        // ================================================================
+        [HttpPatch("{id}/read")]
+        public async Task<IActionResult> MarkAsRead(int id)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
-//                foreach (var mail in unreadMails)
-//                    mail.IsRead = true;
+                var mail = await _context.Mails
+                    .FirstOrDefaultAsync(m => m.Id == id && m.ReceiverId == userId);
 
-//                await _context.SaveChangesAsync();
+                if (mail == null)
+                    return NotFound(new ErrorResponseDTO
+                    {
+                        Error   = "NotFound",
+                        Message = "Az értesítés nem található."
+                    });
 
-//                return Ok(new
-//                {
-//                    message = "Minden értesítés olvasottnak jelölve",
-//                    updatedCount = unreadMails.Count
-//                });
-//            }
-//            catch (Exception ex)
-//            {
-//                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
-//            }
-//        }
+                mail.IsRead = true;
+                await _context.SaveChangesAsync();
 
-//        /// <summary>
-//        /// Értesítés törlése
-//        /// DELETE /api/notifications/{notificationId}
-//        /// </summary>
-//        [HttpDelete("{notificationId}")]
-//        public async Task<IActionResult> DeleteNotification(int notificationId)
-//        {
-//            try
-//            {
-//                var notification = await _context.Mails.FindAsync(notificationId);
-//                if (notification == null)
-//                    return NotFound();
+                return Ok(new MessageResponseDTO { Message = "Értesítés olvasottnak jelölve." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
 
-//                _context.Mails.Remove(notification);
-//                await _context.SaveChangesAsync();
+        // ================================================================
+        // PATCH /api/notification/read-all
+        // Az összes értesítés olvasottnak jelölése
+        // ================================================================
+        [HttpPatch("read-all")]
+        public async Task<IActionResult> MarkAllAsRead()
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
-//                return Ok(new { message = "Értesítés törölve" });
-//            }
-//            catch (Exception ex)
-//            {
-//                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
-//            }
-//        }
+                var unreadMails = await _context.Mails
+                    .Where(m => m.ReceiverId == userId && (m.IsRead == false || m.IsRead == null))
+                    .ToListAsync();
 
-//        private static string MapTypeToIcon(string type)
-//        {
-//            return type.ToUpper() switch
-//            {
-//                "CHALLENGE" => "trophy",
-//                "FRIEND" => "user",
-//                "PURCHASE" => "credit-card",
-//                "SYSTEM" => "bell",
-//                _ => "mail"
-//            };
-//        }
-//    }
-//}
+                foreach (var mail in unreadMails)
+                    mail.IsRead = true;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new MessageResponseDTO { Message = $"{unreadMails.Count} értesítés olvasottnak jelölve." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // DELETE /api/notification/{id}
+        // Egy értesítés törlése
+        // ================================================================
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteNotification(int id)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+
+                var mail = await _context.Mails
+                    .FirstOrDefaultAsync(m => m.Id == id && m.ReceiverId == userId);
+
+                if (mail == null)
+                    return NotFound(new ErrorResponseDTO
+                    {
+                        Error   = "NotFound",
+                        Message = "Az értesítés nem található."
+                    });
+
+                _context.Mails.Remove(mail);
+                await _context.SaveChangesAsync();
+
+                return Ok(new MessageResponseDTO { Message = "Értesítés törölve." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+    }
+}
