@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 .github
 .vs
+.github/workflows
+.github
+.git
+workflows
+.workflows
