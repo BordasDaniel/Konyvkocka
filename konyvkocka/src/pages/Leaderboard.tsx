@@ -6,7 +6,7 @@ import '../styles/leaderboard.css';
 // ========================
 
 type ContentFilter = 'all' | 'book' | 'media';
-type LocationFilter = 'world' | 'continent' | 'country';
+type LocationFilter = 'world' | 'country';
 
 interface LeaderboardEntry {
   rank: number;
@@ -14,7 +14,6 @@ interface LeaderboardEntry {
   avatar: string;
   countryFlag: string;
   countryCode: string;
-  continent: string;
   points: number;
   booksRead: number;
   mediaWatched: number;
@@ -36,7 +35,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=1',
     countryFlag: 'https://flagcdn.com/w20/hu.png',
     countryCode: 'HU',
-    continent: 'Európa',
     points: 15420,
     booksRead: 245,
     mediaWatched: 189,
@@ -52,7 +50,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=2',
     countryFlag: 'https://flagcdn.com/w20/de.png',
     countryCode: 'DE',
-    continent: 'Európa',
     points: 14850,
     booksRead: 120,
     mediaWatched: 520,
@@ -68,7 +65,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=3',
     countryFlag: 'https://flagcdn.com/w20/hu.png',
     countryCode: 'HU',
-    continent: 'Európa',
     points: 13990,
     booksRead: 380,
     mediaWatched: 45,
@@ -84,7 +80,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=4',
     countryFlag: 'https://flagcdn.com/w20/at.png',
     countryCode: 'AT',
-    continent: 'Európa',
     points: 12650,
     booksRead: 89,
     mediaWatched: 445,
@@ -100,7 +95,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=5',
     countryFlag: 'https://flagcdn.com/w20/sk.png',
     countryCode: 'SK',
-    continent: 'Európa',
     points: 11800,
     booksRead: 310,
     mediaWatched: 67,
@@ -116,7 +110,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=6',
     countryFlag: 'https://flagcdn.com/w20/pl.png',
     countryCode: 'PL',
-    continent: 'Európa',
     points: 10920,
     booksRead: 45,
     mediaWatched: 612,
@@ -132,7 +125,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=7',
     countryFlag: 'https://flagcdn.com/w20/hu.png',
     countryCode: 'HU',
-    continent: 'Európa',
     points: 10450,
     booksRead: 289,
     mediaWatched: 78,
@@ -148,7 +140,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=8',
     countryFlag: 'https://flagcdn.com/w20/ro.png',
     countryCode: 'RO',
-    continent: 'Európa',
     points: 9870,
     booksRead: 156,
     mediaWatched: 234,
@@ -164,7 +155,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=9',
     countryFlag: 'https://flagcdn.com/w20/cz.png',
     countryCode: 'CZ',
-    continent: 'Európa',
     points: 9340,
     booksRead: 267,
     mediaWatched: 89,
@@ -180,7 +170,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=10',
     countryFlag: 'https://flagcdn.com/w20/hr.png',
     countryCode: 'HR',
-    continent: 'Európa',
     points: 8920,
     booksRead: 34,
     mediaWatched: 478,
@@ -196,7 +185,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=11',
     countryFlag: 'https://flagcdn.com/w20/hu.png',
     countryCode: 'HU',
-    continent: 'Európa',
     points: 8450,
     booksRead: 298,
     mediaWatched: 23,
@@ -212,7 +200,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=12',
     countryFlag: 'https://flagcdn.com/w20/si.png',
     countryCode: 'SI',
-    continent: 'Európa',
     points: 7980,
     booksRead: 67,
     mediaWatched: 389,
@@ -228,7 +215,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=13',
     countryFlag: 'https://flagcdn.com/w20/ua.png',
     countryCode: 'UA',
-    continent: 'Európa',
     points: 7560,
     booksRead: 234,
     mediaWatched: 56,
@@ -244,7 +230,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=14',
     countryFlag: 'https://flagcdn.com/w20/bg.png',
     countryCode: 'BG',
-    continent: 'Európa',
     points: 7120,
     booksRead: 45,
     mediaWatched: 356,
@@ -260,7 +245,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=15',
     countryFlag: 'https://flagcdn.com/w20/hu.png',
     countryCode: 'HU',
-    continent: 'Európa',
     points: 6780,
     booksRead: 189,
     mediaWatched: 123,
@@ -276,7 +260,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=16',
     countryFlag: 'https://flagcdn.com/w20/rs.png',
     countryCode: 'RS',
-    continent: 'Európa',
     points: 6340,
     booksRead: 28,
     mediaWatched: 412,
@@ -292,7 +275,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     avatar: 'https://i.pravatar.cc/150?img=17',
     countryFlag: 'https://flagcdn.com/w20/hu.png',
     countryCode: 'HU',
-    continent: 'Európa',
     points: 5920,
     booksRead: 256,
     mediaWatched: 34,
@@ -306,7 +288,6 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
 
 // Felhasználó országa (később az AuthContext-ből jön)
 const USER_COUNTRY = 'HU';
-const USER_CONTINENT = 'Európa';
 
 export default function Leaderboard() {
   const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
@@ -358,8 +339,6 @@ export default function Leaderboard() {
       // Hely szerinti szűrés
       if (locationFilter === 'country') {
         filtered = filtered.filter(entry => entry.countryCode === USER_COUNTRY);
-      } else if (locationFilter === 'continent') {
-        filtered = filtered.filter(entry => entry.continent === USER_CONTINENT);
       }
 
       // Pontok újraszámolása tartalom típus szerint
@@ -399,7 +378,6 @@ export default function Leaderboard() {
   const getLocationLabel = (filter: LocationFilter): string => {
     switch (filter) {
       case 'world': return 'Világ';
-      case 'continent': return 'Kontinens';
       case 'country': return 'Ország';
     }
   };
@@ -452,7 +430,7 @@ export default function Leaderboard() {
         <div className="leaderboard-filter-group">
           <span className="leaderboard-filter-label">Régió:</span>
           <div className="leaderboard-filter-buttons">
-            {(['world', 'continent', 'country'] as LocationFilter[]).map((filter) => (
+            {(['world', 'country'] as LocationFilter[]).map((filter) => (
               <button
                 key={filter}
                 className={`btn btn-sm btn-action ${locationFilter === filter ? 'active' : ''}`}
@@ -460,7 +438,6 @@ export default function Leaderboard() {
                 onClick={() => setLocationFilter(filter)}
               >
                 {filter === 'world' && <i className="bi bi-globe me-1"></i>}
-                {filter === 'continent' && <i className="bi bi-geo-alt me-1"></i>}
                 {filter === 'country' && <i className="bi bi-flag me-1"></i>}
                 {getLocationLabel(filter)}
               </button>

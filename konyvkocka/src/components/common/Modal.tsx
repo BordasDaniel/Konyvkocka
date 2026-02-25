@@ -26,18 +26,16 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 
 	useEffect(() => {
 		if (open && card) {
-			const scrollY = window.scrollY;
-			document.body.style.position = 'fixed';
-			document.body.style.top = `-${scrollY}px`;
-			document.body.style.width = '100%';
+			// Scrollbar szélesség kompenzáció (hogy ne ugorjon a tartalom)
+			const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+			document.documentElement.style.overflow = 'hidden';
 			document.body.style.overflow = 'hidden';
+			document.body.style.paddingRight = `${scrollBarWidth}px`;
 			loadComments(card.title);
 			return () => {
-				document.body.style.position = '';
-				document.body.style.top = '';
-				document.body.style.width = '';
+				document.documentElement.style.overflow = '';
 				document.body.style.overflow = '';
-				window.scrollTo(0, scrollY);
+				document.body.style.paddingRight = '';
 			};
 		}
 	}, [open, card]);
@@ -124,7 +122,7 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 										</div>
 										{card.desc && <p>{card.desc}</p>}
 
-										{card.trailer && (
+										{card.trailer && card.type !== 'book' && (
 											<div className="video-wrapper">
 												<iframe
 													src={`${card.trailer}${card.trailer.includes('?') ? '&' : '?'}rel=0`}

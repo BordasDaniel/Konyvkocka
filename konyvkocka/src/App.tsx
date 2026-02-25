@@ -21,6 +21,7 @@ import Notifications from './pages/Notifications.tsx'
 import Challenges from './pages/Challenges.tsx'
 import Subscription from './pages/Subscription.tsx'
 import Leaderboard from './pages/Leaderboard.tsx'
+import Admin from './pages/Admin.tsx'
 
 function App() {
   const location = useLocation();
@@ -49,6 +50,7 @@ function App() {
         <Route path="/olvaso" element={<Reader />} />
         <Route path="/nezes" element={<Watch />} />
         <Route path="/profil" element={<User />} />
+        <Route path="/admin" element={<Admin />} />
         <Route path="/jelszo-visszaallitas" element={<ResetPassword />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
