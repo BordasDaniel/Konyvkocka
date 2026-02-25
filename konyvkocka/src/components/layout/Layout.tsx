@@ -1,6 +1,7 @@
 import React from 'react'
 import Navbar from './Navbar'
 import Footer from './Footer'
+import NewsletterModal from '../common/NewsletterModal'
 
 type LayoutProps = {
 	children: React.ReactNode
@@ -14,6 +15,7 @@ function Layout({ children }: LayoutProps) {
 				{children}
 			</div>
 			<Footer />
+			<NewsletterModal />
 		</>
 	)
 }

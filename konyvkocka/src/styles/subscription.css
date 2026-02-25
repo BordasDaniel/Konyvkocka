@@ -309,7 +309,13 @@ body:has(.subscription-page) {
 }
 
 .purchase-table-wrapper {
-  overflow-x: auto;
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .purchase-table-wrapper {
+    overflow-x: auto;
+  }
 }
 
 .purchase-table {
