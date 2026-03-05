@@ -22,197 +22,163 @@ namespace KonyvkockaAPI.Controllers
         // GET /api/content/search
         // Tartalmak keresése könyvek, filmek, sorozatok között
         //
-        // Query paraméterek:
-        //   q          – keresési kifejezés (cím)
-        //   type       – "all" | "book" | "audiobook" | "ebook" | "movie" | "series"
-        //   genreId    – szűrés műfaj ID alapján
-        //   yearMin    – megjelenési év minimum
-        //   yearMax    – megjelenési év maximum
-        //   ratingMin  – minimum értékelés (0.0–10.0)
-        //   ageRatingId – korhatár besorolás ID
-        //   limit      – max találat (alapért.: 20, max: 100)
-        //   offset     – lapozás eltolása (alapért.: 0)
+        // Filterek (mind opcionális, többszörös érték vesszővel):
+        //   q           – keresési kifejezés (cím)
+        //   type        – "all" | "book" | "movie" | "series" (vesszővel több)
+        //   ageRatings  – korhatár nevek: "Minden,Gyerek,12+,16+,18+"
+        //   genres      – műfaj nevek: "Akció,Kaland,Krimi,..."
+        //   tags        – tag nevek: "Magyar,Külföldi,Feliratos,..."
+        //   sort        – "relevancia" | "ertekeles" | "felkapott" | "megjelenes"
+        //   limit       – max találat (alapért.: 20, max: 100)
+        //   offset      – lapozás eltolása (alapért.: 0)
+        //
+        // Visszatérés: HomeCardDTO lista (ugyanolyan mint a főoldalon)
         // ================================================================
         [HttpGet("search")]
         public async Task<IActionResult> SearchContent(
-            [FromQuery] string  q           = "",
-            [FromQuery] string  type        = "all",
-            [FromQuery] int?    genreId     = null,
-            [FromQuery] int?    yearMin     = null,
-            [FromQuery] int?    yearMax     = null,
-            [FromQuery] decimal? ratingMin  = null,
-            [FromQuery] int?    ageRatingId = null,
-            [FromQuery] int     limit       = 20,
-            [FromQuery] int     offset      = 0)
+            [FromQuery] string q          = "",
+            [FromQuery] string type       = "all",
+            [FromQuery] string ageRatings = "",
+            [FromQuery] string genres     = "",
+            [FromQuery] string tags       = "",
+            [FromQuery] string sort       = "relevancia",
+            [FromQuery] int    limit      = 20,
+            [FromQuery] int    offset     = 0)
         {
             try
             {
                 if (limit < 1 || limit > 100) limit = 20;
                 if (offset < 0) offset = 0;
 
-                var normalized = type.ToLower();
-                var books   = new List<ContentSearchItemDTO>();
-                var movies  = new List<ContentSearchItemDTO>();
-                var series  = new List<ContentSearchItemDTO>();
+                var typeList      = string.IsNullOrWhiteSpace(type)       ? new[] { "all" }       : type.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(t => t.ToLower()).ToArray();
+                var ageRatingList = string.IsNullOrWhiteSpace(ageRatings) ? Array.Empty<string>() : ageRatings.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var genreList     = string.IsNullOrWhiteSpace(genres)     ? Array.Empty<string>() : genres.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var tagList       = string.IsNullOrWhiteSpace(tags)       ? Array.Empty<string>() : tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                // A műfajok (Akció, Horror, stb.) a DB-ben tagként vannak tárolva – összevonjuk
+                var combinedTagList = genreList.Concat(tagList).Distinct().ToArray();
+
+                var includeAll    = typeList.Contains("all");
+                var includeBooks  = includeAll || typeList.Contains("book");
+                var includeMovies = includeAll || typeList.Contains("movie");
+                var includeSeries = includeAll || typeList.Contains("series");
+
+                var results = new List<HomeCardDTO>();
 
                 // ── KÖNYVEK ──────────────────────────────────────────────
-                if (normalized is "all" or "book" or "audiobook" or "ebook")
+                if (includeBooks)
                 {
                     var bookQuery = _context.Books
-                        .Include(b => b.AgeRating)
-                        .Include(b => b.Genres)
-                        .Include(b => b.Authors)
+                        .Include(b => b.Tags)
                         .AsQueryable();
 
                     if (!string.IsNullOrWhiteSpace(q))
                         bookQuery = bookQuery.Where(b => b.Title.Contains(q));
 
-                    if (normalized is "book" or "audiobook" or "ebook")
-                        bookQuery = bookQuery.Where(b => b.Type == normalized.ToUpper());
+                    if (ageRatingList.Length > 0)
+                        bookQuery = bookQuery.Where(b => b.AgeRating != null && ageRatingList.Contains(b.AgeRating.Name));
 
-                    if (genreId.HasValue)
-                        bookQuery = bookQuery.Where(b => b.Genres.Any(g => g.Id == genreId));
+                    if (combinedTagList.Length > 0)
+                        bookQuery = bookQuery.Where(b => b.Tags.Any(t => combinedTagList.Contains(t.Name)));
 
-                    if (yearMin.HasValue)
-                        bookQuery = bookQuery.Where(b => b.Released >= yearMin);
+                    var bookCards = await bookQuery
+                        .Select(b => new HomeCardDTO
+                        {
+                            Id     = b.Id,
+                            Type   = b.Type.ToLower(),
+                            Title  = b.Title,
+                            Img    = b.CoverApiName,
+                            Year   = b.Released,
+                            Rating = b.Rating,
+                            Tags   = b.Tags.Select(t => t.Name).Take(2).ToList()
+                        }).ToListAsync();
 
-                    if (yearMax.HasValue)
-                        bookQuery = bookQuery.Where(b => b.Released <= yearMax);
-
-                    if (ratingMin.HasValue)
-                        bookQuery = bookQuery.Where(b => b.Rating >= ratingMin);
-
-                    if (ageRatingId.HasValue)
-                        bookQuery = bookQuery.Where(b => b.AgeRatingId == ageRatingId);
-
-                    var bookResults = await bookQuery
-                        .OrderByDescending(b => b.Rating)
-                        .Skip(offset)
-                        .Take(limit)
-                        .ToListAsync();
-
-                    books = bookResults.Select(b => new ContentSearchItemDTO
-                    {
-                        Id        = b.Id,
-                        Type      = b.Type.ToLower(),
-                        Title     = b.Title,
-                        Img       = b.CoverApiName,
-                        Year      = b.Released,
-                        Rating    = b.Rating,
-                        AgeRating = b.AgeRating != null ? new AgeRatingDTO { Id = b.AgeRating.Id, Name = b.AgeRating.Name, MinAge = b.AgeRating.MinAge } : null,
-                        Genres    = b.Genres.Select(g => g.Name).ToList(),
-                        Authors   = b.Authors.Select(a => a.Name).ToList(),
-                        Length    = b.Type == "AUDIOBOOK" ? b.AudioLength : b.PageNum
-                    }).ToList();
+                    results.AddRange(bookCards);
                 }
 
                 // ── FILMEK ───────────────────────────────────────────────
-                if (normalized is "all" or "movie")
+                if (includeMovies)
                 {
                     var movieQuery = _context.Movies
-                        .Include(m => m.AgeRating)
-                        .Include(m => m.Genres)
-                        .Include(m => m.Authors)
+                        .Include(m => m.Tags)
                         .AsQueryable();
 
                     if (!string.IsNullOrWhiteSpace(q))
                         movieQuery = movieQuery.Where(m => m.Title.Contains(q));
 
-                    if (genreId.HasValue)
-                        movieQuery = movieQuery.Where(m => m.Genres.Any(g => g.Id == genreId));
+                    if (ageRatingList.Length > 0)
+                        movieQuery = movieQuery.Where(m => m.AgeRating != null && ageRatingList.Contains(m.AgeRating.Name));
 
-                    if (yearMin.HasValue)
-                        movieQuery = movieQuery.Where(m => m.Released >= yearMin);
+                    if (combinedTagList.Length > 0)
+                        movieQuery = movieQuery.Where(m => m.Tags.Any(t => combinedTagList.Contains(t.Name)));
 
-                    if (yearMax.HasValue)
-                        movieQuery = movieQuery.Where(m => m.Released <= yearMax);
+                    var movieCards = await movieQuery
+                        .Select(m => new HomeCardDTO
+                        {
+                            Id     = m.Id,
+                            Type   = "movie",
+                            Title  = m.Title,
+                            Img    = m.PosterApiName,
+                            Year   = m.Released,
+                            Rating = m.Rating,
+                            Tags   = m.Tags.Select(t => t.Name).Take(2).ToList()
+                        }).ToListAsync();
 
-                    if (ratingMin.HasValue)
-                        movieQuery = movieQuery.Where(m => m.Rating >= ratingMin);
-
-                    if (ageRatingId.HasValue)
-                        movieQuery = movieQuery.Where(m => m.AgeRatingId == ageRatingId);
-
-                    var movieResults = await movieQuery
-                        .OrderByDescending(m => m.Rating)
-                        .Skip(offset)
-                        .Take(limit)
-                        .ToListAsync();
-
-                    movies = movieResults.Select(m => new ContentSearchItemDTO
-                    {
-                        Id        = m.Id,
-                        Type      = "movie",
-                        Title     = m.Title,
-                        Img       = m.PosterApiName,
-                        Year      = m.Released,
-                        Rating    = m.Rating,
-                        AgeRating = m.AgeRating != null ? new AgeRatingDTO { Id = m.AgeRating.Id, Name = m.AgeRating.Name, MinAge = m.AgeRating.MinAge } : null,
-                        Genres    = m.Genres.Select(g => g.Name).ToList(),
-                        Authors   = m.Authors.Select(a => a.Name).ToList(),
-                        Length    = m.Length
-                    }).ToList();
+                    results.AddRange(movieCards);
                 }
 
                 // ── SOROZATOK ────────────────────────────────────────────
-                if (normalized is "all" or "series")
+                if (includeSeries)
                 {
                     var seriesQuery = _context.Series
-                        .Include(s => s.AgeRating)
-                        .Include(s => s.Genres)
-                        .Include(s => s.Authors)
-                        .Include(s => s.Episodes)
+                        .Include(s => s.Tags)
                         .AsQueryable();
 
                     if (!string.IsNullOrWhiteSpace(q))
                         seriesQuery = seriesQuery.Where(s => s.Title.Contains(q));
 
-                    if (genreId.HasValue)
-                        seriesQuery = seriesQuery.Where(s => s.Genres.Any(g => g.Id == genreId));
+                    if (ageRatingList.Length > 0)
+                        seriesQuery = seriesQuery.Where(s => s.AgeRating != null && ageRatingList.Contains(s.AgeRating.Name));
 
-                    if (yearMin.HasValue)
-                        seriesQuery = seriesQuery.Where(s => s.Released >= yearMin);
+                    if (combinedTagList.Length > 0)
+                        seriesQuery = seriesQuery.Where(s => s.Tags.Any(t => combinedTagList.Contains(t.Name)));
 
-                    if (yearMax.HasValue)
-                        seriesQuery = seriesQuery.Where(s => s.Released <= yearMax);
+                    var seriesCards = await seriesQuery
+                        .Select(s => new HomeCardDTO
+                        {
+                            Id     = s.Id,
+                            Type   = "series",
+                            Title  = s.Title,
+                            Img    = s.PosterApiName,
+                            Year   = s.Released,
+                            Rating = s.Rating,
+                            Tags   = s.Tags.Select(t => t.Name).Take(2).ToList()
+                        }).ToListAsync();
 
-                    if (ratingMin.HasValue)
-                        seriesQuery = seriesQuery.Where(s => s.Rating >= ratingMin);
-
-                    if (ageRatingId.HasValue)
-                        seriesQuery = seriesQuery.Where(s => s.AgeRatingId == ageRatingId);
-
-                    var seriesResults = await seriesQuery
-                        .OrderByDescending(s => s.Rating)
-                        .Skip(offset)
-                        .Take(limit)
-                        .ToListAsync();
-
-                    series = seriesResults.Select(s => new ContentSearchItemDTO
-                    {
-                        Id        = s.Id,
-                        Type      = "series",
-                        Title     = s.Title,
-                        Img       = s.PosterApiName,
-                        Year      = s.Released,
-                        Rating    = s.Rating,
-                        AgeRating = s.AgeRating != null ? new AgeRatingDTO { Id = s.AgeRating.Id, Name = s.AgeRating.Name, MinAge = s.AgeRating.MinAge } : null,
-                        Genres    = s.Genres.Select(g => g.Name).ToList(),
-                        Authors   = s.Authors.Select(a => a.Name).ToList(),
-                        Length    = s.Episodes.Count
-                    }).ToList();
+                    results.AddRange(seriesCards);
                 }
 
-                var total = books.Count + movies.Count + series.Count;
+                // ── RENDEZÉS ─────────────────────────────────────────────
+                var sortNorm = sort.ToLower();
+                results = sortNorm switch
+                {
+                    "ertekeles"  => results.OrderByDescending(r => r.Rating).ToList(),
+                    "megjelenes" => results.OrderByDescending(r => r.Year).ToList(),
+                    "felkapott"  => results.OrderByDescending(r => r.Rating).ThenByDescending(r => r.Year).ToList(),
+                    _            => !string.IsNullOrWhiteSpace(q)
+                                        ? results // relevancia – az SQL CONTAINS sorrend marad
+                                        : results.OrderByDescending(r => r.Year).ToList()
+                };
 
-                return Ok(new ContentSearchResponseDTO
+                var total = results.Count;
+                var paged = results.Skip(offset).Take(limit).ToList();
+
+                return Ok(new SearchResponseDTO
                 {
                     Total  = total,
                     Limit  = limit,
                     Offset = offset,
-                    Books  = books,
-                    Movies = movies,
-                    Series = series
+                    Items  = paged
                 });
             }
             catch (Exception ex)
@@ -249,8 +215,6 @@ namespace KonyvkockaAPI.Controllers
                 {
                     var book = await _context.Books
                         .Include(b => b.AgeRating)
-                        .Include(b => b.Authors)
-                        .Include(b => b.Genres)
                         .Include(b => b.Tags)
                         .FirstOrDefaultAsync(b => b.Id == id);
 
@@ -299,8 +263,6 @@ namespace KonyvkockaAPI.Controllers
                         ReadUrl          = readUrl,
                         AgeRating        = book.AgeRating != null ? new AgeRatingDTO { Id = book.AgeRating.Id, Name = book.AgeRating.Name, MinAge = book.AgeRating.MinAge } : null,
                         Tags             = book.Tags.Select(t => t.Name).ToList(),
-                        Authors          = book.Authors.Select(a => new AuthorDTO { Id = a.Id, Name = a.Name }).ToList(),
-                        Genres           = book.Genres.Select(g => new GenreDTO { Id = g.Id, Name = g.Name }).ToList(),
                         UserLibrary      = librarySnapshot
                     });
                 }
@@ -309,8 +271,6 @@ namespace KonyvkockaAPI.Controllers
                 {
                     var movie = await _context.Movies
                         .Include(m => m.AgeRating)
-                        .Include(m => m.Authors)
-                        .Include(m => m.Genres)
                         .Include(m => m.Tags)
                         .FirstOrDefaultAsync(m => m.Id == id);
 
@@ -350,8 +310,6 @@ namespace KonyvkockaAPI.Controllers
                         IsOfflineAvailable = movie.IsOfflineAvailable,
                         AgeRating          = movie.AgeRating != null ? new AgeRatingDTO { Id = movie.AgeRating.Id, Name = movie.AgeRating.Name, MinAge = movie.AgeRating.MinAge } : null,
                         Tags               = movie.Tags.Select(t => t.Name).ToList(),
-                        Authors            = movie.Authors.Select(a => new AuthorDTO { Id = a.Id, Name = a.Name }).ToList(),
-                        Genres             = movie.Genres.Select(g => new GenreDTO { Id = g.Id, Name = g.Name }).ToList(),
                         UserLibrary        = librarySnapshot
                     });
                 }
@@ -360,8 +318,6 @@ namespace KonyvkockaAPI.Controllers
                 {
                     var s = await _context.Series
                         .Include(x => x.AgeRating)
-                        .Include(x => x.Authors)
-                        .Include(x => x.Genres)
                         .Include(x => x.Tags)
                         .Include(x => x.Episodes)
                         .FirstOrDefaultAsync(x => x.Id == id);
@@ -407,8 +363,6 @@ namespace KonyvkockaAPI.Controllers
                         TotalEpisodes      = totalEpisodes,
                         AgeRating          = s.AgeRating != null ? new AgeRatingDTO { Id = s.AgeRating.Id, Name = s.AgeRating.Name, MinAge = s.AgeRating.MinAge } : null,
                         Tags               = s.Tags.Select(t => t.Name).ToList(),
-                        Authors            = s.Authors.Select(a => new AuthorDTO { Id = a.Id, Name = a.Name }).ToList(),
-                        Genres             = s.Genres.Select(g => new GenreDTO { Id = g.Id, Name = g.Name }).ToList(),
                         Episodes           = s.Episodes
                             .OrderBy(e => e.SeasonNum).ThenBy(e => e.EpisodeNum)
                             .Select(e => new EpisodeDTO
@@ -431,156 +385,20 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
-        // GET /api/content/category/{category}
-        // Kategória szerinti tartalmak
-        //
-        // category: "latest" | "popular" | "top_rated" |
-        //           "new_books" | "new_movies" | "new_series"
-        // type:     "all" | "book" | "movie" | "series"
-        // limit:    max találat (alapért.: 20)
-        // ================================================================
-        [HttpGet("category/{category}")]
-        public async Task<IActionResult> GetContentByCategory(
-            string category,
-            [FromQuery] string type  = "all",
-            [FromQuery] int    limit = 20)
-        {
-            try
-            {
-                if (limit < 1 || limit > 100) limit = 20;
-
-                var validCategories = new[] { "latest", "popular", "top_rated", "new_books", "new_movies", "new_series" };
-                if (!validCategories.Contains(category.ToLower()))
-                    return BadRequest(new ErrorResponseDTO
-                    {
-                        Error   = "InvalidCategory",
-                        Message = $"Érvénytelen kategória. Lehetséges: {string.Join(", ", validCategories)}"
-                    });
-
-                var normalized = category.ToLower();
-                var typeFilter = type.ToLower();
-                var items      = new List<ContentSearchItemDTO>();
-
-                // Könyvek
-                if (normalized is "latest" or "popular" or "top_rated" or "new_books"
-                    && typeFilter is "all" or "book" or "audiobook" or "ebook")
-                {
-                    IQueryable<Book> q = _context.Books
-                        .Include(b => b.AgeRating)
-                        .Include(b => b.Genres)
-                        .Include(b => b.Authors);
-
-                    q = normalized switch
-                    {
-                        "top_rated" => q.OrderByDescending(b => b.Rating),
-                        "new_books" => q.OrderByDescending(b => b.Id),
-                        _           => q.OrderByDescending(b => b.Id) // latest / popular
-                    };
-
-                    var results = await q.Take(limit).Select(b => new ContentSearchItemDTO
-                    {
-                        Id     = b.Id, Type = b.Type.ToLower(), Title = b.Title,
-                        Img    = b.CoverApiName, Year = b.Released, Rating = b.Rating,
-                        Genres = b.Genres.Select(g => g.Name).ToList(),
-                        Authors = b.Authors.Select(a => a.Name).ToList(),
-                        Length = b.Type == "AUDIOBOOK" ? b.AudioLength : b.PageNum
-                    }).ToListAsync();
-
-                    items.AddRange(results);
-                }
-
-                // Filmek
-                if (normalized is "latest" or "popular" or "top_rated" or "new_movies"
-                    && typeFilter is "all" or "movie")
-                {
-                    IQueryable<Movie> q = _context.Movies
-                        .Include(m => m.AgeRating)
-                        .Include(m => m.Genres)
-                        .Include(m => m.Authors);
-
-                    q = normalized switch
-                    {
-                        "top_rated"  => q.OrderByDescending(m => m.Rating),
-                        "new_movies" => q.OrderByDescending(m => m.Id),
-                        _            => q.OrderByDescending(m => m.Id)
-                    };
-
-                    var results = await q.Take(limit).Select(m => new ContentSearchItemDTO
-                    {
-                        Id     = m.Id, Type = "movie", Title = m.Title,
-                        Img    = m.PosterApiName, Year = m.Released, Rating = m.Rating,
-                        Genres = m.Genres.Select(g => g.Name).ToList(),
-                        Authors = m.Authors.Select(a => a.Name).ToList(),
-                        Length = m.Length
-                    }).ToListAsync();
-
-                    items.AddRange(results);
-                }
-
-                // Sorozatok
-                if (normalized is "latest" or "popular" or "top_rated" or "new_series"
-                    && typeFilter is "all" or "series")
-                {
-                    IQueryable<Series> q = _context.Series
-                        .Include(s => s.AgeRating)
-                        .Include(s => s.Genres)
-                        .Include(s => s.Authors)
-                        .Include(s => s.Episodes);
-
-                    q = normalized switch
-                    {
-                        "top_rated"  => q.OrderByDescending(s => s.Rating),
-                        "new_series" => q.OrderByDescending(s => s.Id),
-                        _            => q.OrderByDescending(s => s.Id)
-                    };
-
-                    var results = await q.Take(limit).Select(s => new ContentSearchItemDTO
-                    {
-                        Id     = s.Id, Type = "series", Title = s.Title,
-                        Img    = s.PosterApiName, Year = s.Released, Rating = s.Rating,
-                        Genres = s.Genres.Select(g => g.Name).ToList(),
-                        Authors = s.Authors.Select(a => a.Name).ToList(),
-                        Length = s.Episodes.Count
-                    }).ToListAsync();
-
-                    items.AddRange(results);
-                }
-
-                if (items.Count == 0)
-                    return NotFound(new ErrorResponseDTO
-                    {
-                        Error   = "NotFound",
-                        Message = $"Nincs találat a '{category}' kategóriában"
-                    });
-
-                return Ok(new ContentCategoryResultDTO
-                {
-                    Category = category.ToLower(),
-                    Items    = items,
-                    Total    = items.Count
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponseDTO { Error = "CategoryError", Message = ex.Message });
-            }
-        }
-
-        // ================================================================
         // GET /api/content/genres
-        // Összes elérhető műfaj listája
+        // Összes elérhető műfaj (= tag) listája
         // ================================================================
         [HttpGet("genres")]
         public async Task<IActionResult> GetGenres()
         {
             try
             {
-                var genres = await _context.Genres
-                    .OrderBy(g => g.Name)
-                    .Select(g => new GenreDTO { Id = g.Id, Name = g.Name })
+                var tags = await _context.Tags
+                    .OrderBy(t => t.Name)
+                    .Select(t => new TagItemDTO { Id = t.Id, Name = t.Name })
                     .ToListAsync();
 
-                return Ok(genres);
+                return Ok(tags);
             }
             catch (Exception ex)
             {

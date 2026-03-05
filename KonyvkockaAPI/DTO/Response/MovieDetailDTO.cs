@@ -28,8 +28,6 @@ namespace KonyvkockaAPI.DTO.Response
 
         public AgeRatingDTO? AgeRating { get; set; }
         public List<string> Tags { get; set; } = new();
-        public List<AuthorDTO> Authors { get; set; } = new();
-        public List<GenreDTO> Genres { get; set; } = new();
 
         /// <summary>
         /// null ha nincs bejelentkezve vagy a tartalom nincs a könyvtárban

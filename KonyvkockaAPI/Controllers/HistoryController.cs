@@ -59,8 +59,7 @@ namespace KonyvkockaAPI.Controllers
                 {
                     var bookQuery = _context.UserBooks
                         .Where(ub => ub.UserId == userId)
-                        .Include(ub => ub.Book)
-                            .ThenInclude(b => b.Authors);
+                        .Include(ub => ub.Book);
 
                     if (normalized == "books")
                     {
@@ -382,7 +381,7 @@ namespace KonyvkockaAPI.Controllers
             ContentType = "book",
             ContentId   = ub.BookId,
             Title       = ub.Book.Title,
-            Author      = ub.Book.Authors.OrderBy(a => a.Name).Select(a => a.Name).FirstOrDefault(),
+            Author      = null,
             Cover       = ub.Book.CoverApiName,
             Status      = ub.Status,
             Progress    = ub.CurrentPage,

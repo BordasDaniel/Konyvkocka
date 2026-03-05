@@ -18,13 +18,11 @@ public partial class KonyvkockaContext : DbContext
     public virtual DbSet<Achievement> Achievements { get; set; }
     public virtual DbSet<AgeRating> AgeRatings { get; set; }
     public virtual DbSet<Article> Articles { get; set; }
-    public virtual DbSet<Author> Authors { get; set; }
     public virtual DbSet<Badge> Badges { get; set; }
     public virtual DbSet<Book> Books { get; set; }
     public virtual DbSet<Challenge> Challenges { get; set; }
     public virtual DbSet<ContentCategory> ContentCategories { get; set; }
     public virtual DbSet<Episode> Episodes { get; set; }
-    public virtual DbSet<Genre> Genres { get; set; }
     public virtual DbSet<Mail> Mails { get; set; }
     public virtual DbSet<Movie> Movies { get; set; }
     public virtual DbSet<Purchase> Purchases { get; set; }
@@ -82,14 +80,6 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.ImageUrl).HasMaxLength(2048).HasDefaultValueSql("'NULL'");
         });
 
-        modelBuilder.Entity<Author>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PRIMARY");
-            entity.ToTable("author");
-            entity.Property(e => e.Id).HasColumnType("int(11)");
-            entity.Property(e => e.Name).HasMaxLength(128);
-        });
-
         modelBuilder.Entity<Badge>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");
@@ -131,18 +121,6 @@ public partial class KonyvkockaContext : DbContext
             entity.HasOne(d => d.AgeRating).WithMany(p => p.Books)
                 .HasForeignKey(d => d.AgeRatingId)
                 .HasConstraintName("book_age_rating_fk");
-
-            entity.HasMany(d => d.Authors).WithMany(p => p.Books)
-                .UsingEntity<Dictionary<string, object>>("book_author",
-                    r => r.HasOne<Author>().WithMany().HasForeignKey("AuthorId").HasConstraintName("fk_book_author_author"),
-                    l => l.HasOne<Book>().WithMany().HasForeignKey("BookId").HasConstraintName("fk_book_author_book"),
-                    j => { j.HasKey("BookId", "AuthorId"); j.ToTable("book_author"); });
-
-            entity.HasMany(d => d.Genres).WithMany(p => p.Books)
-                .UsingEntity<Dictionary<string, object>>("book_genre",
-                    r => r.HasOne<Genre>().WithMany().HasForeignKey("GenreId").HasConstraintName("fk_book_genre_genre"),
-                    l => l.HasOne<Book>().WithMany().HasForeignKey("BookId").HasConstraintName("fk_book_genre_book"),
-                    j => { j.HasKey("BookId", "GenreId"); j.ToTable("book_genre"); });
 
             entity.HasMany(d => d.Categories).WithMany(p => p.Books)
                 .UsingEntity<Dictionary<string, object>>("book_category",
@@ -206,14 +184,6 @@ public partial class KonyvkockaContext : DbContext
                 .HasConstraintName("episode_series_fk");
         });
 
-        modelBuilder.Entity<Genre>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PRIMARY");
-            entity.ToTable("genre");
-            entity.Property(e => e.Id).HasColumnType("int(11)");
-            entity.Property(e => e.Name).HasMaxLength(64);
-        });
-
         modelBuilder.Entity<Mail>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");
@@ -264,18 +234,6 @@ public partial class KonyvkockaContext : DbContext
                 .HasForeignKey(d => d.AgeRatingId)
                 .HasConstraintName("movie_age_rating_fk");
 
-            entity.HasMany(d => d.Authors).WithMany(p => p.Movies)
-                .UsingEntity<Dictionary<string, object>>("movie_author",
-                    r => r.HasOne<Author>().WithMany().HasForeignKey("AuthorId").HasConstraintName("fk_movie_author_author"),
-                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId").HasConstraintName("fk_movie_author_movie"),
-                    j => { j.HasKey("MovieId", "AuthorId"); j.ToTable("movie_author"); });
-
-            entity.HasMany(d => d.Genres).WithMany(p => p.Movies)
-                .UsingEntity<Dictionary<string, object>>("movie_genre",
-                    r => r.HasOne<Genre>().WithMany().HasForeignKey("GenreId").HasConstraintName("fk_movie_genre_genre"),
-                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId").HasConstraintName("fk_movie_genre_movie"),
-                    j => { j.HasKey("MovieId", "GenreId"); j.ToTable("movie_genre"); });
-
             entity.HasMany(d => d.Categories).WithMany(p => p.Movies)
                 .UsingEntity<Dictionary<string, object>>("movie_category",
                     r => r.HasOne<ContentCategory>().WithMany().HasForeignKey("CategoryId").HasConstraintName("fk_movie_category_category"),
@@ -322,18 +280,6 @@ public partial class KonyvkockaContext : DbContext
             entity.HasOne(d => d.AgeRating).WithMany(p => p.Series)
                 .HasForeignKey(d => d.AgeRatingId)
                 .HasConstraintName("series_age_rating_fk");
-
-            entity.HasMany(d => d.Authors).WithMany(p => p.Series)
-                .UsingEntity<Dictionary<string, object>>("series_author",
-                    r => r.HasOne<Author>().WithMany().HasForeignKey("AuthorId").HasConstraintName("fk_series_author_author"),
-                    l => l.HasOne<Series>().WithMany().HasForeignKey("SeriesId").HasConstraintName("fk_series_author_series"),
-                    j => { j.HasKey("SeriesId", "AuthorId"); j.ToTable("series_author"); });
-
-            entity.HasMany(d => d.Genres).WithMany(p => p.Series)
-                .UsingEntity<Dictionary<string, object>>("series_genre",
-                    r => r.HasOne<Genre>().WithMany().HasForeignKey("GenreId").HasConstraintName("fk_series_genre_genre"),
-                    l => l.HasOne<Series>().WithMany().HasForeignKey("SeriesId").HasConstraintName("fk_series_genre_series"),
-                    j => { j.HasKey("SeriesId", "GenreId"); j.ToTable("series_genre"); });
 
             entity.HasMany(d => d.Categories).WithMany(p => p.Series)
                 .UsingEntity<Dictionary<string, object>>("series_category",
