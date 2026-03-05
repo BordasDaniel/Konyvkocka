@@ -23,8 +23,6 @@ public partial class UserSeries
 
     public DateTime? LastSeen { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
-
     public int? CurrentSeason { get; set; }
 
     public int? CurrentEpisode { get; set; }

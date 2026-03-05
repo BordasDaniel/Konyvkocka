@@ -44,7 +44,9 @@ namespace KonyvkockaAPI.Controllers
                         Message = "Érvénytelen vagy lejárt token"
                     });
 
-                var user = await _context.Users.FindAsync(userId);
+                var user = await _context.Users
+                    .Include(u => u.UserTitles).ThenInclude(ut => ut.Title)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
 
                 if (user == null)
                     return Unauthorized(new ErrorResponseDTO
@@ -76,7 +78,9 @@ namespace KonyvkockaAPI.Controllers
         {
             try
             {
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+                var user = await _context.Users
+                    .Include(u => u.UserTitles).ThenInclude(ut => ut.Title)
+                    .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
 
                 if (user == null)
                     return Unauthorized(new ErrorResponseDTO
@@ -229,7 +233,8 @@ namespace KonyvkockaAPI.Controllers
             Email           = user.Email,
             Avatar          = user.ProfilePic,
             IsSubscriber    = user.Premium,
-            PermissionLevel = user.PermissionLevel ?? "USER"
+            PermissionLevel = user.PermissionLevel ?? "USER",
+            ActiveTitle     = user.UserTitles?.FirstOrDefault(ut => ut.IsActive)?.Title?.Name
         };
 
         private string GenerateJwtToken(User user)

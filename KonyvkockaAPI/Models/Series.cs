@@ -31,8 +31,6 @@ public partial class Series
 
     public bool IsOfflineAvailable { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
-
     public virtual AgeRating? AgeRating { get; set; }
 
     public virtual ICollection<Author> Authors { get; set; } = new List<Author>();

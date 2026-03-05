@@ -19,8 +19,6 @@ public partial class Badge
 
     public bool IsHidden { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
-
     public virtual ICollection<Challenge> Challenges { get; set; } = new List<Challenge>();
 
     public virtual ICollection<UserBadge> UserBadges { get; set; } = new List<UserBadge>();

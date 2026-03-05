@@ -102,7 +102,6 @@ public partial class KonyvkockaContext : DbContext
                 .HasColumnType("enum('EVENT','STREAK','READING','WATCHING','SOCIAL','SPECIAL')");
             entity.Property(e => e.Rarity)
                 .HasColumnType("enum('COMMON','RARE','EPIC','LEGENDARY')");
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
         });
 
         modelBuilder.Entity<Book>(entity =>
@@ -129,9 +128,33 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.RewardXp).HasColumnType("int(11)").HasColumnName("RewardXP");
             entity.Property(e => e.Title).HasMaxLength(128);
             entity.Property(e => e.Type).HasColumnType("enum('BOOK','AUDIOBOOK','EBOOK')");
-            entity.HasOne(d => d.AgeRating).WithMany()
+            entity.HasOne(d => d.AgeRating).WithMany(p => p.Books)
                 .HasForeignKey(d => d.AgeRatingId)
                 .HasConstraintName("book_age_rating_fk");
+
+            entity.HasMany(d => d.Authors).WithMany(p => p.Books)
+                .UsingEntity<Dictionary<string, object>>("book_author",
+                    r => r.HasOne<Author>().WithMany().HasForeignKey("AuthorId").HasConstraintName("fk_book_author_author"),
+                    l => l.HasOne<Book>().WithMany().HasForeignKey("BookId").HasConstraintName("fk_book_author_book"),
+                    j => { j.HasKey("BookId", "AuthorId"); j.ToTable("book_author"); });
+
+            entity.HasMany(d => d.Genres).WithMany(p => p.Books)
+                .UsingEntity<Dictionary<string, object>>("book_genre",
+                    r => r.HasOne<Genre>().WithMany().HasForeignKey("GenreId").HasConstraintName("fk_book_genre_genre"),
+                    l => l.HasOne<Book>().WithMany().HasForeignKey("BookId").HasConstraintName("fk_book_genre_book"),
+                    j => { j.HasKey("BookId", "GenreId"); j.ToTable("book_genre"); });
+
+            entity.HasMany(d => d.Categories).WithMany(p => p.Books)
+                .UsingEntity<Dictionary<string, object>>("book_category",
+                    r => r.HasOne<ContentCategory>().WithMany().HasForeignKey("CategoryId").HasConstraintName("fk_book_category_category"),
+                    l => l.HasOne<Book>().WithMany().HasForeignKey("BookId").HasConstraintName("fk_book_category_book"),
+                    j => { j.HasKey("BookId", "CategoryId"); j.ToTable("book_category"); });
+
+            entity.HasMany(d => d.Tags).WithMany(p => p.Books)
+                .UsingEntity<Dictionary<string, object>>("book_tag",
+                    r => r.HasOne<Tag>().WithMany().HasForeignKey("TagId").HasConstraintName("fk_book_tag_tag"),
+                    l => l.HasOne<Book>().WithMany().HasForeignKey("BookId").HasConstraintName("fk_book_tag_book"),
+                    j => { j.HasKey("BookId", "TagId"); j.ToTable("book_tag"); });
         });
 
         modelBuilder.Entity<Challenge>(entity =>
@@ -237,9 +260,33 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.Title).HasMaxLength(128);
             entity.Property(e => e.TrailerUrl).HasMaxLength(2048).HasDefaultValueSql("'NULL'").HasColumnName("TrailerURL");
             entity.Property(e => e.RewardXp).HasColumnType("int(11)").HasColumnName("RewardXP");
-            entity.HasOne(d => d.AgeRating).WithMany()
+            entity.HasOne(d => d.AgeRating).WithMany(p => p.Movies)
                 .HasForeignKey(d => d.AgeRatingId)
                 .HasConstraintName("movie_age_rating_fk");
+
+            entity.HasMany(d => d.Authors).WithMany(p => p.Movies)
+                .UsingEntity<Dictionary<string, object>>("movie_author",
+                    r => r.HasOne<Author>().WithMany().HasForeignKey("AuthorId").HasConstraintName("fk_movie_author_author"),
+                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId").HasConstraintName("fk_movie_author_movie"),
+                    j => { j.HasKey("MovieId", "AuthorId"); j.ToTable("movie_author"); });
+
+            entity.HasMany(d => d.Genres).WithMany(p => p.Movies)
+                .UsingEntity<Dictionary<string, object>>("movie_genre",
+                    r => r.HasOne<Genre>().WithMany().HasForeignKey("GenreId").HasConstraintName("fk_movie_genre_genre"),
+                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId").HasConstraintName("fk_movie_genre_movie"),
+                    j => { j.HasKey("MovieId", "GenreId"); j.ToTable("movie_genre"); });
+
+            entity.HasMany(d => d.Categories).WithMany(p => p.Movies)
+                .UsingEntity<Dictionary<string, object>>("movie_category",
+                    r => r.HasOne<ContentCategory>().WithMany().HasForeignKey("CategoryId").HasConstraintName("fk_movie_category_category"),
+                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId").HasConstraintName("fk_movie_category_movie"),
+                    j => { j.HasKey("MovieId", "CategoryId"); j.ToTable("movie_category"); });
+
+            entity.HasMany(d => d.Tags).WithMany(p => p.Movies)
+                .UsingEntity<Dictionary<string, object>>("movie_tag",
+                    r => r.HasOne<Tag>().WithMany().HasForeignKey("TagId").HasConstraintName("fk_movie_tag_tag"),
+                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId").HasConstraintName("fk_movie_tag_movie"),
+                    j => { j.HasKey("MovieId", "TagId"); j.ToTable("movie_tag"); });
         });
 
         modelBuilder.Entity<Purchase>(entity =>
@@ -272,9 +319,33 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.Title).HasMaxLength(128);
             entity.Property(e => e.TrailerUrl).HasMaxLength(2048).HasDefaultValueSql("'NULL'").HasColumnName("TrailerURL");
             entity.Property(e => e.RewardXp).HasColumnType("int(11)").HasColumnName("RewardXP");
-            entity.HasOne(d => d.AgeRating).WithMany()
+            entity.HasOne(d => d.AgeRating).WithMany(p => p.Series)
                 .HasForeignKey(d => d.AgeRatingId)
                 .HasConstraintName("series_age_rating_fk");
+
+            entity.HasMany(d => d.Authors).WithMany(p => p.Series)
+                .UsingEntity<Dictionary<string, object>>("series_author",
+                    r => r.HasOne<Author>().WithMany().HasForeignKey("AuthorId").HasConstraintName("fk_series_author_author"),
+                    l => l.HasOne<Series>().WithMany().HasForeignKey("SeriesId").HasConstraintName("fk_series_author_series"),
+                    j => { j.HasKey("SeriesId", "AuthorId"); j.ToTable("series_author"); });
+
+            entity.HasMany(d => d.Genres).WithMany(p => p.Series)
+                .UsingEntity<Dictionary<string, object>>("series_genre",
+                    r => r.HasOne<Genre>().WithMany().HasForeignKey("GenreId").HasConstraintName("fk_series_genre_genre"),
+                    l => l.HasOne<Series>().WithMany().HasForeignKey("SeriesId").HasConstraintName("fk_series_genre_series"),
+                    j => { j.HasKey("SeriesId", "GenreId"); j.ToTable("series_genre"); });
+
+            entity.HasMany(d => d.Categories).WithMany(p => p.Series)
+                .UsingEntity<Dictionary<string, object>>("series_category",
+                    r => r.HasOne<ContentCategory>().WithMany().HasForeignKey("CategoryId").HasConstraintName("fk_series_category_category"),
+                    l => l.HasOne<Series>().WithMany().HasForeignKey("SeriesId").HasConstraintName("fk_series_category_series"),
+                    j => { j.HasKey("SeriesId", "CategoryId"); j.ToTable("series_category"); });
+
+            entity.HasMany(d => d.Tags).WithMany(p => p.Series)
+                .UsingEntity<Dictionary<string, object>>("series_tag",
+                    r => r.HasOne<Tag>().WithMany().HasForeignKey("TagId").HasConstraintName("fk_series_tag_tag"),
+                    l => l.HasOne<Series>().WithMany().HasForeignKey("SeriesId").HasConstraintName("fk_series_tag_series"),
+                    j => { j.HasKey("SeriesId", "TagId"); j.ToTable("series_tag"); });
         });
 
         modelBuilder.Entity<Tag>(entity =>
@@ -395,7 +466,7 @@ public partial class KonyvkockaContext : DbContext
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("'current_timestamp()'")
                 .HasColumnType("datetime")
-                .HasColumnName("LastUpdated");
+                .HasColumnName("updated_at");
             entity.Property(e => e.StartedAt).HasDefaultValueSql("'NULL'").HasColumnType("datetime");
             entity.Property(e => e.Status)
                 .HasDefaultValueSql("'''NOT_STARTED'''")

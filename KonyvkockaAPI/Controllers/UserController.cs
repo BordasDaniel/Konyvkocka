@@ -295,6 +295,134 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
+        // GET /api/user/{id}/recent/{type}
+        // ================================================================
+        [HttpGet("{id}/recent/{type}")]
+        public async Task<IActionResult> GetRecent(int id, string type)
+        {
+            try
+            {
+                var limit = 3;
+                var items = new List<ContentSearchItemDTO>();
+
+                if (type.ToLower() is "all" or "book" or "audiobook" or "ebook")
+                {
+                    var books = await _context.UserBooks
+                        .Where(ub => ub.UserId == id)
+                        .OrderByDescending(ub => ub.LastSeen)
+                        .Take(limit)
+                        .Select(ub => new ContentSearchItemDTO
+                        {
+                            Id = ub.BookId, Type = ub.Book.Type.ToLower(), Title = ub.Book.Title,
+                            Img = ub.Book.CoverApiName, Year = ub.Book.Released, Rating = ub.Book.Rating,
+                            Length = ub.Book.Type == "AUDIOBOOK" ? ub.Book.AudioLength : ub.Book.PageNum
+                        }).ToListAsync();
+                    items.AddRange(books);
+                }
+
+                if (type.ToLower() is "all" or "movie")
+                {
+                    var movies = await _context.UserMovies
+                        .Where(um => um.UserId == id)
+                        .OrderByDescending(um => um.LastSeen)
+                        .Take(limit)
+                        .Select(um => new ContentSearchItemDTO
+                        {
+                            Id = um.MovieId, Type = "movie", Title = um.Movie.Title,
+                            Img = um.Movie.PosterApiName, Year = um.Movie.Released, Rating = um.Movie.Rating,
+                            Length = um.Movie.Length
+                        }).ToListAsync();
+                    items.AddRange(movies);
+                }
+
+                if (type.ToLower() is "all" or "series")
+                {
+                    var series = await _context.UserSeries
+                        .Where(us => us.UserId == id)
+                        .OrderByDescending(us => us.LastSeen)
+                        .Take(limit)
+                        .Select(us => new ContentSearchItemDTO
+                        {
+                            Id = us.SeriesId, Type = "series", Title = us.Series.Title,
+                            Img = us.Series.PosterApiName, Year = us.Series.Released, Rating = us.Series.Rating,
+                            Length = us.Series.Episodes.Count
+                        }).ToListAsync();
+                    items.AddRange(series);
+                }
+
+                return Ok(items.OrderByDescending(x => x.Id).Take(limit)); // Simplified sort for all
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // GET /api/user/{id}/favorites/{type}
+        // ================================================================
+        [HttpGet("{id}/favorites/{type}")]
+        public async Task<IActionResult> GetFavorites(int id, string type)
+        {
+            try
+            {
+                var limit = 3;
+                var items = new List<ContentSearchItemDTO>();
+
+                if (type.ToLower() is "all" or "book" or "audiobook" or "ebook")
+                {
+                    var books = await _context.UserBooks
+                        .Where(ub => ub.UserId == id && ub.Favorite)
+                        .OrderByDescending(ub => ub.AddedAt)
+                        .Take(limit)
+                        .Select(ub => new ContentSearchItemDTO
+                        {
+                            Id = ub.BookId, Type = ub.Book.Type.ToLower(), Title = ub.Book.Title,
+                            Img = ub.Book.CoverApiName, Year = ub.Book.Released, Rating = ub.Book.Rating,
+                            Length = ub.Book.Type == "AUDIOBOOK" ? ub.Book.AudioLength : ub.Book.PageNum
+                        }).ToListAsync();
+                    items.AddRange(books);
+                }
+
+                if (type.ToLower() is "all" or "movie")
+                {
+                    var movies = await _context.UserMovies
+                        .Where(um => um.UserId == id && um.Favorite)
+                        .OrderByDescending(um => um.AddedAt)
+                        .Take(limit)
+                        .Select(um => new ContentSearchItemDTO
+                        {
+                            Id = um.MovieId, Type = "movie", Title = um.Movie.Title,
+                            Img = um.Movie.PosterApiName, Year = um.Movie.Released, Rating = um.Movie.Rating,
+                            Length = um.Movie.Length
+                        }).ToListAsync();
+                    items.AddRange(movies);
+                }
+
+                if (type.ToLower() is "all" or "series")
+                {
+                    var series = await _context.UserSeries
+                        .Where(us => us.UserId == id && us.Favorite)
+                        .OrderByDescending(us => us.AddedAt)
+                        .Take(limit)
+                        .Select(us => new ContentSearchItemDTO
+                        {
+                            Id = us.SeriesId, Type = "series", Title = us.Series.Title,
+                            Img = us.Series.PosterApiName, Year = us.Series.Released, Rating = us.Series.Rating,
+                            Length = us.Series.Episodes.Count
+                        }).ToListAsync();
+                    items.AddRange(series);
+                }
+
+                return Ok(items.OrderByDescending(x => x.Id).Take(limit)); // Simplified sort for all
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
         // Belső segédosztály a raw SQL user_rank_cache projekcióhoz
         // ================================================================
         private class RankCacheRow

@@ -473,19 +473,20 @@ namespace KonyvkockaAPI.Controllers
                     q = normalized switch
                     {
                         "top_rated" => q.OrderByDescending(b => b.Rating),
-                        "new_books" => q.OrderByDescending(b => b.UpdatedAt ?? DateTime.MinValue),
-                        _           => q.OrderByDescending(b => b.UpdatedAt ?? DateTime.MinValue) // latest / popular
+                        "new_books" => q.OrderByDescending(b => b.Id),
+                        _           => q.OrderByDescending(b => b.Id) // latest / popular
                     };
 
-                    var results = await q.Take(limit).ToListAsync();
-                    items.AddRange(results.Select(b => new ContentSearchItemDTO
+                    var results = await q.Take(limit).Select(b => new ContentSearchItemDTO
                     {
                         Id     = b.Id, Type = b.Type.ToLower(), Title = b.Title,
                         Img    = b.CoverApiName, Year = b.Released, Rating = b.Rating,
                         Genres = b.Genres.Select(g => g.Name).ToList(),
                         Authors = b.Authors.Select(a => a.Name).ToList(),
                         Length = b.Type == "AUDIOBOOK" ? b.AudioLength : b.PageNum
-                    }));
+                    }).ToListAsync();
+
+                    items.AddRange(results);
                 }
 
                 // Filmek
@@ -500,19 +501,20 @@ namespace KonyvkockaAPI.Controllers
                     q = normalized switch
                     {
                         "top_rated"  => q.OrderByDescending(m => m.Rating),
-                        "new_movies" => q.OrderByDescending(m => m.UpdatedAt ?? DateTime.MinValue),
-                        _            => q.OrderByDescending(m => m.UpdatedAt ?? DateTime.MinValue)
+                        "new_movies" => q.OrderByDescending(m => m.Id),
+                        _            => q.OrderByDescending(m => m.Id)
                     };
 
-                    var results = await q.Take(limit).ToListAsync();
-                    items.AddRange(results.Select(m => new ContentSearchItemDTO
+                    var results = await q.Take(limit).Select(m => new ContentSearchItemDTO
                     {
                         Id     = m.Id, Type = "movie", Title = m.Title,
                         Img    = m.PosterApiName, Year = m.Released, Rating = m.Rating,
                         Genres = m.Genres.Select(g => g.Name).ToList(),
                         Authors = m.Authors.Select(a => a.Name).ToList(),
                         Length = m.Length
-                    }));
+                    }).ToListAsync();
+
+                    items.AddRange(results);
                 }
 
                 // Sorozatok
@@ -528,19 +530,20 @@ namespace KonyvkockaAPI.Controllers
                     q = normalized switch
                     {
                         "top_rated"  => q.OrderByDescending(s => s.Rating),
-                        "new_series" => q.OrderByDescending(s => s.UpdatedAt ?? DateTime.MinValue),
-                        _            => q.OrderByDescending(s => s.UpdatedAt ?? DateTime.MinValue)
+                        "new_series" => q.OrderByDescending(s => s.Id),
+                        _            => q.OrderByDescending(s => s.Id)
                     };
 
-                    var results = await q.Take(limit).ToListAsync();
-                    items.AddRange(results.Select(s => new ContentSearchItemDTO
+                    var results = await q.Take(limit).Select(s => new ContentSearchItemDTO
                     {
                         Id     = s.Id, Type = "series", Title = s.Title,
                         Img    = s.PosterApiName, Year = s.Released, Rating = s.Rating,
                         Genres = s.Genres.Select(g => g.Name).ToList(),
                         Authors = s.Authors.Select(a => a.Name).ToList(),
                         Length = s.Episodes.Count
-                    }));
+                    }).ToListAsync();
+
+                    items.AddRange(results);
                 }
 
                 if (items.Count == 0)

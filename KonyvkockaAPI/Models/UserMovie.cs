@@ -23,8 +23,6 @@ public partial class UserMovie
 
     public DateTime? LastSeen { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
-
     public int? CurrentPosition { get; set; }
 
     public virtual Movie Movie { get; set; } = null!;

@@ -12,5 +12,7 @@ namespace KonyvkockaAPI.DTO.Response
         /// Jogosultsági szint: "USER" | "MODERATOR" | "ADMIN"
         /// </summary>
         public string PermissionLevel { get; set; } = "USER";
+
+        public string? ActiveTitle { get; set; }
     }
 }
