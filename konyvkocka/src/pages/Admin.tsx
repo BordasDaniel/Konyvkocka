@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../styles/admin.css';
@@ -23,14 +23,20 @@ interface AdminUser {
   username: string;
   email: string;
   avatar: string;
-  role: 'user' | 'moderator' | 'admin';
-  subscription: 'free' | 'premium' | 'premium-plus';
+  permissionLevel: 'user' | 'moderator' | 'admin' | 'banned';
+  subscription: 'free' | 'premium';
+  premiumExpiresAt: string | null;
   level: number;
+  xp: number;
+  countryCode: string;
   joinDate: string;
-  lastActive: string;
-  isBanned: boolean;
-  booksRead: number;
-  mediaWatched: number;
+  lastLoginDate: string;
+  dayStreak: number;
+  readTimeMin: number;
+  watchTimeMin: number;
+  bookPoints: number;
+  seriesPoints: number;
+  moviePoints: number;
 }
 
 interface AdminContent {
@@ -81,14 +87,14 @@ const STATS: StatCard[] = [
 ];
 
 const MOCK_USERS: AdminUser[] = [
-  { id: 1, username: 'BookMaster99', email: 'bookmaster@example.com', avatar: 'https://i.pravatar.cc/150?img=1', role: 'user', subscription: 'premium', level: 120, joinDate: '2020-03-15', lastActive: '2026.02.25.', isBanned: false, booksRead: 245, mediaWatched: 189 },
-  { id: 2, username: 'CinemaLover', email: 'cinema@example.com', avatar: 'https://i.pravatar.cc/150?img=2', role: 'moderator', subscription: 'premium-plus', level: 115, joinDate: '2020-06-22', lastActive: '2026.02.25.', isBanned: false, booksRead: 120, mediaWatched: 520 },
-  { id: 3, username: 'ReadingQueen', email: 'queen@example.com', avatar: 'https://i.pravatar.cc/150?img=3', role: 'user', subscription: 'premium', level: 112, joinDate: '2019-11-08', lastActive: '2026.02.24.', isBanned: false, booksRead: 380, mediaWatched: 45 },
-  { id: 4, username: 'TrollUser69', email: 'troll@example.com', avatar: 'https://i.pravatar.cc/150?img=4', role: 'user', subscription: 'free', level: 5, joinDate: '2025-01-20', lastActive: '2026.02.20.', isBanned: true, booksRead: 0, mediaWatched: 2 },
-  { id: 5, username: 'PageTurner', email: 'turner@example.com', avatar: 'https://i.pravatar.cc/150?img=5', role: 'user', subscription: 'premium', level: 105, joinDate: '2020-08-30', lastActive: '2026.02.25.', isBanned: false, booksRead: 310, mediaWatched: 67 },
-  { id: 6, username: 'FilmFanatic', email: 'fanatic@example.com', avatar: 'https://i.pravatar.cc/150?img=10', role: 'user', subscription: 'free', level: 91, joinDate: '2021-06-20', lastActive: '2026.02.18.', isBanned: false, booksRead: 34, mediaWatched: 478 },
-  { id: 7, username: 'NovelNinja', email: 'ninja@example.com', avatar: 'https://i.pravatar.cc/150?img=9', role: 'moderator', subscription: 'premium-plus', level: 94, joinDate: '2020-09-14', lastActive: '2026.02.25.', isBanned: false, booksRead: 267, mediaWatched: 89 },
-  { id: 8, username: 'SpamBot2025', email: 'spam@fake.com', avatar: 'https://i.pravatar.cc/150?img=20', role: 'user', subscription: 'free', level: 1, joinDate: '2025-02-01', lastActive: '2026.02.22.', isBanned: true, booksRead: 0, mediaWatched: 0 },
+  { id: 1, username: 'BookMaster99', email: 'bookmaster@example.com', avatar: 'https://i.pravatar.cc/150?img=1', permissionLevel: 'user', subscription: 'premium', premiumExpiresAt: '2026-08-12', level: 120, xp: 840, countryCode: 'HU', joinDate: '2020-03-15', lastLoginDate: '2026-03-12', dayStreak: 47, readTimeMin: 18320, watchTimeMin: 5220, bookPoints: 8450, seriesPoints: 2160, moviePoints: 980 },
+  { id: 2, username: 'CinemaLover', email: 'cinema@example.com', avatar: 'https://i.pravatar.cc/150?img=2', permissionLevel: 'moderator', subscription: 'premium', premiumExpiresAt: '2027-01-01', level: 115, xp: 625, countryCode: 'RO', joinDate: '2020-06-22', lastLoginDate: '2026-03-13', dayStreak: 18, readTimeMin: 6540, watchTimeMin: 24180, bookPoints: 2210, seriesPoints: 5840, moviePoints: 6120 },
+  { id: 3, username: 'ReadingQueen', email: 'queen@example.com', avatar: 'https://i.pravatar.cc/150?img=3', permissionLevel: 'user', subscription: 'premium', premiumExpiresAt: '2026-05-17', level: 112, xp: 410, countryCode: 'HU', joinDate: '2019-11-08', lastLoginDate: '2026-03-11', dayStreak: 83, readTimeMin: 24880, watchTimeMin: 1240, bookPoints: 11020, seriesPoints: 640, moviePoints: 310 },
+  { id: 4, username: 'TrollUser69', email: 'troll@example.com', avatar: 'https://i.pravatar.cc/150?img=4', permissionLevel: 'banned', subscription: 'free', premiumExpiresAt: null, level: 5, xp: 90, countryCode: 'HU', joinDate: '2025-01-20', lastLoginDate: '2026-02-20', dayStreak: 0, readTimeMin: 14, watchTimeMin: 41, bookPoints: 0, seriesPoints: 10, moviePoints: 0 },
+  { id: 5, username: 'PageTurner', email: 'turner@example.com', avatar: 'https://i.pravatar.cc/150?img=5', permissionLevel: 'user', subscription: 'premium', premiumExpiresAt: '2026-09-09', level: 105, xp: 255, countryCode: 'SK', joinDate: '2020-08-30', lastLoginDate: '2026-03-13', dayStreak: 29, readTimeMin: 16770, watchTimeMin: 3100, bookPoints: 9040, seriesPoints: 420, moviePoints: 260 },
+  { id: 6, username: 'FilmFanatic', email: 'fanatic@example.com', avatar: 'https://i.pravatar.cc/150?img=10', permissionLevel: 'user', subscription: 'free', premiumExpiresAt: null, level: 91, xp: 710, countryCode: 'DE', joinDate: '2021-06-20', lastLoginDate: '2026-03-08', dayStreak: 6, readTimeMin: 2100, watchTimeMin: 20640, bookPoints: 840, seriesPoints: 4120, moviePoints: 4970 },
+  { id: 7, username: 'NovelNinja', email: 'ninja@example.com', avatar: 'https://i.pravatar.cc/150?img=9', permissionLevel: 'moderator', subscription: 'premium', premiumExpiresAt: '2026-12-31', level: 94, xp: 930, countryCode: 'AT', joinDate: '2020-09-14', lastLoginDate: '2026-03-13', dayStreak: 12, readTimeMin: 14320, watchTimeMin: 6220, bookPoints: 6900, seriesPoints: 1540, moviePoints: 890 },
+  { id: 8, username: 'SpamBot2025', email: 'spam@fake.com', avatar: 'https://i.pravatar.cc/150?img=20', permissionLevel: 'banned', subscription: 'free', premiumExpiresAt: null, level: 1, xp: 0, countryCode: '??', joinDate: '2025-02-01', lastLoginDate: '2026-02-22', dayStreak: 0, readTimeMin: 0, watchTimeMin: 0, bookPoints: 0, seriesPoints: 0, moviePoints: 0 },
 ];
 
 const MOCK_CONTENT: AdminContent[] = [
@@ -135,20 +141,52 @@ const Admin: React.FC = () => {
   const [newsSearch, setNewsSearch] = useState('');
   const [challengeSearch, setChallengeSearch] = useState('');
   const [contentTypeFilter, setContentTypeFilter] = useState<'all' | 'book' | 'movie' | 'series'>('all');
+  const [userTypeFilter, setUserTypeFilter] = useState<'all' | 'premium' | 'staff' | 'banned'>('all');
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [userDraft, setUserDraft] = useState<AdminUser | null>(null);
+  const [activeUserDropdown, setActiveUserDropdown] = useState<'permissionLevel' | 'subscription' | null>(null);
+  const [saveModal, setSaveModal] = useState<{ title: string; message: string } | null>(null);
   const [announcementText, setAnnouncementText] = useState('');
   const [announcementTarget, setAnnouncementTarget] = useState<'all' | 'subscribers' | 'free' | 'specific'>('all');
   const [announcementUsers, setAnnouncementUsers] = useState('');
   const [announcementSent, setAnnouncementSent] = useState(false);
 
+  const selectedUser = userDraft;
+
+  const getUserTotalPoints = (user: AdminUser) => user.bookPoints + user.seriesPoints + user.moviePoints;
+
+  const userSummary = useMemo(() => ({
+    premium: users.filter(user => user.subscription !== 'free').length,
+    staff: users.filter(user => user.permissionLevel === 'moderator' || user.permissionLevel === 'admin').length,
+    banned: users.filter(user => user.permissionLevel === 'banned').length,
+    activeToday: users.filter(user => user.lastLoginDate >= '2026-03-13').length,
+  }), [users]);
+
   // Szűrt felhasználók
   const filteredUsers = useMemo(() => {
-    if (!userSearch.trim()) return users;
+    let items = users;
+
+    if (userTypeFilter === 'premium') {
+      items = items.filter(user => user.subscription !== 'free');
+    }
+
+    if (userTypeFilter === 'staff') {
+      items = items.filter(user => user.permissionLevel === 'moderator' || user.permissionLevel === 'admin');
+    }
+
+    if (userTypeFilter === 'banned') {
+      items = items.filter(user => user.permissionLevel === 'banned');
+    }
+
+    if (!userSearch.trim()) return items;
+
     const q = userSearch.toLowerCase();
-    return users.filter(u =>
-      u.username.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q)
+    return items.filter(user =>
+      user.username.toLowerCase().includes(q) ||
+      user.email.toLowerCase().includes(q) ||
+      user.countryCode.toLowerCase().includes(q)
     );
-  }, [users, userSearch]);
+  }, [users, userSearch, userTypeFilter]);
 
   // Szűrt tartalmak
   const filteredContent = useMemo(() => {
@@ -189,24 +227,108 @@ const Admin: React.FC = () => {
   // Mentés handler (mock)
   const handleSave = (section: string) => {
     // TODO: API hívás
-    alert(`${section} sikeresen mentve!`);
+    setSaveModal({
+      title: 'Mentés kész',
+      message: `${section} módosításai sikeresen mentve lettek.`,
+    });
   };
 
-  // Felhasználó ban/unban
-  const toggleBan = (id: number) => {
-    setUsers(prev => prev.map(u =>
-      u.id === id ? { ...u, isBanned: !u.isBanned } : u
+  const openUserModal = (user: AdminUser) => {
+    setSelectedUserId(user.id);
+    setUserDraft({ ...user });
+  };
+
+  const closeUserModal = () => {
+    setSelectedUserId(null);
+    setUserDraft(null);
+    setActiveUserDropdown(null);
+  };
+
+  const updateUserDraft = <K extends keyof AdminUser>(field: K, value: AdminUser[K]) => {
+    setUserDraft(prev => prev ? { ...prev, [field]: value } : prev);
+  };
+
+  const saveUserDraft = () => {
+    if (!userDraft) return;
+
+    const normalizedUser: AdminUser = {
+      ...userDraft,
+      premiumExpiresAt: userDraft.subscription === 'free' ? null : userDraft.premiumExpiresAt,
+    };
+
+    setUsers(prev => prev.map(user =>
+      user.id === normalizedUser.id ? normalizedUser : user
     ));
+
+    closeUserModal();
   };
 
-  // Felhasználó szerepkör váltás
-  const cycleRole = (id: number) => {
-    const roles: AdminUser['role'][] = ['user', 'moderator', 'admin'];
-    setUsers(prev => prev.map(u => {
-      if (u.id !== id) return u;
-      const idx = roles.indexOf(u.role);
-      return { ...u, role: roles[(idx + 1) % roles.length] };
-    }));
+  useEffect(() => {
+    if (!selectedUserId) return;
+
+    const scrollY = window.scrollY;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeUserModal();
+      }
+    };
+
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.height = '100%';
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100%';
+    document.body.style.touchAction = 'none';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.height = '';
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      document.body.style.touchAction = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.removeEventListener('keydown', handleKeyDown);
+      window.scrollTo(0, scrollY);
+    };
+  }, [selectedUserId]);
+
+  useEffect(() => {
+    if (!selectedUserId) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.admin-custom-select')) {
+        setActiveUserDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedUserId]);
+
+  const getUserHealth = (user: AdminUser) => {
+    if (user.permissionLevel === 'banned') return 'Korlátozott';
+    if (user.subscription !== 'free') return 'Prémium aktív';
+    if (user.dayStreak >= 30) return 'Magasan aktív';
+    return 'Normál';
+  };
+
+  const permissionLevelLabels: Record<AdminUser['permissionLevel'], string> = {
+    user: 'USER',
+    moderator: 'MODERATOR',
+    admin: 'ADMIN',
+    banned: 'BANNED',
+  };
+
+  const subscriptionLabels: Record<AdminUser['subscription'], string> = {
+    free: 'FREE',
+    premium: 'PREMIUM',
   };
 
   // Tartalom státusz váltás
@@ -256,17 +378,17 @@ const Admin: React.FC = () => {
   };
 
   // Helper: badge színek
-  const getRoleBadge = (role: AdminUser['role']) => {
-    switch (role) {
+  const getRoleBadge = (permissionLevel: AdminUser['permissionLevel']) => {
+    switch (permissionLevel) {
       case 'admin': return <span className="admin-badge admin-badge-red">Admin</span>;
       case 'moderator': return <span className="admin-badge admin-badge-blue">Moderátor</span>;
+      case 'banned': return <span className="admin-badge admin-badge-red">Banned</span>;
       default: return <span className="admin-badge admin-badge-gray">Felhasználó</span>;
     }
   };
 
   const getSubBadge = (sub: AdminUser['subscription']) => {
     switch (sub) {
-      case 'premium-plus': return <span className="admin-badge admin-badge-gold">Premium+</span>;
       case 'premium': return <span className="admin-badge admin-badge-yellow">Premium</span>;
       default: return <span className="admin-badge admin-badge-dim">Ingyenes</span>;
     }
@@ -469,6 +591,29 @@ const Admin: React.FC = () => {
           {/* ======================== FELHASZNÁLÓK ======================== */}
           {activeTab === 'users' && (
             <div className="admin-section">
+              <div className="admin-users-overview">
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Prémium fiókok</span>
+                  <strong>{userSummary.premium}</strong>
+                  <small>{Math.round((userSummary.premium / users.length) * 100)}% konverzió</small>
+                </div>
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Stáb tagok</span>
+                  <strong>{userSummary.staff}</strong>
+                  <small>moderátor + admin jogosultság</small>
+                </div>
+                <div className="admin-users-stat admin-users-stat-alert">
+                  <span className="admin-users-stat-label">Korlátozott fiókok</span>
+                  <strong>{userSummary.banned}</strong>
+                  <small>permissionLevel = banned</small>
+                </div>
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Mai belépések</span>
+                  <strong>{userSummary.activeToday}</strong>
+                  <small>utolsó login alapján</small>
+                </div>
+              </div>
+
               <div className="admin-card">
                 <div className="admin-card-header">
                   <h3 className="admin-card-title">
@@ -476,14 +621,33 @@ const Admin: React.FC = () => {
                     Felhasználók kezelése
                     <span className="admin-count">{users.length}</span>
                   </h3>
-                  <div className="admin-search">
-                    <i className="bi bi-search"></i>
-                    <input
-                      type="text"
-                      placeholder="Keresés név vagy e-mail alapján..."
-                      value={userSearch}
-                      onChange={(e) => setUserSearch(e.target.value)}
-                    />
+                  <div className="admin-header-controls">
+                    <div className="admin-filter-pills">
+                      {([
+                        { key: 'all', label: 'Minden user' },
+                        { key: 'premium', label: 'Prémium' },
+                        { key: 'staff', label: 'Stáb' },
+                        { key: 'banned', label: 'Korlátozott' },
+                      ] as const).map(filter => (
+                        <button
+                          key={filter.key}
+                          className={`admin-pill ${userTypeFilter === filter.key ? 'active' : ''}`}
+                          onClick={() => setUserTypeFilter(filter.key)}
+                        >
+                          {filter.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="admin-search">
+                      <i className="bi bi-search"></i>
+                      <input
+                        type="text"
+                        placeholder="Keresés név, e-mail vagy országkód alapján..."
+                        value={userSearch}
+                        onChange={(e) => setUserSearch(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -492,53 +656,66 @@ const Admin: React.FC = () => {
                     <thead>
                       <tr>
                         <th>Felhasználó</th>
-                        <th>Szerepkör</th>
+                        <th>Hozzáférés</th>
                         <th>Előfizetés</th>
-                        <th>Szint</th>
+                        <th>Haladás</th>
+                        <th>Összpont</th>
+                        <th>Utolsó login</th>
                         <th>Regisztráció</th>
-                        <th>Utolsó aktivitás</th>
-                        <th>Státusz</th>
-                        <th>Műveletek</th>
+                        <th>Állapot</th>
+                        <th></th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredUsers.map(user => (
-                        <tr key={user.id} className={user.isBanned ? 'banned-row' : ''}>
+                        <tr
+                          key={user.id}
+                          className={user.permissionLevel === 'banned' ? 'banned-row admin-user-row' : 'admin-user-row'}
+                          onClick={() => openUserModal(user)}
+                        >
                           <td>
                             <div className="admin-user-cell">
                               <img src={user.avatar} alt={user.username} className="admin-user-avatar" />
                               <div>
                                 <div className="admin-user-name">{user.username}</div>
                                 <div className="admin-user-email">{user.email}</div>
+                                <div className="admin-user-meta">#{user.id} · {user.countryCode}</div>
                               </div>
                             </div>
                           </td>
-                          <td>{getRoleBadge(user.role)}</td>
-                          <td>{getSubBadge(user.subscription)}</td>
-                          <td><span className="admin-level">Lv.{user.level}</span></td>
-                          <td>{new Date(user.joinDate).toLocaleDateString('hu-HU')}</td>
-                          <td>{user.lastActive}</td>
+                          <td>{getRoleBadge(user.permissionLevel)}</td>
+                          <td className="admin-user-subscription-cell">
+                            <div className="admin-user-subscription">
+                              {getSubBadge(user.subscription)}
+                              <small>{user.subscription === 'premium' && user.premiumExpiresAt ? `Lejár: ${new Date(user.premiumExpiresAt).toLocaleDateString('hu-HU')}` : 'Nincs előfizetés'}</small>
+                            </div>
+                          </td>
                           <td>
-                            {user.isBanned
-                              ? <span className="admin-badge admin-badge-red">Bannolva</span>
-                              : <span className="admin-badge admin-badge-green">Aktív</span>
-                            }
+                            <div className="admin-user-progress">
+                              <span className="admin-level">Lv.{user.level}</span>
+                              <small>{user.xp} XP · {user.dayStreak} napos streak</small>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="admin-user-points">
+                              <strong>{getUserTotalPoints(user).toLocaleString('hu-HU')}</strong>
+                              <small>Könyv {user.bookPoints} · Média {(user.seriesPoints + user.moviePoints).toLocaleString('hu-HU')}</small>
+                            </div>
+                          </td>
+                          <td>{new Date(user.lastLoginDate).toLocaleDateString('hu-HU')}</td>
+                          <td>{new Date(user.joinDate).toLocaleDateString('hu-HU')}</td>
+                          <td>
+                            <span className={`admin-badge ${user.permissionLevel === 'banned' ? 'admin-badge-red' : user.subscription !== 'free' ? 'admin-badge-gold' : 'admin-badge-green'}`}>
+                              {getUserHealth(user)}
+                            </span>
                           </td>
                           <td>
                             <div className="admin-actions">
-                              <button
-                                className="admin-btn-icon"
-                                title="Szerepkör váltása"
-                                onClick={() => cycleRole(user.id)}
-                              >
-                                <i className="bi bi-person-gear"></i>
-                              </button>
-                              <button
-                                className={`admin-btn-icon ${user.isBanned ? 'text-success' : 'text-danger'}`}
-                                title={user.isBanned ? 'Unban' : 'Ban'}
-                                onClick={() => toggleBan(user.id)}
-                              >
-                                <i className={`bi ${user.isBanned ? 'bi-unlock-fill' : 'bi-ban'}`}></i>
+                              <button className="admin-btn-icon" title="Felhasználó szerkesztése" onClick={(event) => {
+                                event.stopPropagation();
+                                openUserModal(user);
+                              }}>
+                                <i className="bi bi-sliders2"></i>
                               </button>
                             </div>
                           </td>
@@ -551,10 +728,203 @@ const Admin: React.FC = () => {
                 <div className="admin-save-bar">
                   <button className="admin-send-btn" onClick={() => handleSave('Felhasználók')}>
                     <i className="bi bi-floppy-fill me-2"></i>
-                    Változtatások mentése
+                    Módosítások mentése
                   </button>
                 </div>
               </div>
+
+              {selectedUser && (
+                <div className="admin-user-modal-backdrop" onClick={closeUserModal}>
+                  <div className="admin-user-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="admin-user-modal-title">
+                    <div className="admin-user-modal-header">
+                      <div className="admin-user-modal-title-wrap">
+                        <div className="admin-user-modal-avatar-wrap">
+                          <img src={selectedUser.avatar} alt={selectedUser.username} className="admin-user-modal-avatar" />
+                        </div>
+                        <div>
+                          <h3 id="admin-user-modal-title">{selectedUser.username}</h3>
+                          <p>{selectedUser.email}</p>
+                        </div>
+                      </div>
+                      <button className="admin-user-modal-close" onClick={closeUserModal} aria-label="Bezárás">
+                        <i className="bi bi-x-lg"></i>
+                      </button>
+                    </div>
+
+                    <div className="admin-user-modal-body">
+                      <div className="admin-user-modal-sidebar">
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Regisztráció</span>
+                          <strong>{new Date(selectedUser.joinDate).toLocaleDateString('hu-HU')}</strong>
+                        </div>
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Utolsó login</span>
+                          <strong>{new Date(selectedUser.lastLoginDate).toLocaleDateString('hu-HU')}</strong>
+                        </div>
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Összpont</span>
+                          <strong>{getUserTotalPoints(selectedUser).toLocaleString('hu-HU')}</strong>
+                        </div>
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Aktivitás</span>
+                          <strong>{selectedUser.readTimeMin + selectedUser.watchTimeMin} perc</strong>
+                        </div>
+                      </div>
+
+                      <div className="admin-user-modal-form">
+                        <div className="admin-user-form-section">
+                          <h4>Hozzáférés és moderáció</h4>
+                          <div className="admin-user-form-grid">
+                            <label className="admin-user-field">
+                              <span>Permission level</span>
+                              <div className="admin-custom-select">
+                                <button
+                                  type="button"
+                                  className="admin-custom-select-trigger"
+                                  aria-expanded={activeUserDropdown === 'permissionLevel'}
+                                  onClick={() => setActiveUserDropdown(prev => prev === 'permissionLevel' ? null : 'permissionLevel')}
+                                >
+                                  <span>{permissionLevelLabels[selectedUser.permissionLevel]}</span>
+                                </button>
+                                <div className={`admin-custom-select-menu ${activeUserDropdown === 'permissionLevel' ? 'show' : ''}`}>
+                                  {(['user', 'moderator', 'admin', 'banned'] as const).map(option => (
+                                    <button
+                                      key={option}
+                                      type="button"
+                                      className={`admin-custom-select-option ${selectedUser.permissionLevel === option ? 'active' : ''}`}
+                                      onClick={() => {
+                                        updateUserDraft('permissionLevel', option);
+                                        setActiveUserDropdown(null);
+                                      }}
+                                    >
+                                      {permissionLevelLabels[option]}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </label>
+
+                            <label className="admin-user-field">
+                              <span>Országkód</span>
+                              <input value={selectedUser.countryCode} maxLength={2} onChange={(event) => updateUserDraft('countryCode', event.target.value.toUpperCase())} />
+                            </label>
+
+                            <label className="admin-user-field">
+                              <span>Előfizetés</span>
+                              <div className="admin-custom-select">
+                                <button
+                                  type="button"
+                                  className="admin-custom-select-trigger"
+                                  aria-expanded={activeUserDropdown === 'subscription'}
+                                  onClick={() => setActiveUserDropdown(prev => prev === 'subscription' ? null : 'subscription')}
+                                >
+                                  <span>{subscriptionLabels[selectedUser.subscription]}</span>
+                                </button>
+                                <div className={`admin-custom-select-menu ${activeUserDropdown === 'subscription' ? 'show' : ''}`}>
+                                  {(['free', 'premium'] as const).map(option => (
+                                    <button
+                                      key={option}
+                                      type="button"
+                                      className={`admin-custom-select-option ${selectedUser.subscription === option ? 'active' : ''}`}
+                                      onClick={() => {
+                                        updateUserDraft('subscription', option);
+                                        if (option === 'free') {
+                                          updateUserDraft('premiumExpiresAt', null);
+                                        }
+                                        setActiveUserDropdown(null);
+                                      }}
+                                    >
+                                      {subscriptionLabels[option]}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </label>
+
+                            <label className="admin-user-field">
+                              <span>Prémium lejárat</span>
+                              <input type="date" value={selectedUser.premiumExpiresAt ?? ''} onChange={(event) => updateUserDraft('premiumExpiresAt', event.target.value || null)} />
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="admin-user-form-section">
+                          <h4>Haladás és pontok</h4>
+                          <div className="admin-user-form-grid">
+                            <label className="admin-user-field">
+                              <span>Szint</span>
+                              <input type="number" min={1} value={selectedUser.level} onChange={(event) => updateUserDraft('level', Number(event.target.value))} />
+                            </label>
+
+                            <label className="admin-user-field">
+                              <span>XP</span>
+                              <input type="number" min={0} value={selectedUser.xp} onChange={(event) => updateUserDraft('xp', Number(event.target.value))} />
+                            </label>
+
+                            <label className="admin-user-field">
+                              <span>Könyv pontok</span>
+                              <input type="number" min={0} value={selectedUser.bookPoints} onChange={(event) => updateUserDraft('bookPoints', Number(event.target.value))} />
+                            </label>
+
+                            <label className="admin-user-field">
+                              <span>Sorozat pontok</span>
+                              <input type="number" min={0} value={selectedUser.seriesPoints} onChange={(event) => updateUserDraft('seriesPoints', Number(event.target.value))} />
+                            </label>
+
+                            <label className="admin-user-field">
+                              <span>Film pontok</span>
+                              <input type="number" min={0} value={selectedUser.moviePoints} onChange={(event) => updateUserDraft('moviePoints', Number(event.target.value))} />
+                            </label>
+
+                            <label className="admin-user-field">
+                              <span>Napi streak</span>
+                              <input type="number" min={0} value={selectedUser.dayStreak} onChange={(event) => updateUserDraft('dayStreak', Number(event.target.value))} />
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="admin-user-form-section">
+                          <h4>Elköteleződés</h4>
+                          <div className="admin-user-form-grid">
+                            <label className="admin-user-field">
+                              <span>Olvasási idő (perc)</span>
+                              <input type="number" min={0} value={selectedUser.readTimeMin} onChange={(event) => updateUserDraft('readTimeMin', Number(event.target.value))} />
+                            </label>
+
+                            <label className="admin-user-field">
+                              <span>Nézési idő (perc)</span>
+                              <input type="number" min={0} value={selectedUser.watchTimeMin} onChange={(event) => updateUserDraft('watchTimeMin', Number(event.target.value))} />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="admin-user-modal-footer">
+                      <button className="admin-user-secondary-btn" onClick={closeUserModal}>Mégse</button>
+                      <button className="admin-send-btn" onClick={saveUserDraft}>
+                        <i className="bi bi-check2-circle me-2"></i>
+                        Felhasználó mentése
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {saveModal && (
+                <div className="admin-save-modal-backdrop" onClick={() => setSaveModal(null)}>
+                  <div className="admin-save-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="admin-save-modal-title">
+                    <div className="admin-save-modal-icon">
+                      <i className="bi bi-check2-circle"></i>
+                    </div>
+                    <h4 id="admin-save-modal-title">{saveModal.title}</h4>
+                    <p>{saveModal.message}</p>
+                    <button className="admin-send-btn" onClick={() => setSaveModal(null)}>
+                      Rendben
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
