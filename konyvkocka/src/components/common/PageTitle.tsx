@@ -60,6 +60,9 @@ const PageTitle = () => {
       case '/jelszo-visszaallitas':
         title = 'Jelszó visszaállítás | KönyvKocka';
         break;
+      case '/admin':
+        title = 'Admin | KönyvKocka';
+        break;
       default:
         // Handle dynamic routes or 404 if needed, though 404 is usually handled by the route matching
         if (path !== '/') {

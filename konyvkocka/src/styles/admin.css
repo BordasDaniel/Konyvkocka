@@ -811,6 +811,49 @@ body:has(.admin-page) {
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
 }
 
+.admin-challenge-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1230;
+  background: rgba(3, 3, 3, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.admin-challenge-modal {
+  width: min(1080px, 100%);
+  max-height: min(92vh, 940px);
+  overflow: auto;
+  background: linear-gradient(180deg, rgba(13, 11, 9, 0.98), rgba(9, 8, 7, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.admin-challenge-row {
+  cursor: pointer;
+}
+
+.admin-challenge-target,
+.admin-challenge-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-challenge-target strong {
+  color: var(--h1Text);
+}
+
+.admin-challenge-target small,
+.admin-challenge-links small {
+  color: rgba(255, 255, 255, 0.62);
+}
+
 .admin-news-modal-header {
   display: flex;
   align-items: flex-start;
@@ -914,6 +957,19 @@ body:has(.admin-page) {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+}
+
+.admin-user-field-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 48px;
+}
+
+.admin-user-field-inline input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--secondary);
 }
 
 .admin-user-field span {
@@ -1225,6 +1281,10 @@ body:has(.admin-page) {
     padding: 0.8rem;
   }
 
+  .admin-challenge-modal-backdrop {
+    padding: 0.8rem;
+  }
+
   .admin-user-modal-header,
   .admin-user-modal-footer,
   .admin-user-modal-body {
@@ -1233,6 +1293,11 @@ body:has(.admin-page) {
 
   .admin-news-modal-header,
   .admin-news-modal-body {
+    padding: 1rem;
+  }
+
+  .admin-challenge-modal .admin-news-modal-header,
+  .admin-challenge-modal .admin-news-modal-body {
     padding: 1rem;
   }
 

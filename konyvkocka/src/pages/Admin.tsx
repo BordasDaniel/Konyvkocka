@@ -63,13 +63,34 @@ interface AdminNewsItem {
 interface AdminChallenge {
   id: number;
   title: string;
-  category: string;
-  rarity: string;
+  description: string;
+  iconUrl: string | null;
+  type: 'READ' | 'WATCH' | 'SOCIAL' | 'MIXED' | 'DEDICATION' | 'EVENT';
+  targetValue: number;
+  rewardXP: number;
+  rewardBadgeId: number | null;
+  rewardTitleId: number | null;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EPIC';
+  isActive: boolean;
+  isRepeatable: boolean;
+  createdAt: string;
   participants: number;
   completions: number;
-  status: 'active' | 'upcoming' | 'ended';
-  startDate: string;
-  endDate?: string;
+}
+
+interface AdminBadgeOption {
+  id: number;
+  name: string;
+  category: 'EVENT' | 'STREAK' | 'READING' | 'WATCHING' | 'SOCIAL' | 'SPECIAL';
+  rarity: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
+  isHidden: boolean;
+}
+
+interface AdminTitleOption {
+  id: number;
+  name: string;
+  description: string;
+  rarity: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 }
 
 // ========================
@@ -149,13 +170,106 @@ const MOCK_NEWS: AdminNewsItem[] = [
   },
 ];
 
+const MOCK_BADGE_OPTIONS: AdminBadgeOption[] = [
+  { id: 1, name: 'Első Fejezet', category: 'READING', rarity: 'COMMON', isHidden: false },
+  { id: 2, name: 'Maraton Mester', category: 'EVENT', rarity: 'EPIC', isHidden: false },
+  { id: 3, name: 'Csendes Megfigyelő', category: 'SOCIAL', rarity: 'RARE', isHidden: true },
+  { id: 4, name: 'Nézőtitán', category: 'WATCHING', rarity: 'LEGENDARY', isHidden: false },
+];
+
+const MOCK_TITLE_OPTIONS: AdminTitleOption[] = [
+  { id: 1, name: 'Könyvmoly', description: 'Kiemelkedő olvasási aktivitásért járó cím.', rarity: 'COMMON' },
+  { id: 2, name: 'Kihívásvadász', description: 'Több event challenge teljesítéséért.', rarity: 'RARE' },
+  { id: 3, name: 'Aréna Bajnok', description: 'Nehéz kihívások teljesítéséért.', rarity: 'EPIC' },
+  { id: 4, name: 'Legendák Őrzője', description: 'Különleges, ritka achievement cím.', rarity: 'LEGENDARY' },
+];
+
 const MOCK_CHALLENGES: AdminChallenge[] = [
-  { id: 1, title: 'Első lépések', category: 'Olvasás', rarity: 'Gyakori', participants: 8420, completions: 6210, status: 'active', startDate: '2024-01-01' },
-  { id: 2, title: 'Könyvmoly', category: 'Olvasás', rarity: 'Epikus', participants: 3200, completions: 890, status: 'active', startDate: '2024-01-01' },
-  { id: 3, title: 'Filmmánia', category: 'Nézés', rarity: 'Ritka', participants: 5100, completions: 2340, status: 'active', startDate: '2024-03-15' },
-  { id: 4, title: '30 napos olvasási maraton', category: 'Esemény', rarity: 'Legendás', participants: 1240, completions: 156, status: 'active', startDate: '2025-01-01', endDate: '2025-01-31' },
-  { id: 5, title: 'Tavaszi kihívás', category: 'Esemény', rarity: 'Nagyon ritka', participants: 0, completions: 0, status: 'upcoming', startDate: '2026-03-01', endDate: '2026-03-31' },
-  { id: 6, title: 'Téli kihívás', category: 'Esemény', rarity: 'Nagyon ritka', participants: 2890, completions: 410, status: 'ended', startDate: '2024-12-01', endDate: '2025-01-31' },
+  {
+    id: 1,
+    title: 'Első lépések',
+    description: 'Olvass el 3 fejezetet bármely könyvből.',
+    iconUrl: null,
+    type: 'READ',
+    targetValue: 3,
+    rewardXP: 120,
+    rewardBadgeId: 1,
+    rewardTitleId: null,
+    difficulty: 'EASY',
+    isActive: true,
+    isRepeatable: true,
+    createdAt: '2024-01-01T09:00:00',
+    participants: 8420,
+    completions: 6210,
+  },
+  {
+    id: 2,
+    title: 'Könyvmoly',
+    description: 'Teljesíts 12 olvasási sessiont 7 nap alatt.',
+    iconUrl: null,
+    type: 'DEDICATION',
+    targetValue: 12,
+    rewardXP: 420,
+    rewardBadgeId: 2,
+    rewardTitleId: 2,
+    difficulty: 'HARD',
+    isActive: true,
+    isRepeatable: false,
+    createdAt: '2024-01-01T09:30:00',
+    participants: 3200,
+    completions: 890,
+  },
+  {
+    id: 3,
+    title: 'Filmmánia',
+    description: 'Nézz meg 5 filmet ezen a héten.',
+    iconUrl: null,
+    type: 'WATCH',
+    targetValue: 5,
+    rewardXP: 260,
+    rewardBadgeId: 4,
+    rewardTitleId: null,
+    difficulty: 'MEDIUM',
+    isActive: true,
+    isRepeatable: true,
+    createdAt: '2024-03-15T12:00:00',
+    participants: 5100,
+    completions: 2340,
+  },
+  {
+    id: 4,
+    title: '30 napos olvasási maraton',
+    description: 'Legalabb 20 nap olvasás egy 30 napos ablakban.',
+    iconUrl: null,
+    type: 'EVENT',
+    targetValue: 20,
+    rewardXP: 780,
+    rewardBadgeId: 2,
+    rewardTitleId: 3,
+    difficulty: 'EPIC',
+    isActive: true,
+    isRepeatable: false,
+    createdAt: '2025-01-01T08:00:00',
+    participants: 1240,
+    completions: 156,
+  },
+  {
+    id: 5,
+    title: 'Téli kihívás',
+    description: 'Olvass és nézz összesen 15 tartalmat a szezonban.',
+    iconUrl: null,
+    type: 'MIXED',
+    targetValue: 15,
+    rewardXP: 500,
+    rewardBadgeId: 3,
+    rewardTitleId: 4,
+    difficulty: 'HARD',
+    isActive: false,
+    isRepeatable: false,
+    createdAt: '2024-12-01T10:00:00',
+    participants: 2890,
+    completions: 410,
+  },
 ];
 
 // ========================
@@ -169,7 +283,9 @@ const Admin: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS);
   const [content, setContent] = useState<AdminContent[]>(MOCK_CONTENT);
   const [news, setNews] = useState<AdminNewsItem[]>(MOCK_NEWS);
-  const [challenges] = useState<AdminChallenge[]>(MOCK_CHALLENGES);
+  const [challenges, setChallenges] = useState<AdminChallenge[]>(MOCK_CHALLENGES);
+  const [badges] = useState<AdminBadgeOption[]>(MOCK_BADGE_OPTIONS);
+  const [titles] = useState<AdminTitleOption[]>(MOCK_TITLE_OPTIONS);
   const [userSearch, setUserSearch] = useState('');
   const [contentSearch, setContentSearch] = useState('');
   const [newsSearch, setNewsSearch] = useState('');
@@ -182,6 +298,9 @@ const Admin: React.FC = () => {
   const [selectedNewsId, setSelectedNewsId] = useState<number | null>(null);
   const [newsDraft, setNewsDraft] = useState<AdminNewsItem | null>(null);
   const [newsTagDropdownOpen, setNewsTagDropdownOpen] = useState(false);
+  const [selectedChallengeId, setSelectedChallengeId] = useState<number | null>(null);
+  const [challengeDraft, setChallengeDraft] = useState<AdminChallenge | null>(null);
+  const [activeChallengeDropdown, setActiveChallengeDropdown] = useState<'type' | 'difficulty' | 'badge' | 'title' | null>(null);
   const [saveModal, setSaveModal] = useState<{ title: string; message: string } | null>(null);
   const [announcementText, setAnnouncementText] = useState('');
   const [announcementTarget, setAnnouncementTarget] = useState<'all' | 'subscribers' | 'free' | 'specific'>('all');
@@ -190,6 +309,7 @@ const Admin: React.FC = () => {
 
   const selectedUser = userDraft;
   const selectedNews = newsDraft;
+  const selectedChallenge = challengeDraft;
 
   const getUserTotalPoints = (user: AdminUser) => user.bookPoints + user.seriesPoints + user.moviePoints;
 
@@ -259,7 +379,9 @@ const Admin: React.FC = () => {
     const q = challengeSearch.toLowerCase();
     return challenges.filter(ch =>
       ch.title.toLowerCase().includes(q) ||
-      ch.category.toLowerCase().includes(q)
+      ch.type.toLowerCase().includes(q) ||
+      ch.difficulty.toLowerCase().includes(q) ||
+      ch.description.toLowerCase().includes(q)
     );
   }, [challenges, challengeSearch]);
 
@@ -283,6 +405,12 @@ const Admin: React.FC = () => {
     setNewsTagDropdownOpen(false);
   };
 
+  const openChallengeModal = (item: AdminChallenge) => {
+    setSelectedChallengeId(item.id);
+    setChallengeDraft({ ...item });
+    setActiveChallengeDropdown(null);
+  };
+
   const closeUserModal = () => {
     setSelectedUserId(null);
     setUserDraft(null);
@@ -293,6 +421,12 @@ const Admin: React.FC = () => {
     setSelectedNewsId(null);
     setNewsDraft(null);
     setNewsTagDropdownOpen(false);
+  };
+
+  const closeChallengeModal = () => {
+    setSelectedChallengeId(null);
+    setChallengeDraft(null);
+    setActiveChallengeDropdown(null);
   };
 
   const updateUserDraft = <K extends keyof AdminUser>(field: K, value: AdminUser[K]) => {
@@ -337,8 +471,31 @@ const Admin: React.FC = () => {
     });
   };
 
+  const updateChallengeDraft = <K extends keyof AdminChallenge>(field: K, value: AdminChallenge[K]) => {
+    setChallengeDraft(prev => prev ? { ...prev, [field]: value } : prev);
+  };
+
+  const saveChallengeDraft = () => {
+    if (!challengeDraft) return;
+
+    setChallenges(prev => prev.map(item =>
+      item.id === challengeDraft.id ? challengeDraft : item
+    ));
+
+    closeChallengeModal();
+  };
+
+  const deleteChallenge = (id: number) => {
+    if (!window.confirm('Biztosan törlöd ezt a kihívást?')) return;
+
+    setChallenges(prev => prev.filter(item => item.id !== id));
+    if (selectedChallengeId === id) {
+      closeChallengeModal();
+    }
+  };
+
   useEffect(() => {
-    if (!selectedUserId && !selectedNewsId) return;
+    if (!selectedUserId && !selectedNewsId && !selectedChallengeId) return;
 
     const scrollY = window.scrollY;
 
@@ -346,6 +503,7 @@ const Admin: React.FC = () => {
       if (event.key === 'Escape') {
         if (selectedUserId) closeUserModal();
         if (selectedNewsId) closeNewsModal();
+        if (selectedChallengeId) closeChallengeModal();
       }
     };
 
@@ -371,22 +529,23 @@ const Admin: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.scrollTo(0, scrollY);
     };
-  }, [selectedUserId, selectedNewsId]);
+  }, [selectedUserId, selectedNewsId, selectedChallengeId]);
 
   useEffect(() => {
-    if (!selectedUserId && !selectedNewsId) return;
+    if (!selectedUserId && !selectedNewsId && !selectedChallengeId) return;
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!target.closest('.admin-custom-select')) {
         setActiveUserDropdown(null);
         setNewsTagDropdownOpen(false);
+        setActiveChallengeDropdown(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedUserId, selectedNewsId]);
+  }, [selectedUserId, selectedNewsId, selectedChallengeId]);
 
   const getUserHealth = (user: AdminUser) => {
     if (user.permissionLevel === 'banned') return 'Korlátozott';
@@ -406,6 +565,25 @@ const Admin: React.FC = () => {
     free: 'FREE',
     premium: 'PREMIUM',
   };
+
+  const challengeTypeLabels: Record<AdminChallenge['type'], string> = {
+    READ: 'Olvasás',
+    WATCH: 'Nézés',
+    SOCIAL: 'Közösségi',
+    MIXED: 'Vegyes',
+    DEDICATION: 'Kitartás',
+    EVENT: 'Esemény',
+  };
+
+  const challengeDifficultyLabels: Record<AdminChallenge['difficulty'], string> = {
+    EASY: 'Könnyű',
+    MEDIUM: 'Normál',
+    HARD: 'Nehéz',
+    EPIC: 'Epikus',
+  };
+
+  const getBadgeById = (id: number | null) => badges.find(b => b.id === id) ?? null;
+  const getTitleById = (id: number | null) => titles.find(t => t.id === id) ?? null;
 
   // Tartalom státusz váltás
   const cycleContentStatus = (id: number) => {
@@ -1277,7 +1455,7 @@ const Admin: React.FC = () => {
                     <i className="bi bi-search"></i>
                     <input
                       type="text"
-                      placeholder="Keresés név vagy kategória..."
+                      placeholder="Keresés cím, típus, nehézség vagy leírás alapján..."
                       value={challengeSearch}
                       onChange={(e) => setChallengeSearch(e.target.value)}
                     />
@@ -1289,21 +1467,38 @@ const Admin: React.FC = () => {
                     <thead>
                       <tr>
                         <th>Kihívás</th>
-                        <th>Kategória</th>
-                        <th>Ritkaság</th>
+                        <th>Típus</th>
+                        <th>Nehézség</th>
+                        <th>Cél/Jutalom</th>
+                        <th>Badge / Title</th>
                         <th>Résztvevők</th>
                         <th>Teljesítések</th>
-                        <th>Időszak</th>
                         <th>Státusz</th>
                         <th>Műveletek</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredChallenges.map(ch => (
-                        <tr key={ch.id}>
+                        <tr key={ch.id} className="admin-challenge-row" onClick={() => openChallengeModal(ch)}>
                           <td><span className="admin-news-title">{ch.title}</span></td>
-                          <td>{ch.category}</td>
-                          <td>{ch.rarity}</td>
+                          <td>
+                            <span className="admin-badge admin-badge-blue">{challengeTypeLabels[ch.type]}</span>
+                          </td>
+                          <td>
+                            <span className="admin-badge admin-badge-purple">{challengeDifficultyLabels[ch.difficulty]}</span>
+                          </td>
+                          <td>
+                            <div className="admin-challenge-target">
+                              <strong>{ch.targetValue}</strong>
+                              <small>{ch.rewardXP} XP</small>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="admin-challenge-links">
+                              <small>{getBadgeById(ch.rewardBadgeId)?.name ?? 'Nincs badge'}</small>
+                              <small>{getTitleById(ch.rewardTitleId)?.name ?? 'Nincs title'}</small>
+                            </div>
+                          </td>
                           <td>{ch.participants.toLocaleString('hu-HU')}</td>
                           <td>
                             <span className="admin-completion">
@@ -1315,17 +1510,28 @@ const Admin: React.FC = () => {
                               )}
                             </span>
                           </td>
-                          <td>
-                            <span className="admin-date-range">
-                              {new Date(ch.startDate).toLocaleDateString('hu-HU')}
-                              {ch.endDate && <> – {new Date(ch.endDate).toLocaleDateString('hu-HU')}</>}
-                            </span>
-                          </td>
-                          <td>{getStatusBadge(ch.status)}</td>
+                          <td>{ch.isActive ? <span className="admin-badge admin-badge-green">Aktív</span> : <span className="admin-badge admin-badge-dim">Inaktív</span>}</td>
                           <td>
                             <div className="admin-actions">
-                              <button className="admin-btn-icon" title="Szerkesztés">
+                              <button
+                                className="admin-btn-icon"
+                                title="Szerkesztés"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openChallengeModal(ch);
+                                }}
+                              >
                                 <i className="bi bi-pencil-fill"></i>
+                              </button>
+                              <button
+                                className="admin-btn-icon text-danger"
+                                title="Törlés"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  deleteChallenge(ch.id);
+                                }}
+                              >
+                                <i className="bi bi-trash-fill"></i>
                               </button>
                             </div>
                           </td>
@@ -1342,6 +1548,222 @@ const Admin: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              {selectedChallenge && (
+                <div className="admin-challenge-modal-backdrop" onClick={closeChallengeModal}>
+                  <div className="admin-challenge-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="admin-challenge-modal-title">
+                    <div className="admin-news-modal-header">
+                      <div>
+                        <h3 id="admin-challenge-modal-title">Kihívás szerkesztése</h3>
+                        <p>Challenge tábla mezői: Type, TargetValue, RewardXP, RewardBadgeId, RewardTitleId, Difficulty, IsActive, IsRepeatable.</p>
+                      </div>
+                      <button className="admin-user-modal-close" onClick={closeChallengeModal} aria-label="Bezárás">
+                        <i className="bi bi-x-lg"></i>
+                      </button>
+                    </div>
+
+                    <div className="admin-news-modal-body">
+                      <div className="admin-news-meta-grid">
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Challenge ID</span>
+                          <strong>#{selectedChallenge.id}</strong>
+                        </div>
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Létrehozva</span>
+                          <strong>{new Date(selectedChallenge.createdAt).toLocaleString('hu-HU')}</strong>
+                        </div>
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Teljesítés arány</span>
+                          <strong>{selectedChallenge.participants > 0 ? `${Math.round((selectedChallenge.completions / selectedChallenge.participants) * 100)}%` : '0%'}</strong>
+                        </div>
+                      </div>
+
+                      <div className="admin-user-form-section">
+                        <div className="admin-user-form-grid">
+                          <label className="admin-user-field admin-user-field-wide">
+                            <span>Cím</span>
+                            <input value={selectedChallenge.title} onChange={(event) => updateChallengeDraft('title', event.target.value)} maxLength={128} />
+                          </label>
+
+                          <label className="admin-user-field admin-user-field-wide">
+                            <span>Leírás</span>
+                            <textarea
+                              className="admin-textarea admin-news-textarea"
+                              value={selectedChallenge.description}
+                              onChange={(event) => updateChallengeDraft('description', event.target.value)}
+                              rows={5}
+                            />
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>Típus</span>
+                            <div className="admin-custom-select">
+                              <button
+                                type="button"
+                                className="admin-custom-select-trigger"
+                                aria-expanded={activeChallengeDropdown === 'type'}
+                                onClick={() => setActiveChallengeDropdown(prev => prev === 'type' ? null : 'type')}
+                              >
+                                <span>{challengeTypeLabels[selectedChallenge.type]}</span>
+                              </button>
+                              <div className={`admin-custom-select-menu ${activeChallengeDropdown === 'type' ? 'show' : ''}`}>
+                                {(['READ', 'WATCH', 'SOCIAL', 'MIXED', 'DEDICATION', 'EVENT'] as const).map(option => (
+                                  <button
+                                    key={option}
+                                    type="button"
+                                    className={`admin-custom-select-option ${selectedChallenge.type === option ? 'active' : ''}`}
+                                    onClick={() => {
+                                      updateChallengeDraft('type', option);
+                                      setActiveChallengeDropdown(null);
+                                    }}
+                                  >
+                                    {challengeTypeLabels[option]}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>Nehézség</span>
+                            <div className="admin-custom-select">
+                              <button
+                                type="button"
+                                className="admin-custom-select-trigger"
+                                aria-expanded={activeChallengeDropdown === 'difficulty'}
+                                onClick={() => setActiveChallengeDropdown(prev => prev === 'difficulty' ? null : 'difficulty')}
+                              >
+                                <span>{challengeDifficultyLabels[selectedChallenge.difficulty]}</span>
+                              </button>
+                              <div className={`admin-custom-select-menu ${activeChallengeDropdown === 'difficulty' ? 'show' : ''}`}>
+                                {(['EASY', 'MEDIUM', 'HARD', 'EPIC'] as const).map(option => (
+                                  <button
+                                    key={option}
+                                    type="button"
+                                    className={`admin-custom-select-option ${selectedChallenge.difficulty === option ? 'active' : ''}`}
+                                    onClick={() => {
+                                      updateChallengeDraft('difficulty', option);
+                                      setActiveChallengeDropdown(null);
+                                    }}
+                                  >
+                                    {challengeDifficultyLabels[option]}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>Cél érték</span>
+                            <input type="number" min={1} value={selectedChallenge.targetValue} onChange={(event) => updateChallengeDraft('targetValue', Number(event.target.value))} />
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>Jutalom XP</span>
+                            <input type="number" min={0} value={selectedChallenge.rewardXP} onChange={(event) => updateChallengeDraft('rewardXP', Number(event.target.value))} />
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>Reward badge</span>
+                            <div className="admin-custom-select">
+                              <button
+                                type="button"
+                                className="admin-custom-select-trigger"
+                                aria-expanded={activeChallengeDropdown === 'badge'}
+                                onClick={() => setActiveChallengeDropdown(prev => prev === 'badge' ? null : 'badge')}
+                              >
+                                <span>{getBadgeById(selectedChallenge.rewardBadgeId)?.name ?? 'Nincs badge'}</span>
+                              </button>
+                              <div className={`admin-custom-select-menu ${activeChallengeDropdown === 'badge' ? 'show' : ''}`}>
+                                <button
+                                  type="button"
+                                  className={`admin-custom-select-option ${selectedChallenge.rewardBadgeId === null ? 'active' : ''}`}
+                                  onClick={() => {
+                                    updateChallengeDraft('rewardBadgeId', null);
+                                    setActiveChallengeDropdown(null);
+                                  }}
+                                >
+                                  Nincs badge
+                                </button>
+                                {badges.map(option => (
+                                  <button
+                                    key={option.id}
+                                    type="button"
+                                    className={`admin-custom-select-option ${selectedChallenge.rewardBadgeId === option.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                      updateChallengeDraft('rewardBadgeId', option.id);
+                                      setActiveChallengeDropdown(null);
+                                    }}
+                                  >
+                                    {option.name} ({option.rarity})
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>Reward title</span>
+                            <div className="admin-custom-select">
+                              <button
+                                type="button"
+                                className="admin-custom-select-trigger"
+                                aria-expanded={activeChallengeDropdown === 'title'}
+                                onClick={() => setActiveChallengeDropdown(prev => prev === 'title' ? null : 'title')}
+                              >
+                                <span>{getTitleById(selectedChallenge.rewardTitleId)?.name ?? 'Nincs title'}</span>
+                              </button>
+                              <div className={`admin-custom-select-menu ${activeChallengeDropdown === 'title' ? 'show' : ''}`}>
+                                <button
+                                  type="button"
+                                  className={`admin-custom-select-option ${selectedChallenge.rewardTitleId === null ? 'active' : ''}`}
+                                  onClick={() => {
+                                    updateChallengeDraft('rewardTitleId', null);
+                                    setActiveChallengeDropdown(null);
+                                  }}
+                                >
+                                  Nincs title
+                                </button>
+                                {titles.map(option => (
+                                  <button
+                                    key={option.id}
+                                    type="button"
+                                    className={`admin-custom-select-option ${selectedChallenge.rewardTitleId === option.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                      updateChallengeDraft('rewardTitleId', option.id);
+                                      setActiveChallengeDropdown(null);
+                                    }}
+                                  >
+                                    {option.name} ({option.rarity})
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </label>
+
+                          <label className="admin-user-field admin-user-field-inline">
+                            <input type="checkbox" checked={selectedChallenge.isActive} onChange={(event) => updateChallengeDraft('isActive', event.target.checked)} />
+                            <span>Aktív kihívás</span>
+                          </label>
+
+                          <label className="admin-user-field admin-user-field-inline">
+                            <input type="checkbox" checked={selectedChallenge.isRepeatable} onChange={(event) => updateChallengeDraft('isRepeatable', event.target.checked)} />
+                            <span>Ismételhető</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="admin-user-modal-footer">
+                      <button className="admin-user-secondary-btn" onClick={closeChallengeModal}>Mégse</button>
+                      <button className="admin-send-btn" onClick={saveChallengeDraft}>
+                        <i className="bi bi-check2-circle me-2"></i>
+                        Kihívás mentése
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
