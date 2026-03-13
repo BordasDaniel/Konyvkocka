@@ -54,11 +54,10 @@ interface AdminContent {
 interface AdminNewsItem {
   id: number;
   title: string;
-  type: 'update' | 'feature' | 'info' | 'event';
-  date: string;
-  author: string;
-  status: 'published' | 'draft' | 'archived';
-  views: number;
+  content: string;
+  eventTag: 'UPDATE' | 'ANNOUNCEMENT' | 'EVENT' | 'FUNCTION';
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AdminChallenge {
@@ -108,11 +107,46 @@ const MOCK_CONTENT: AdminContent[] = [
 ];
 
 const MOCK_NEWS: AdminNewsItem[] = [
-  { id: 1, title: 'KönyvKocka 1.0 Launch Esemény', type: 'event', date: '2025-11-05', author: 'Admin', status: 'published', views: 3420 },
-  { id: 2, title: 'Új Megtekintés oldal', type: 'feature', date: '2025-10-30', author: 'Admin', status: 'published', views: 2180 },
-  { id: 3, title: 'PDF olvasó továbbfejlesztve', type: 'update', date: '2025-10-28', author: 'DevTeam', status: 'published', views: 1560 },
-  { id: 4, title: 'Fizetési oldal finomhangolás', type: 'info', date: '2025-10-21', author: 'DevTeam', status: 'archived', views: 890 },
-  { id: 5, title: 'Téli olvasási akció', type: 'event', date: '2025-12-20', author: 'Marketing', status: 'draft', views: 0 },
+  {
+    id: 1,
+    title: 'KönyvKocka 1.0 Launch Esemény',
+    content: 'Ünnepélyes rajt exkluzív tartalmakkal, nyereményjátékkal és élő közösségi programokkal.',
+    eventTag: 'EVENT',
+    createdAt: '2025-11-05T10:30:00',
+    updatedAt: '2025-11-05T10:30:00',
+  },
+  {
+    id: 2,
+    title: 'Új Megtekintés oldal',
+    content: 'A watch felület átdolgozva: gyorsabb betöltés, jobb listanézet és pontosabb lejátszási folytatás.',
+    eventTag: 'FUNCTION',
+    createdAt: '2025-10-30T14:20:00',
+    updatedAt: '2025-10-31T09:40:00',
+  },
+  {
+    id: 3,
+    title: 'PDF olvasó továbbfejlesztve',
+    content: 'Új könyvjelzőzés, stabilabb nagyítás és gyorsabb oldalszinkron a mentett állapotokkal.',
+    eventTag: 'UPDATE',
+    createdAt: '2025-10-28T08:15:00',
+    updatedAt: '2025-10-28T19:05:00',
+  },
+  {
+    id: 4,
+    title: 'Fizetési oldal finomhangolás',
+    content: 'Pontszerű UX javítások, egyértelműbb visszajelzések és hibakezelés a checkout folyamatban.',
+    eventTag: 'ANNOUNCEMENT',
+    createdAt: '2025-10-21T12:00:00',
+    updatedAt: '2025-10-22T11:32:00',
+  },
+  {
+    id: 5,
+    title: 'Téli olvasási akció',
+    content: 'Decemberben minden teljesített olvasás dupla pontot ad, a toplista külön jutalmazással fut.',
+    eventTag: 'EVENT',
+    createdAt: '2025-12-20T09:00:00',
+    updatedAt: '2025-12-20T09:00:00',
+  },
 ];
 
 const MOCK_CHALLENGES: AdminChallenge[] = [
@@ -145,6 +179,9 @@ const Admin: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [userDraft, setUserDraft] = useState<AdminUser | null>(null);
   const [activeUserDropdown, setActiveUserDropdown] = useState<'permissionLevel' | 'subscription' | null>(null);
+  const [selectedNewsId, setSelectedNewsId] = useState<number | null>(null);
+  const [newsDraft, setNewsDraft] = useState<AdminNewsItem | null>(null);
+  const [newsTagDropdownOpen, setNewsTagDropdownOpen] = useState(false);
   const [saveModal, setSaveModal] = useState<{ title: string; message: string } | null>(null);
   const [announcementText, setAnnouncementText] = useState('');
   const [announcementTarget, setAnnouncementTarget] = useState<'all' | 'subscribers' | 'free' | 'specific'>('all');
@@ -152,6 +189,7 @@ const Admin: React.FC = () => {
   const [announcementSent, setAnnouncementSent] = useState(false);
 
   const selectedUser = userDraft;
+  const selectedNews = newsDraft;
 
   const getUserTotalPoints = (user: AdminUser) => user.bookPoints + user.seriesPoints + user.moviePoints;
 
@@ -210,7 +248,8 @@ const Admin: React.FC = () => {
     const q = newsSearch.toLowerCase();
     return news.filter(n =>
       n.title.toLowerCase().includes(q) ||
-      n.author.toLowerCase().includes(q)
+      n.content.toLowerCase().includes(q) ||
+      n.eventTag.toLowerCase().includes(q)
     );
   }, [news, newsSearch]);
 
@@ -238,10 +277,22 @@ const Admin: React.FC = () => {
     setUserDraft({ ...user });
   };
 
+  const openNewsModal = (item: AdminNewsItem) => {
+    setSelectedNewsId(item.id);
+    setNewsDraft({ ...item });
+    setNewsTagDropdownOpen(false);
+  };
+
   const closeUserModal = () => {
     setSelectedUserId(null);
     setUserDraft(null);
     setActiveUserDropdown(null);
+  };
+
+  const closeNewsModal = () => {
+    setSelectedNewsId(null);
+    setNewsDraft(null);
+    setNewsTagDropdownOpen(false);
   };
 
   const updateUserDraft = <K extends keyof AdminUser>(field: K, value: AdminUser[K]) => {
@@ -263,14 +314,38 @@ const Admin: React.FC = () => {
     closeUserModal();
   };
 
+  const updateNewsDraft = <K extends keyof AdminNewsItem>(field: K, value: AdminNewsItem[K]) => {
+    setNewsDraft(prev => prev ? { ...prev, [field]: value } : prev);
+  };
+
+  const saveNewsDraft = () => {
+    if (!newsDraft) return;
+
+    const normalizedNews: AdminNewsItem = {
+      ...newsDraft,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setNews(prev => prev.map(item =>
+      item.id === normalizedNews.id ? normalizedNews : item
+    ));
+
+    closeNewsModal();
+    setSaveModal({
+      title: 'Cikk frissítve',
+      message: 'A hír adatai sikeresen elmentésre kerültek.',
+    });
+  };
+
   useEffect(() => {
-    if (!selectedUserId) return;
+    if (!selectedUserId && !selectedNewsId) return;
 
     const scrollY = window.scrollY;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        closeUserModal();
+        if (selectedUserId) closeUserModal();
+        if (selectedNewsId) closeNewsModal();
       }
     };
 
@@ -296,21 +371,22 @@ const Admin: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.scrollTo(0, scrollY);
     };
-  }, [selectedUserId]);
+  }, [selectedUserId, selectedNewsId]);
 
   useEffect(() => {
-    if (!selectedUserId) return;
+    if (!selectedUserId && !selectedNewsId) return;
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!target.closest('.admin-custom-select')) {
         setActiveUserDropdown(null);
+        setNewsTagDropdownOpen(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedUserId]);
+  }, [selectedUserId, selectedNewsId]);
 
   const getUserHealth = (user: AdminUser) => {
     if (user.permissionLevel === 'banned') return 'Korlátozott';
@@ -346,16 +422,6 @@ const Admin: React.FC = () => {
     if (window.confirm('Biztosan törlöd ezt a tartalmat?')) {
       setContent(prev => prev.filter(c => c.id !== id));
     }
-  };
-
-  // Hír státusz váltás
-  const cycleNewsStatus = (id: number) => {
-    const statuses: AdminNewsItem['status'][] = ['published', 'draft', 'archived'];
-    setNews(prev => prev.map(n => {
-      if (n.id !== id) return n;
-      const idx = statuses.indexOf(n.status);
-      return { ...n, status: statuses[(idx + 1) % statuses.length] };
-    }));
   };
 
   // Hír törlése
@@ -415,12 +481,13 @@ const Admin: React.FC = () => {
     }
   };
 
-  const getNewsTypeBadge = (type: AdminNewsItem['type']) => {
-    switch (type) {
-      case 'update': return <span className="admin-badge admin-badge-blue">Frissítés</span>;
-      case 'feature': return <span className="admin-badge admin-badge-purple">Új funkció</span>;
-      case 'info': return <span className="admin-badge admin-badge-yellow">Közlemény</span>;
-      case 'event': return <span className="admin-badge admin-badge-green">Esemény</span>;
+  const getEventTagBadge = (eventTag: AdminNewsItem['eventTag']) => {
+    switch (eventTag) {
+      case 'UPDATE': return <span className="admin-badge admin-badge-blue">UPDATE</span>;
+      case 'ANNOUNCEMENT': return <span className="admin-badge admin-badge-yellow">ANNOUNCEMENT</span>;
+      case 'EVENT': return <span className="admin-badge admin-badge-green">EVENT</span>;
+      case 'FUNCTION': return <span className="admin-badge admin-badge-purple">FUNCTION</span>;
+      default: return null;
     }
   };
 
@@ -911,20 +978,6 @@ const Admin: React.FC = () => {
                 </div>
               )}
 
-              {saveModal && (
-                <div className="admin-save-modal-backdrop" onClick={() => setSaveModal(null)}>
-                  <div className="admin-save-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="admin-save-modal-title">
-                    <div className="admin-save-modal-icon">
-                      <i className="bi bi-check2-circle"></i>
-                    </div>
-                    <h4 id="admin-save-modal-title">{saveModal.title}</h4>
-                    <p>{saveModal.message}</p>
-                    <button className="admin-send-btn" onClick={() => setSaveModal(null)}>
-                      Rendben
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -1037,14 +1090,14 @@ const Admin: React.FC = () => {
                 <div className="admin-card-header">
                   <h3 className="admin-card-title">
                     <i className="bi bi-newspaper me-2"></i>
-                    Hírek kezelése
+                    Hírcikkek kezelése
                     <span className="admin-count">{news.length}</span>
                   </h3>
                   <div className="admin-search">
                     <i className="bi bi-search"></i>
                     <input
                       type="text"
-                      placeholder="Keresés cím vagy szerző..."
+                      placeholder="Keresés cím, tartalom vagy EventTag alapján..."
                       value={newsSearch}
                       onChange={(e) => setNewsSearch(e.target.value)}
                     />
@@ -1056,36 +1109,44 @@ const Admin: React.FC = () => {
                     <thead>
                       <tr>
                         <th>Cím</th>
-                        <th>Típus</th>
-                        <th>Dátum</th>
-                        <th>Szerző</th>
-                        <th>Megtekintés</th>
-                        <th>Státusz</th>
+                        <th>Tartalom</th>
+                        <th>EventTag</th>
+                        <th>Létrehozva</th>
+                        <th>Frissítve</th>
                         <th>Műveletek</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredNews.map(item => (
-                        <tr key={item.id}>
+                        <tr key={item.id} className="admin-news-row" onClick={() => openNewsModal(item)}>
                           <td><span className="admin-news-title">{item.title}</span></td>
-                          <td>{getNewsTypeBadge(item.type)}</td>
-                          <td>{new Date(item.date).toLocaleDateString('hu-HU')}</td>
-                          <td>{item.author}</td>
-                          <td>{item.views.toLocaleString('hu-HU')}</td>
                           <td>
-                            <button className="admin-btn-status" onClick={() => cycleNewsStatus(item.id)}>
-                              {getStatusBadge(item.status)}
-                            </button>
+                            <p className="admin-news-preview">
+                              {item.content.length > 110 ? `${item.content.slice(0, 110)}...` : item.content}
+                            </p>
                           </td>
+                          <td>{getEventTagBadge(item.eventTag)}</td>
+                          <td>{new Date(item.createdAt).toLocaleString('hu-HU')}</td>
+                          <td>{new Date(item.updatedAt).toLocaleString('hu-HU')}</td>
                           <td>
                             <div className="admin-actions">
-                              <button className="admin-btn-icon" title="Szerkesztés">
+                              <button
+                                className="admin-btn-icon"
+                                title="Cikk szerkesztése"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openNewsModal(item);
+                                }}
+                              >
                                 <i className="bi bi-pencil-fill"></i>
                               </button>
                               <button
                                 className="admin-btn-icon text-danger"
                                 title="Törlés"
-                                onClick={() => deleteNews(item.id)}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  deleteNews(item.id);
+                                }}
                               >
                                 <i className="bi bi-trash-fill"></i>
                               </button>
@@ -1104,6 +1165,101 @@ const Admin: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              {selectedNews && (
+                <div className="admin-news-modal-backdrop" onClick={closeNewsModal}>
+                  <div className="admin-news-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="admin-news-modal-title">
+                    <div className="admin-news-modal-header">
+                      <div>
+                        <h3 id="admin-news-modal-title">Cikk szerkesztése</h3>
+                        <p>Az article tábla mezőihez igazítva: Title, Content, EventTag, CreatedAt, updated_at.</p>
+                      </div>
+                      <button className="admin-user-modal-close" onClick={closeNewsModal} aria-label="Bezárás">
+                        <i className="bi bi-x-lg"></i>
+                      </button>
+                    </div>
+
+                    <div className="admin-news-modal-body">
+                      <div className="admin-news-meta-grid">
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Article ID</span>
+                          <strong>#{selectedNews.id}</strong>
+                        </div>
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Létrehozva</span>
+                          <strong>{new Date(selectedNews.createdAt).toLocaleString('hu-HU')}</strong>
+                        </div>
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Utolsó frissítés</span>
+                          <strong>{new Date(selectedNews.updatedAt).toLocaleString('hu-HU')}</strong>
+                        </div>
+                      </div>
+
+                      <div className="admin-user-form-section">
+                        <div className="admin-user-form-grid">
+                          <label className="admin-user-field admin-user-field-wide">
+                            <span>Cím</span>
+                            <input
+                              value={selectedNews.title}
+                              onChange={(event) => updateNewsDraft('title', event.target.value)}
+                              maxLength={256}
+                            />
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>EventTag</span>
+                            <div className="admin-custom-select">
+                              <button
+                                type="button"
+                                className="admin-custom-select-trigger"
+                                aria-expanded={newsTagDropdownOpen}
+                                onClick={() => setNewsTagDropdownOpen(prev => !prev)}
+                              >
+                                <span>{selectedNews.eventTag}</span>
+                              </button>
+
+                              <div className={`admin-custom-select-menu ${newsTagDropdownOpen ? 'show' : ''}`}>
+                                {(['UPDATE', 'ANNOUNCEMENT', 'EVENT', 'FUNCTION'] as const).map(option => (
+                                  <button
+                                    key={option}
+                                    type="button"
+                                    className={`admin-custom-select-option ${selectedNews.eventTag === option ? 'active' : ''}`}
+                                    onClick={() => {
+                                      updateNewsDraft('eventTag', option);
+                                      setNewsTagDropdownOpen(false);
+                                    }}
+                                  >
+                                    {option}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </label>
+
+                          <label className="admin-user-field admin-user-field-wide">
+                            <span>Tartalom</span>
+                            <textarea
+                              className="admin-textarea admin-news-textarea"
+                              value={selectedNews.content}
+                              onChange={(event) => updateNewsDraft('content', event.target.value)}
+                              maxLength={4000}
+                              rows={8}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="admin-user-modal-footer">
+                      <button className="admin-user-secondary-btn" onClick={closeNewsModal}>Mégse</button>
+                      <button className="admin-send-btn" onClick={saveNewsDraft}>
+                        <i className="bi bi-check2-circle me-2"></i>
+                        Cikk mentése
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1270,6 +1426,21 @@ const Admin: React.FC = () => {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {saveModal && (
+            <div className="admin-save-modal-backdrop" onClick={() => setSaveModal(null)}>
+              <div className="admin-save-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="admin-save-modal-title">
+                <div className="admin-save-modal-icon">
+                  <i className="bi bi-check2-circle"></i>
+                </div>
+                <h4 id="admin-save-modal-title">{saveModal.title}</h4>
+                <p>{saveModal.message}</p>
+                <button className="admin-send-btn" onClick={() => setSaveModal(null)}>
+                  Rendben
+                </button>
               </div>
             </div>
           )}

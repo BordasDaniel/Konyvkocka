@@ -528,6 +528,21 @@ body:has(.admin-page) {
   font-weight: 500;
 }
 
+.admin-news-row {
+  cursor: pointer;
+}
+
+.admin-news-row:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.admin-news-preview {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
 /* Level */
 .admin-level {
   color: var(--secondary);
@@ -773,6 +788,64 @@ body:has(.admin-page) {
   justify-content: center;
 }
 
+.admin-news-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1220;
+  background: rgba(3, 3, 3, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.admin-news-modal {
+  width: min(1080px, 100%);
+  max-height: min(92vh, 940px);
+  overflow: auto;
+  background: linear-gradient(180deg, rgba(13, 11, 9, 0.98), rgba(9, 8, 7, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.admin-news-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.35rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-news-modal-header h3 {
+  margin: 0;
+  color: var(--h1Text);
+}
+
+.admin-news-modal-header p {
+  margin: 0.35rem 0 0;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.admin-news-modal-body {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.admin-news-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.admin-news-textarea {
+  min-height: 190px;
+}
+
 .admin-user-secondary-btn {
   padding: 0.7rem 1.2rem;
 }
@@ -831,6 +904,10 @@ body:has(.admin-page) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.9rem;
+}
+
+.admin-user-field-wide {
+  grid-column: 1 / -1;
 }
 
 .admin-user-field {
@@ -1088,6 +1165,10 @@ body:has(.admin-page) {
   .admin-user-modal-sidebar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .admin-news-meta-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1140,9 +1221,18 @@ body:has(.admin-page) {
     padding: 0.8rem;
   }
 
+  .admin-news-modal-backdrop {
+    padding: 0.8rem;
+  }
+
   .admin-user-modal-header,
   .admin-user-modal-footer,
   .admin-user-modal-body {
+    padding: 1rem;
+  }
+
+  .admin-news-modal-header,
+  .admin-news-modal-body {
     padding: 1rem;
   }
 
