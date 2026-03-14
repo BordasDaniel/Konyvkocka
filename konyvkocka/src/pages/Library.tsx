@@ -8,6 +8,8 @@ const Library: React.FC = () => {
   const [query, setQuery] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<CardData | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     if (filterOpen) {
@@ -32,12 +34,48 @@ const Library: React.FC = () => {
     });
   }, [query]);
 
+  const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
+  const pagedResults = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return results.slice(start, start + pageSize);
+  }, [results, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const toggleFilter = () => setFilterOpen((v) => !v);
   const closeFilter = () => setFilterOpen(false);
   const resetFilters = () => {
     // TODO: ide kerül majd a valós szűrés
     closeFilter();
   };
+
+  const jumpToTopNow = () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const scrollingRoot = document.scrollingElement as HTMLElement | null;
+    if (scrollingRoot) scrollingRoot.scrollTop = 0;
+  };
+
+  const changePage = (page: number) => {
+    jumpToTopNow();
+    setCurrentPage(Math.min(totalPages, Math.max(1, page)));
+  };
+
+  const paginationRange = useMemo(() => {
+    const delta = 2;
+    const start = Math.max(1, currentPage - delta);
+    const end = Math.min(totalPages, currentPage + delta);
+    return Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
+  }, [currentPage, totalPages]);
 
   return (
     <div className="search-page library-page"> {/* reuse search layout styling with minor tweaks */}
@@ -164,16 +202,38 @@ const Library: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
-                <Card
-                  data={results}
-                  count={results.length}
-                  category="library"
-                  showMoreCard={false}
-                  onCardClick={(c) => setSelectedCard(c)}
-                  gridClass="col mb-4"
-                />
-              </div>
+              <>
+                <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
+                  <Card
+                    data={pagedResults}
+                    count={pagedResults.length}
+                    category="library"
+                    showMoreCard={false}
+                    onCardClick={(c) => setSelectedCard(c)}
+                    gridClass="col mb-4"
+                  />
+                </div>
+
+                {totalPages > 1 && (
+                  <nav className="kk-pagination-wrap" aria-label="Könyvtár találatok lapozása">
+                    <ul className="pagination kk-pagination justify-content-center mb-0">
+                      <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => changePage(currentPage - 1)}>Előző</button>
+                      </li>
+
+                      {paginationRange.map((page) => (
+                        <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                          <button className="page-link" onClick={() => changePage(page)}>{page}</button>
+                        </li>
+                      ))}
+
+                      <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => changePage(currentPage + 1)}>Következő</button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -28,8 +28,24 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+
+  useEffect(() => {
+    const scrollTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const pageContent = document.querySelector<HTMLElement>('.page-content');
+      if (pageContent) pageContent.scrollTop = 0;
+    };
+
+    scrollTop();
+    const raf = window.requestAnimationFrame(scrollTop);
+    return () => window.cancelAnimationFrame(raf);
+  }, [location.pathname, location.search, location.hash]);
   
   return (
     <Layout>
