@@ -1316,7 +1316,7 @@ const User: React.FC = () => {
 														aria-expanded={openSelect === `badge-${position}`}
 														onClick={(e) => {
 															e.stopPropagation();
-															setOpenSelect(prev => (prev === `badge-${position}` ? null : `badge-${position}`));
+															setOpenSelect(prev => (prev === `badge-${position}` ? null : `badge-${position}` as OpenSelectId));
 														}}
 													>
 														<span>{settings.selectedBadges[position]}</span>
