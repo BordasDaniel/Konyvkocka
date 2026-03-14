@@ -129,16 +129,6 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
     animTimeoutRef.current = window.setTimeout(() => setIsAnimating(false), 600)
   }, [isAnimating, slides.length])
 
-  const goNext = useCallback(() => {
-    if (slides.length === 0) return
-    goTo((activeIndex + 1) % slides.length)
-  }, [activeIndex, slides.length, goTo])
-
-  const goPrev = useCallback(() => {
-    if (slides.length === 0) return
-    goTo((activeIndex - 1 + slides.length) % slides.length)
-  }, [activeIndex, slides.length, goTo])
-
   // Auto-play timer
   useEffect(() => {
     if (slides.length <= 1) return
