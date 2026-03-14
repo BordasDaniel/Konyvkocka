@@ -30,6 +30,13 @@ function About(): React.JSX.Element {
             <h3 className="about-sub">Csapatunk</h3>
             <p>Fejlesztők, tartalomkurátorok és ügyfélszolgálati szakemberek dolgoznak a platformon, hogy megbízható és folyamatosan fejlődő szolgáltatást biztosítsunk. Szívesen halljuk a visszajelzéseket írj nekünk az <a href="mailto:info@konyvkocka.hu" style={{color: "var(--link)"}}>info@konyvkocka.hu</a> címre.</p>
           </section>
+
+          <section className="mb-2">
+            <h3 className="about-sub">Jogi dokumentumok</h3>
+            <p>
+              A szolgáltatás használatának feltételeit az ÁSZF tartalmazza. Részletek itt: <Link to="/aszf" style={{ color: 'var(--link)' }}>Általános Szerződési Feltételek</Link>.
+            </p>
+          </section>
         </div>
       </div>
     </div>

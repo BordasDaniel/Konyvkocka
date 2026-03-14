@@ -1,0 +1,91 @@
+.aszf-page {
+  padding-top: 4rem;
+  padding-bottom: 2.25rem;
+}
+
+.aszf-title {
+  width: min(96vw, 1380px);
+  max-width: 1380px;
+  box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.aszf-panel {
+  width: min(96vw, 1380px);
+  max-width: 1380px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 2.4rem;
+}
+
+.aszf-section {
+  margin-bottom: 1.35rem;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.aszf-section p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.72;
+}
+
+.aszf-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.aszf-list li {
+  margin-bottom: 0.52rem;
+  line-height: 1.62;
+}
+
+.aszf-footer-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.aszf-footer-actions .btn {
+  background-color: var(--primary);
+  color: var(--bg);
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.aszf-footer-actions .btn:hover {
+  background-color: var(--secondary);
+  box-shadow: 0 4px 12px rgba(194, 157, 89, 0.4);
+}
+
+@media (max-width: 768px) {
+  .aszf-title {
+    width: min(98vw, 100%);
+    text-underline-offset: 3px !important;
+  }
+
+  .aszf-panel {
+    width: min(98vw, 100%);
+    padding: 1.4rem;
+  }
+
+  .aszf-section {
+    padding: 0.8rem 0.85rem;
+  }
+
+  .aszf-footer-actions {
+    justify-content: stretch;
+  }
+
+  .aszf-footer-actions .btn {
+    width: 100%;
+    text-align: center;
+  }
+}

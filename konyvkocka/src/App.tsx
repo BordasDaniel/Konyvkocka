@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout.tsx'
 import PageTitle from './components/common/PageTitle.tsx'
 import Home from './pages/Home.tsx'
 import About from './pages/About.tsx'
+import Aszf from './pages/Aszf.tsx'
 import Login from './pages/Login.tsx'
 import Search from './pages/Search.tsx'
 import News from './pages/News.tsx'
@@ -36,6 +37,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/rolunk" element={<About />} />
+        <Route path="/aszf" element={<Aszf />} />
         <Route path="/belepes" element={<Login />} />
         <Route path="/kereses" element={<Search />} />
         <Route path="/konyvtaram" element={<Library />} />

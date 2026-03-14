@@ -15,6 +15,9 @@ const PageTitle = () => {
       case '/rolunk':
         title = 'Rólunk | KönyvKocka';
         break;
+      case '/aszf':
+        title = 'ÁSZF | KönyvKocka';
+        break;
       case '/belepes':
         title = 'Bejelentkezés | KönyvKocka';
         break;

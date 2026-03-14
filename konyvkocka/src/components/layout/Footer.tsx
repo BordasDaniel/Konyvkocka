@@ -21,6 +21,7 @@ function Footer() {
                       <li><NavLink to="/kereses" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Keresés</NavLink></li>
                       <li><NavLink to="/tamogatas" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Támogatás</NavLink></li>
                       <li><NavLink to="/rolunk" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Rólunk</NavLink></li>
+                      <li><NavLink to="/aszf" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>ÁSZF</NavLink></li>
                   </ul>
               </div>
         <div className="col-md-4 mb-4 px-5">
