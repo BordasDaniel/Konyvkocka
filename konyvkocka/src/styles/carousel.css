@@ -50,6 +50,7 @@
       background-repeat: no-repeat !important;
       background-size: cover;
       padding: 2rem 0; /* allow space for content on small screens */
+      contain: paint;
     }
 
     /* háttér blur - a hero-carousel hátterét örökli */
@@ -62,8 +63,15 @@
       background-size: cover;
       background-position: center;
       /* dim using the theme overlay so images read well on top */
-      filter: blur(20px) brightness(0.28);  
+      filter: blur(12px) brightness(0.28);
+      opacity: 0;
+      transition: opacity 220ms ease;
       z-index: 1;
+      will-change: opacity;
+    }
+
+    .carousel-item.active::before {
+      opacity: 1;
     }
 
     .carousel-content {
@@ -78,6 +86,7 @@
       opacity: 0;
       transform: translateY(20px);
       transition: transform 0.8s ease;
+      will-change: transform;
     }
 
     .carousel-item.active .carousel-content {
@@ -96,6 +105,16 @@
       position: relative;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(2px);
+    }
+
+    @media (max-width: 1024px) {
+      .carousel-item::before {
+        filter: blur(8px) brightness(0.3);
+      }
+
+      .carousel-text {
+        backdrop-filter: none;
+      }
     }
 
     .tags span {

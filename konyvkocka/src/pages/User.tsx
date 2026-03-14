@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import '../styles/user.css';
 
@@ -352,6 +352,7 @@ type ViewType = 'all' | 'book' | 'media' | 'settings';
 type OpenSelectId = 'profileVisibility' | 'language' | 'badge-0' | 'badge-1' | 'badge-2' | 'notificationFrequency' | 'timezone' | null;
 type SaveModalState = { title: string; message: string } | null;
 type MedalModalState = { medal: Medal; groupTitle: string; details: MedalDetails } | null;
+type MedalRarityKey = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 
 const MEDAL_DB_DETAILS: Record<number, Partial<MedalDetails>> = {
 	1: { rarity: 'Ritka', description: 'Amikor mások még a startgombot keresik, te már célba értél a tavaszi hajrában.' },
@@ -396,6 +397,17 @@ const getMedalDetails = (medal: Medal, groupTitle: string): MedalDetails => {
 	};
 };
 
+const getMedalRarityKey = (rarity: string): MedalRarityKey => {
+	const normalized = rarity.trim().toLowerCase();
+
+	if (normalized === 'common' || normalized === 'gyakori') return 'COMMON';
+	if (normalized === 'rare' || normalized === 'ritka') return 'RARE';
+	if (normalized === 'epic' || normalized === 'epikus') return 'EPIC';
+	if (normalized === 'legendary' || normalized === 'legendás') return 'LEGENDARY';
+
+	return 'COMMON';
+};
+
 const NOTIFICATION_FREQUENCY_OPTIONS: Array<{ value: UserSettings['notificationFrequency']; label: string }> = [
 	{ value: 'immediate', label: 'Azonnal' },
 	{ value: 'daily', label: 'Napi' },
@@ -433,6 +445,10 @@ const User: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [saveModal, setSaveModal] = useState<SaveModalState>(null);
 	const [medalModal, setMedalModal] = useState<MedalModalState>(null);
+	const [medalModalVisible, setMedalModalVisible] = useState(false);
+	const [medalModalClosing, setMedalModalClosing] = useState(false);
+	const lastMedalModal = useRef<MedalModalState>(null);
+	if (medalModal) lastMedalModal.current = medalModal;
 	const [badgesExpanded, setBadgesExpanded] = useState(false);
 	const [badgesLoaded, setBadgesLoaded] = useState(false);
 	const [isLoadingBadges, setIsLoadingBadges] = useState(false);
@@ -554,7 +570,7 @@ const User: React.FC = () => {
 		return () => document.removeEventListener('click', clickAway);
 	}, []);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (!saveModal) return;
 
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -563,40 +579,95 @@ const User: React.FC = () => {
 			}
 		};
 
-		document.documentElement.style.overflow = 'hidden';
-		document.documentElement.style.height = '100%';
-		document.body.style.overflow = 'hidden';
-		document.body.style.height = '100%';
+		const html = document.documentElement;
+		const body = document.body;
+		const lockCount = Number(body.dataset.kkScrollLocks || '0');
+
+		if (lockCount === 0) {
+			const scrollBarWidth = window.innerWidth - html.clientWidth;
+			html.style.setProperty('--scrollbar-compensation', `${scrollBarWidth}px`);
+			html.style.overflow = 'hidden';
+			body.style.overflow = 'hidden';
+			body.style.paddingRight = `${scrollBarWidth}px`;
+			body.classList.add('kk-scroll-lock');
+		}
+
+		body.dataset.kkScrollLocks = String(lockCount + 1);
+		html.style.height = '100%';
+		body.style.height = '100%';
 		document.addEventListener('keydown', onKeyDown);
 
 		return () => {
-			document.documentElement.style.overflow = '';
-			document.documentElement.style.height = '';
-			document.body.style.overflow = '';
-			document.body.style.height = '';
+			const current = Number(body.dataset.kkScrollLocks || '1');
+			const next = Math.max(0, current - 1);
+			if (next === 0) {
+				delete body.dataset.kkScrollLocks;
+				html.style.overflow = '';
+				body.style.overflow = '';
+				body.style.paddingRight = '';
+				html.style.removeProperty('--scrollbar-compensation');
+				body.classList.remove('kk-scroll-lock');
+			} else {
+				body.dataset.kkScrollLocks = String(next);
+			}
+
+			html.style.height = '';
+			body.style.height = '';
 			document.removeEventListener('keydown', onKeyDown);
 		};
 	}, [saveModal]);
 
 	useEffect(() => {
-		if (!medalModal) return;
+		if (medalModal) {
+			setMedalModalClosing(false);
+			setMedalModalVisible(true);
+		} else if (medalModalVisible) {
+			setMedalModalClosing(true);
+			const t = setTimeout(() => { setMedalModalVisible(false); setMedalModalClosing(false); }, 290);
+			return () => clearTimeout(t);
+		}
+	}, [medalModal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+	useLayoutEffect(() => {
+		if (!medalModalVisible) return;
 
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key === 'Escape') {
-				setMedalModal(null);
-			}
+			if (event.key === 'Escape') setMedalModal(null);
 		};
 
-		document.documentElement.style.overflow = 'hidden';
-		document.body.style.overflow = 'hidden';
+		const html = document.documentElement;
+		const body = document.body;
+		const lockCount = Number(body.dataset.kkScrollLocks || '0');
+
+		if (lockCount === 0) {
+			const scrollBarWidth = window.innerWidth - html.clientWidth;
+			html.style.setProperty('--scrollbar-compensation', `${scrollBarWidth}px`);
+			html.style.overflow = 'hidden';
+			body.style.overflow = 'hidden';
+			body.style.paddingRight = `${scrollBarWidth}px`;
+			body.classList.add('kk-scroll-lock');
+		}
+
+		body.dataset.kkScrollLocks = String(lockCount + 1);
 		document.addEventListener('keydown', onKeyDown);
 
 		return () => {
-			document.documentElement.style.overflow = '';
-			document.body.style.overflow = '';
+			const current = Number(body.dataset.kkScrollLocks || '1');
+			const next = Math.max(0, current - 1);
+			if (next === 0) {
+				delete body.dataset.kkScrollLocks;
+				html.style.overflow = '';
+				body.style.overflow = '';
+				body.style.paddingRight = '';
+				html.style.removeProperty('--scrollbar-compensation');
+				body.classList.remove('kk-scroll-lock');
+			} else {
+				body.dataset.kkScrollLocks = String(next);
+			}
+
 			document.removeEventListener('keydown', onKeyDown);
 		};
-	}, [medalModal]);
+	}, [medalModalVisible]);
 
 	// Location state változásának figyelése (pl. navigáció a Beállításokhoz)
 	useEffect(() => {
@@ -609,6 +680,8 @@ const User: React.FC = () => {
 		setReadBooksOpen(false);
 		setFavBooksOpen(false);
 		setMedalModal(null);
+		setMedalModalVisible(false);
+		setMedalModalClosing(false);
 		setBadgesExpanded(false);
 	}, [activeView]);
 
@@ -1711,37 +1784,44 @@ const User: React.FC = () => {
 				</section>
 			)}
 
-			{medalModal && (
-				<div className="user-medal-modal-backdrop" onClick={() => setMedalModal(null)}>
-					<div
-						className="user-medal-modal"
-						onClick={(event) => event.stopPropagation()}
-						role="dialog"
-						aria-modal="true"
-						aria-labelledby="user-medal-modal-title"
-					>
-						<div className="user-medal-modal-header">
-							<img src={medalModal.medal.image} alt={medalModal.medal.label} className="user-medal-modal-image" />
-							<div>
-								<h4 id="user-medal-modal-title">{medalModal.medal.label}</h4>
-								<p>{medalModal.groupTitle} • {medalModal.details.rarity}</p>
+			{medalModalVisible && (() => {
+				const dm = medalModal ?? lastMedalModal.current;
+				if (!dm) return null;
+				const rarityKey = getMedalRarityKey(dm.details.rarity);
+				return (
+					<div className={`user-medal-modal-backdrop${medalModalClosing ? ' closing' : ''}`} onClick={() => setMedalModal(null)}>
+						<div
+							className={`user-medal-modal${medalModalClosing ? ' closing' : ''}`}
+							onClick={(event) => event.stopPropagation()}
+							role="dialog"
+							aria-modal="true"
+							aria-labelledby="user-medal-modal-title"
+						>
+							<div className="user-medal-modal-header">
+								<img src={dm.medal.image} alt={dm.medal.label} className="user-medal-modal-image" />
+								<div>
+									<h4 id="user-medal-modal-title">{dm.medal.label}</h4>
+									<p>
+										{dm.groupTitle} • <span className={`medal-rarity medal-rarity-${rarityKey.toLowerCase()}`}>{dm.details.rarity}</span>
+									</p>
+								</div>
 							</div>
+
+							<div className="user-medal-modal-grid">
+								<div><strong>Kategória:</strong> <span>{dm.details.category}</span></div>
+								<div><strong>Állapot:</strong> <span>{dm.medal.isLocked ? 'Zárolt' : 'Megszerezve'}</span></div>
+								<div><strong>Megszerzés:</strong> <span>{dm.medal.date ?? 'Még nincs megszerezve'}</span></div>
+							</div>
+
+							<p className="user-medal-modal-description">{dm.details.description}</p>
+
+							<button className="admin-send-btn" onClick={() => setMedalModal(null)}>
+								Rendben
+							</button>
 						</div>
-
-						<div className="user-medal-modal-grid">
-							<div><strong>Kategória:</strong> <span>{medalModal.details.category}</span></div>
-							<div><strong>Állapot:</strong> <span>{medalModal.medal.isLocked ? 'Zárolt' : 'Megszerezve'}</span></div>
-							<div><strong>Megszerzés:</strong> <span>{medalModal.medal.date ?? 'Még nincs megszerezve'}</span></div>
-						</div>
-
-						<p className="user-medal-modal-description">{medalModal.details.description}</p>
-
-						<button className="admin-send-btn" onClick={() => setMedalModal(null)}>
-							Rendben
-						</button>
 					</div>
-				</div>
-			)}
+				);
+			})()}
 		</main>
 	);
 };

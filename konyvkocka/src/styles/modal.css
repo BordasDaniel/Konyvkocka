@@ -5,6 +5,7 @@
       background: rgba(2,2,2,0.75);
       z-index: 1040; /* below Bootstrap modal (1050) */
       display: none;
+      animation: kkBackdropIn 350ms ease-out;
     }
 
     /* Prevent body scroll when modal is open */
@@ -19,6 +20,18 @@
     }
 
     .modal-custom { --bs-modal-zindex: 1060; }
+
+    .modal-custom.show .modal-dialog {
+      animation: kkModalIn 460ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      transform-origin: center 20%;
+    }
+
+    .modal-custom.show .modal-content {
+      animation: kkModalSurfaceIn 540ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      will-change: transform, opacity, filter;
+      position: relative;
+      overflow: hidden;
+    }
 
     .modal-dialog {
       max-width: 95%;
@@ -103,4 +116,74 @@
       text-decoration-line: underline !important;
       text-decoration-thickness: 2px;
       text-underline-offset: 2px;
+    }
+
+    /* ── Closing (fade-out) ── */
+    .custom-modal-backdrop.closing {
+      animation: kkBackdropOut 250ms ease-in forwards;
+    }
+
+    .modal-custom.closing .modal-dialog {
+      animation: kkModalOut 270ms cubic-bezier(0.4, 0, 0.8, 0) forwards;
+    }
+
+    .modal-custom.closing .modal-content {
+      animation: kkModalSurfaceOut 270ms ease-in forwards;
+    }
+
+    @keyframes kkBackdropIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes kkModalIn {
+      from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes kkModalSurfaceIn {
+      from {
+        opacity: 0;
+        filter: blur(6px) saturate(0.85);
+      }
+      to {
+        opacity: 1;
+        filter: blur(0) saturate(1);
+      }
+    }
+
+    @keyframes kkBackdropOut {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    @keyframes kkModalOut {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to   { opacity: 0; transform: translateY(14px) scale(0.98); }
+    }
+
+    @keyframes kkModalSurfaceOut {
+      from { opacity: 1; filter: blur(0); }
+      to   { opacity: 0; filter: blur(4px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .custom-modal-backdrop,
+      .custom-modal-backdrop.closing,
+      .modal-custom.show .modal-dialog,
+      .modal-custom.show .modal-content,
+      .modal-custom.closing .modal-dialog,
+      .modal-custom.closing .modal-content {
+        animation: none !important;
+      }
     }

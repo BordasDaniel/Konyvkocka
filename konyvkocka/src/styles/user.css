@@ -292,6 +292,11 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  animation: kkMedalBackdropIn 350ms ease-out;
+}
+
+.user-medal-modal-backdrop.closing {
+  animation: kkMedalBackdropOut 250ms ease-in forwards;
 }
 
 .user-medal-modal {
@@ -301,6 +306,42 @@
   border-radius: 18px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
   padding: 1.2rem;
+  position: relative;
+  overflow: hidden;
+  animation: kkMedalIn 460ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.user-medal-modal.closing {
+  animation: kkMedalOut 270ms cubic-bezier(0.4, 0, 0.8, 0) forwards;
+}
+
+@keyframes kkMedalBackdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes kkMedalBackdropOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes kkMedalIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); filter: blur(6px) saturate(0.85); }
+  to   { opacity: 1; transform: translateY(0) scale(1);      filter: blur(0)   saturate(1);    }
+}
+
+@keyframes kkMedalOut {
+  from { opacity: 1; transform: translateY(0) scale(1);      filter: blur(0); }
+  to   { opacity: 0; transform: translateY(14px) scale(0.98); filter: blur(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .user-medal-modal-backdrop,
+  .user-medal-modal-backdrop.closing,
+  .user-medal-modal,
+  .user-medal-modal.closing {
+    animation: none !important;
+  }
 }
 
 .user-medal-modal-header {
@@ -328,6 +369,27 @@
 .user-medal-modal-header p {
   margin: 0.2rem 0 0;
   color: rgba(255,255,255,0.65);
+}
+
+.medal-rarity {
+  font-weight: 700;
+}
+
+.medal-rarity-common {
+  color: #c9ced8;
+}
+
+.medal-rarity-rare {
+  color: #72b9ff;
+}
+
+.medal-rarity-epic {
+  color: #ffb56b;
+}
+
+.medal-rarity-legendary {
+  color: #e6c07c;
+  text-shadow: 0 0 12px rgba(230, 192, 124, 0.24);
 }
 
 .user-medal-modal-grid {
