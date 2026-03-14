@@ -158,14 +158,15 @@
   font-weight: bold !important;
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 991.98px) {
   .dropdown-menu::before {
     left: 0.75rem;
   }
 
   .navbar-collapse {
-    padding: 0.25rem 0.5rem;
+    padding: 0.25rem 0.6rem 0.25rem 0.5rem;
     max-height: calc(100vh - var(--navbar-height) - 12px);
+    overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
@@ -176,7 +177,9 @@
   }
 
   .mobile-menu-switcher {
-    width: 100%;
+    box-sizing: border-box;
+    width: 200%;
+    padding-right: 3px;
     overflow: hidden;
     transition: height 260ms cubic-bezier(.4, 0, .2, 1);
   }
@@ -184,28 +187,34 @@
   .mobile-menu-track {
     display: flex;
     align-items: flex-start;
-    width: 200%;
+    width: 100%;
     transition: transform 260ms cubic-bezier(.4, 0, .2, 1);
     will-change: transform;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
   }
 
   .mobile-menu-track.show-profile {
-    transform: translateX(-50%);
+    /* 150% switcher mellett a panelek 2/3 szélesek, ezért ennyivel kell váltani */
+    transform: translate3d(-66.6667%, 0, 0);
   }
 
   .mobile-menu-panel {
-    width: 50%;
-    flex: 0 0 50%;
-    padding-right: 0.2rem;
+    width: 66.6667%;
+    flex: 0 0 66.6667%;
+    box-sizing: border-box;
+    padding-right: 0;
     margin-bottom: 0 !important;
+    overflow-x: hidden;
   }
 
   .mobile-profile-toggle,
   .mobile-back-btn,
   .mobile-logout {
-    width: 100%;
+    /* width: 100%; */
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     text-align: left;
     text-decoration: none !important;
     border: none !important;
@@ -214,6 +223,17 @@
 
   .mobile-profile-toggle {
     gap: 0.5rem;
+    padding-right: 0.65rem;
+  }
+
+  .mobile-profile-toggle .bi-chevron-right {
+    margin-left: auto;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    padding-left: 0.35rem;
   }
 
   .mobile-main-icon {

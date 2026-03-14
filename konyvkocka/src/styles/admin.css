@@ -379,6 +379,45 @@ body:has(.admin-page) {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.admin-pagination-wrap {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.kk-pagination .page-item .page-link {
+  background: rgba(12,12,12,0.52);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.08);
+  min-width: 42px;
+  text-align: center;
+  font-weight: 700;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.kk-pagination .page-item .page-link:hover {
+  background: rgba(194,157,89,0.16);
+  color: var(--secondary);
+  border-color: rgba(230,192,124,0.35);
+  transform: translateY(-1px);
+}
+
+.kk-pagination .page-item.active .page-link {
+  background: linear-gradient(135deg, rgba(230,192,124,0.95), rgba(194,157,89,0.95));
+  color: #15120e;
+  border-color: rgba(230,192,124,0.6);
+}
+
+.kk-pagination .page-item.disabled .page-link {
+  background: rgba(12,12,12,0.3);
+  color: rgba(255,255,255,0.4);
+  border-color: rgba(255,255,255,0.05);
+}
+
+.kk-pagination .page-link:focus {
+  box-shadow: 0 0 0 0.2rem rgba(194,157,89,0.2);
+}
+
 .banned-row {
   opacity: 0.55;
 }
@@ -392,6 +431,8 @@ body:has(.admin-page) {
 
 .admin-users-stat {
   background: linear-gradient(180deg, rgba(12, 10, 8, 0.5), rgba(12, 10, 8, 0.3));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 14px;
   padding: 1rem 1.1rem;
@@ -404,6 +445,12 @@ body:has(.admin-page) {
 .admin-users-stat strong {
   color: var(--h1Text);
   font-size: 1.45rem;
+}
+
+.admin-users-stat-range {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.92rem;
+  font-weight: 500;
 }
 
 .admin-users-stat small,
@@ -828,6 +875,11 @@ body:has(.admin-page) {
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  animation: kkBackdropIn 350ms ease-out;
+}
+
+.admin-save-modal-backdrop.closing {
+  animation: kkBackdropOut 250ms ease-in forwards;
 }
 
 .admin-save-modal {
@@ -838,6 +890,13 @@ body:has(.admin-page) {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
   padding: 1.5rem;
   text-align: center;
+  animation: kkModalIn 460ms cubic-bezier(0.2, 0.8, 0.2, 1), kkModalSurfaceIn 540ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: center 20%;
+  will-change: transform, opacity, filter;
+}
+
+.admin-save-modal.closing {
+  animation: kkModalOut 270ms cubic-bezier(0.4, 0, 0.8, 0) forwards, kkModalSurfaceOut 270ms ease-in forwards;
 }
 
 .admin-save-modal-icon {

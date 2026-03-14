@@ -82,6 +82,8 @@ interface AdminNewsItem {
   updatedAt: string;
 }
 
+type AdminChallengeDifficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'EPIC';
+
 interface AdminChallenge {
   id: number;
   title: string;
@@ -92,7 +94,7 @@ interface AdminChallenge {
   rewardXP: number;
   rewardBadgeId: number | null;
   rewardTitleId: number | null;
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EPIC';
+  difficulty: AdminChallengeDifficulty;
   isActive: boolean;
   isRepeatable: boolean;
   createdAt: string;
@@ -487,6 +489,8 @@ const Admin: React.FC = () => {
   const [challengeSearch, setChallengeSearch] = useState('');
   const [contentTypeFilter, setContentTypeFilter] = useState<'all' | 'BOOK' | 'MOVIE' | 'SERIES'>('all');
   const [userTypeFilter, setUserTypeFilter] = useState<'all' | 'premium' | 'staff' | 'banned'>('all');
+  const [newsTypeFilter, setNewsTypeFilter] = useState<'all' | 'UPDATE' | 'ANNOUNCEMENT' | 'EVENT' | 'FUNCTION'>('all');
+  const [challengeTypeFilter, setChallengeTypeFilter] = useState<'all' | 'READ' | 'WATCH' | 'SOCIAL' | 'MIXED' | 'DEDICATION' | 'EVENT'>('all');
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [userDraft, setUserDraft] = useState<AdminUser | null>(null);
   const [activeUserDropdown, setActiveUserDropdown] = useState<'permissionLevel' | 'subscription' | null>(null);
@@ -500,10 +504,23 @@ const Admin: React.FC = () => {
   const [challengeDraft, setChallengeDraft] = useState<AdminChallenge | null>(null);
   const [activeChallengeDropdown, setActiveChallengeDropdown] = useState<'type' | 'difficulty' | 'badge' | 'title' | null>(null);
   const [saveModal, setSaveModal] = useState<{ title: string; message: string } | null>(null);
+  const [saveModalClosing, setSaveModalClosing] = useState(false);
+  const closeSaveModal = () => {
+    setSaveModalClosing(true);
+    setTimeout(() => {
+      setSaveModal(null);
+      setSaveModalClosing(false);
+    }, 270);
+  };
   const [announcementText, setAnnouncementText] = useState('');
   const [announcementTarget, setAnnouncementTarget] = useState<'all' | 'subscribers' | 'free' | 'specific'>('all');
   const [announcementUsers, setAnnouncementUsers] = useState('');
   const [announcementSent, setAnnouncementSent] = useState(false);
+  const [usersPage, setUsersPage] = useState(1);
+  const [contentPage, setContentPage] = useState(1);
+  const [newsPage, setNewsPage] = useState(1);
+  const [challengesPage, setChallengesPage] = useState(1);
+  const pageSize = 4;
 
   const selectedUser = userDraft;
   const selectedContent = contentDraft;
@@ -518,6 +535,13 @@ const Admin: React.FC = () => {
     banned: users.filter(user => user.permissionLevel === 'banned').length,
     activeToday: users.filter(user => user.lastLoginDate >= '2026-03-13').length,
   }), [users]);
+
+  const contentSummary = useMemo(() => ({
+    total: content.length,
+    books: content.filter(item => item.contentType === 'BOOK').length,
+    series: content.filter(item => item.contentType === 'SERIES').length,
+    movies: content.filter(item => item.contentType === 'MOVIE').length,
+  }), [content]);
 
   // Szűrt felhasználók
   const filteredUsers = useMemo(() => {
@@ -540,8 +564,7 @@ const Admin: React.FC = () => {
     const q = userSearch.toLowerCase();
     return items.filter(user =>
       user.username.toLowerCase().includes(q) ||
-      user.email.toLowerCase().includes(q) ||
-      user.countryCode.toLowerCase().includes(q)
+      user.email.toLowerCase().includes(q)
     );
   }, [users, userSearch, userTypeFilter]);
 
@@ -554,9 +577,7 @@ const Admin: React.FC = () => {
     if (contentSearch.trim()) {
       const q = contentSearch.toLowerCase();
       items = items.filter(c =>
-        c.title.toLowerCase().includes(q) ||
-        c.description.toLowerCase().includes(q) ||
-        c.coverOrPosterApiName.toLowerCase().includes(q)
+        c.title.toLowerCase().includes(q)
       );
     }
     return items;
@@ -564,26 +585,117 @@ const Admin: React.FC = () => {
 
   // Szűrt hírek
   const filteredNews = useMemo(() => {
-    if (!newsSearch.trim()) return news;
+    let items = news;
+
+    if (newsTypeFilter !== 'all') {
+      items = items.filter(item => item.eventTag === newsTypeFilter);
+    }
+
+    if (!newsSearch.trim()) return items;
     const q = newsSearch.toLowerCase();
-    return news.filter(n =>
+    return items.filter(n =>
       n.title.toLowerCase().includes(q) ||
       n.content.toLowerCase().includes(q) ||
       n.eventTag.toLowerCase().includes(q)
     );
-  }, [news, newsSearch]);
+  }, [news, newsSearch, newsTypeFilter]);
+
+  const newsSummary = useMemo(() => ({
+    total: news.length,
+    updates: news.filter(item => item.eventTag === 'UPDATE').length,
+    announcements: news.filter(item => item.eventTag === 'ANNOUNCEMENT').length,
+    events: news.filter(item => item.eventTag === 'EVENT').length,
+    functions: news.filter(item => item.eventTag === 'FUNCTION').length,
+  }), [news]);
+
+  const challengeSummary = useMemo(() => ({
+    total: challenges.length,
+    active: challenges.filter(ch => ch.isActive).length,
+    repeatable: challenges.filter(ch => ch.isRepeatable).length,
+    event: challenges.filter(ch => ch.type === 'EVENT').length,
+  }), [challenges]);
 
   // Szűrt kihívások
   const filteredChallenges = useMemo(() => {
-    if (!challengeSearch.trim()) return challenges;
+    let items = challenges;
+
+    if (challengeTypeFilter !== 'all') {
+      items = items.filter(ch => ch.type === challengeTypeFilter);
+    }
+
+    if (!challengeSearch.trim()) return items;
+
     const q = challengeSearch.toLowerCase();
-    return challenges.filter(ch =>
+    return items.filter(ch =>
       ch.title.toLowerCase().includes(q) ||
       ch.type.toLowerCase().includes(q) ||
       ch.difficulty.toLowerCase().includes(q) ||
       ch.description.toLowerCase().includes(q)
     );
-  }, [challenges, challengeSearch]);
+  }, [challenges, challengeSearch, challengeTypeFilter]);
+
+  const getPaginationRange = (current: number, total: number): number[] => {
+    const delta = 2;
+    const start = Math.max(1, current - delta);
+    const end = Math.min(total, current + delta);
+    return Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
+  };
+
+  const totalUserPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const pagedUsers = useMemo(() => {
+    const start = (usersPage - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [filteredUsers, usersPage]);
+
+  const totalContentPages = Math.max(1, Math.ceil(filteredContent.length / pageSize));
+  const pagedContent = useMemo(() => {
+    const start = (contentPage - 1) * pageSize;
+    return filteredContent.slice(start, start + pageSize);
+  }, [filteredContent, contentPage]);
+
+  const totalNewsPages = Math.max(1, Math.ceil(filteredNews.length / pageSize));
+  const pagedNews = useMemo(() => {
+    const start = (newsPage - 1) * pageSize;
+    return filteredNews.slice(start, start + pageSize);
+  }, [filteredNews, newsPage]);
+
+  const totalChallengePages = Math.max(1, Math.ceil(filteredChallenges.length / pageSize));
+  const pagedChallenges = useMemo(() => {
+    const start = (challengesPage - 1) * pageSize;
+    return filteredChallenges.slice(start, start + pageSize);
+  }, [filteredChallenges, challengesPage]);
+
+  useEffect(() => {
+    setUsersPage(1);
+  }, [userSearch, userTypeFilter]);
+
+  useEffect(() => {
+    if (usersPage > totalUserPages) setUsersPage(totalUserPages);
+  }, [usersPage, totalUserPages]);
+
+  useEffect(() => {
+    setContentPage(1);
+  }, [contentSearch, contentTypeFilter]);
+
+  useEffect(() => {
+    if (contentPage > totalContentPages) setContentPage(totalContentPages);
+  }, [contentPage, totalContentPages]);
+
+  useEffect(() => {
+    setNewsPage(1);
+  }, [newsSearch, newsTypeFilter]);
+
+  useEffect(() => {
+    if (newsPage > totalNewsPages) setNewsPage(totalNewsPages);
+  }, [newsPage, totalNewsPages]);
+
+  useEffect(() => {
+    setChallengesPage(1);
+  }, [challengeSearch, challengeTypeFilter]);
+
+  useEffect(() => {
+    if (challengesPage > totalChallengePages) setChallengesPage(totalChallengePages);
+  }, [challengesPage, totalChallengePages]);
 
   // Mentés handler (mock)
   const handleSave = (section: string) => {
@@ -733,7 +845,7 @@ const Admin: React.FC = () => {
         if (selectedContentId) closeContentModal();
         if (selectedNewsId) closeNewsModal();
         if (selectedChallengeId) closeChallengeModal();
-        if (saveModal) setSaveModal(null);
+        if (saveModal) closeSaveModal();
       }
     };
 
@@ -815,6 +927,16 @@ const Admin: React.FC = () => {
     MEDIUM: 'Normál',
     HARD: 'Nehéz',
     EPIC: 'Epikus',
+  };
+
+  const getChallengeDifficultyBadgeClass = (difficulty: AdminChallengeDifficulty) => {
+    switch (difficulty) {
+      case 'EASY': return 'admin-badge-green';
+      case 'MEDIUM': return 'admin-badge-blue';
+      case 'HARD': return 'admin-badge-yellow';
+      case 'EPIC': return 'admin-badge-purple';
+      default: return 'admin-badge-dim';
+    }
   };
 
   const getBadgeById = (id: number | null) => badges.find(b => b.id === id) ?? null;
@@ -1074,23 +1196,22 @@ const Admin: React.FC = () => {
               <div className="admin-users-overview">
                 <div className="admin-users-stat">
                   <span className="admin-users-stat-label">Prémium fiókok</span>
-                  <strong>{userSummary.premium}</strong>
-                  <small>{Math.round((userSummary.premium / users.length) * 100)}% konverzió</small>
+                  <strong>
+                    {Math.round((userSummary.premium / Math.max(users.length, 1)) * 100)}%
+                    <span className="admin-users-stat-range"> (300 - 1500)</span>
+                  </strong>
                 </div>
                 <div className="admin-users-stat">
                   <span className="admin-users-stat-label">Stáb tagok</span>
                   <strong>{userSummary.staff}</strong>
-                  <small>moderátor + admin jogosultság</small>
                 </div>
                 <div className="admin-users-stat admin-users-stat-alert">
                   <span className="admin-users-stat-label">Korlátozott fiókok</span>
                   <strong>{userSummary.banned}</strong>
-                  <small>permissionLevel = banned</small>
                 </div>
                 <div className="admin-users-stat">
                   <span className="admin-users-stat-label">Mai belépések</span>
                   <strong>{userSummary.activeToday}</strong>
-                  <small>utolsó login alapján</small>
                 </div>
               </div>
 
@@ -1123,7 +1244,7 @@ const Admin: React.FC = () => {
                       <i className="bi bi-search"></i>
                       <input
                         type="text"
-                        placeholder="Keresés név, e-mail vagy országkód alapján..."
+                        placeholder="Keresés név vagy e-mail alapján..."
                         value={userSearch}
                         onChange={(e) => setUserSearch(e.target.value)}
                       />
@@ -1147,7 +1268,7 @@ const Admin: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredUsers.map(user => (
+                      {pagedUsers.map(user => (
                         <tr
                           key={user.id}
                           className={user.permissionLevel === 'banned' ? 'banned-row admin-user-row' : 'admin-user-row'}
@@ -1159,7 +1280,7 @@ const Admin: React.FC = () => {
                               <div>
                                 <div className="admin-user-name">{user.username}</div>
                                 <div className="admin-user-email">{user.email}</div>
-                                <div className="admin-user-meta">#{user.id} · {user.countryCode}</div>
+                                <div className="admin-user-meta">#{user.id}</div>
                               </div>
                             </div>
                           </td>
@@ -1167,19 +1288,16 @@ const Admin: React.FC = () => {
                           <td className="admin-user-subscription-cell">
                             <div className="admin-user-subscription">
                               {getSubBadge(user.subscription)}
-                              <small>{user.subscription === 'premium' && user.premiumExpiresAt ? `Lejár: ${new Date(user.premiumExpiresAt).toLocaleDateString('hu-HU')}` : 'Nincs előfizetés'}</small>
                             </div>
                           </td>
                           <td>
                             <div className="admin-user-progress">
                               <span className="admin-level">Lv.{user.level}</span>
-                              <small>{user.xp} XP · {user.dayStreak} napos streak</small>
                             </div>
                           </td>
                           <td>
                             <div className="admin-user-points">
                               <strong>{getUserTotalPoints(user).toLocaleString('hu-HU')}</strong>
-                              <small>Könyv {user.bookPoints} · Média {(user.seriesPoints + user.moviePoints).toLocaleString('hu-HU')}</small>
                             </div>
                           </td>
                           <td>{new Date(user.lastLoginDate).toLocaleDateString('hu-HU')}</td>
@@ -1204,6 +1322,26 @@ const Admin: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+
+                {filteredUsers.length > 0 && totalUserPages > 1 && (
+                  <nav className="admin-pagination-wrap" aria-label="Felhasználók lapozása">
+                    <ul className="pagination kk-pagination justify-content-center mb-0">
+                      <li className={`page-item ${usersPage === 1 ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setUsersPage(Math.max(1, usersPage - 1))}>Előző</button>
+                      </li>
+
+                      {getPaginationRange(usersPage, totalUserPages).map((page) => (
+                        <li key={page} className={`page-item ${usersPage === page ? 'active' : ''}`}>
+                          <button className="page-link" onClick={() => setUsersPage(page)}>{page}</button>
+                        </li>
+                      ))}
+
+                      <li className={`page-item ${usersPage === totalUserPages ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setUsersPage(Math.min(totalUserPages, usersPage + 1))}>Következő</button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
 
                 <div className="admin-save-bar">
                   <button className="admin-send-btn" onClick={() => handleSave('Felhasználók')}>
@@ -1397,6 +1535,25 @@ const Admin: React.FC = () => {
           {/* ======================== TARTALMAK ======================== */}
           {activeTab === 'content' && (
             <div className="admin-section">
+              <div className="admin-users-overview">
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Összes tartalom</span>
+                  <strong>{contentSummary.total}</strong>
+                </div>
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Könyv</span>
+                  <strong>{contentSummary.books}</strong>
+                </div>
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Sorozat</span>
+                  <strong>{contentSummary.series}</strong>
+                </div>
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Film</span>
+                  <strong>{contentSummary.movies}</strong>
+                </div>
+              </div>
+
               <div className="admin-card">
                 <div className="admin-card-header">
                   <h3 className="admin-card-title">
@@ -1420,7 +1577,7 @@ const Admin: React.FC = () => {
                       <i className="bi bi-search"></i>
                       <input
                         type="text"
-                        placeholder="Kereses cim, leiras vagy API nev alapjan..."
+                        placeholder="Keresés csak cím alapján..."
                         value={contentSearch}
                         onChange={(e) => setContentSearch(e.target.value)}
                       />
@@ -1443,14 +1600,14 @@ const Admin: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredContent.map(item => (
+                      {pagedContent.map(item => (
                         <tr key={item.id} className="admin-content-row" onClick={() => openContentModal(item)}>
                           <td>
                             <div className="admin-content-cell">
                               <img src={item.coverOrPosterApiName} alt={item.title} className="admin-content-cover" />
                               <div>
                                 <div className="admin-news-title">{item.title}</div>
-                                <small className="admin-content-meta">#{item.id} · AgeRatingId: {item.ageRatingId ?? 'NULL'}</small>
+                                <small className="admin-content-meta">#{item.id}</small>
                               </div>
                             </div>
                           </td>
@@ -1507,6 +1664,26 @@ const Admin: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+
+                {filteredContent.length > 0 && totalContentPages > 1 && (
+                  <nav className="admin-pagination-wrap" aria-label="Tartalmak lapozása">
+                    <ul className="pagination kk-pagination justify-content-center mb-0">
+                      <li className={`page-item ${contentPage === 1 ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setContentPage(Math.max(1, contentPage - 1))}>Előző</button>
+                      </li>
+
+                      {getPaginationRange(contentPage, totalContentPages).map((page) => (
+                        <li key={page} className={`page-item ${contentPage === page ? 'active' : ''}`}>
+                          <button className="page-link" onClick={() => setContentPage(page)}>{page}</button>
+                        </li>
+                      ))}
+
+                      <li className={`page-item ${contentPage === totalContentPages ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setContentPage(Math.min(totalContentPages, contentPage + 1))}>Következő</button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
 
                 <div className="admin-save-bar">
                   <button className="admin-send-btn" onClick={() => handleSave('Tartalmak')}>
@@ -1778,6 +1955,29 @@ const Admin: React.FC = () => {
           {/* ======================== HÍREK ======================== */}
           {activeTab === 'news' && (
             <div className="admin-section">
+              <div className="admin-users-overview">
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Összes cikk</span>
+                  <strong>{newsSummary.total}</strong>
+                </div>
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Frissítés</span>
+                  <strong>{newsSummary.updates}</strong>
+                </div>
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Közlemény</span>
+                  <strong>{newsSummary.announcements}</strong>
+                </div>
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Esemény</span>
+                  <strong>{newsSummary.events}</strong>
+                </div>
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Funkció</span>
+                  <strong>{newsSummary.functions}</strong>
+                </div>
+              </div>
+
               <div className="admin-card">
                 <div className="admin-card-header">
                   <h3 className="admin-card-title">
@@ -1785,14 +1985,34 @@ const Admin: React.FC = () => {
                     Hírcikkek kezelése
                     <span className="admin-count">{news.length}</span>
                   </h3>
-                  <div className="admin-search">
-                    <i className="bi bi-search"></i>
-                    <input
-                      type="text"
-                      placeholder="Keresés cím, tartalom vagy EventTag alapján..."
-                      value={newsSearch}
-                      onChange={(e) => setNewsSearch(e.target.value)}
-                    />
+                  <div className="admin-header-controls">
+                    <div className="admin-filter-pills">
+                      {([
+                        { key: 'all', label: 'Mind' },
+                        { key: 'UPDATE', label: 'Frissítés' },
+                        { key: 'ANNOUNCEMENT', label: 'Közlemény' },
+                        { key: 'EVENT', label: 'Esemény' },
+                        { key: 'FUNCTION', label: 'Funkció' },
+                      ] as const).map(filter => (
+                        <button
+                          key={filter.key}
+                          className={`admin-pill ${newsTypeFilter === filter.key ? 'active' : ''}`}
+                          onClick={() => setNewsTypeFilter(filter.key)}
+                        >
+                          {filter.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="admin-search">
+                      <i className="bi bi-search"></i>
+                      <input
+                        type="text"
+                        placeholder="Keresés cím, tartalom vagy EventTag alapján..."
+                        value={newsSearch}
+                        onChange={(e) => setNewsSearch(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1809,7 +2029,7 @@ const Admin: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredNews.map(item => (
+                      {pagedNews.map(item => (
                         <tr key={item.id} className="admin-news-row" onClick={() => openNewsModal(item)}>
                           <td><span className="admin-news-title">{item.title}</span></td>
                           <td>
@@ -1849,6 +2069,26 @@ const Admin: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+
+                {filteredNews.length > 0 && totalNewsPages > 1 && (
+                  <nav className="admin-pagination-wrap" aria-label="Hírek lapozása">
+                    <ul className="pagination kk-pagination justify-content-center mb-0">
+                      <li className={`page-item ${newsPage === 1 ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setNewsPage(Math.max(1, newsPage - 1))}>Előző</button>
+                      </li>
+
+                      {getPaginationRange(newsPage, totalNewsPages).map((page) => (
+                        <li key={page} className={`page-item ${newsPage === page ? 'active' : ''}`}>
+                          <button className="page-link" onClick={() => setNewsPage(page)}>{page}</button>
+                        </li>
+                      ))}
+
+                      <li className={`page-item ${newsPage === totalNewsPages ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setNewsPage(Math.min(totalNewsPages, newsPage + 1))}>Következő</button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
 
                 <div className="admin-save-bar">
                   <button className="admin-send-btn" onClick={() => handleSave('Hírek')}>
@@ -1958,6 +2198,25 @@ const Admin: React.FC = () => {
           {/* ======================== KIHÍVÁSOK ======================== */}
           {activeTab === 'challenges' && (
             <div className="admin-section">
+              <div className="admin-users-overview">
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Összes kihívás</span>
+                  <strong>{challengeSummary.total}</strong>
+                </div>
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Aktív</span>
+                  <strong>{challengeSummary.active}</strong>
+                </div>
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Ismételhető</span>
+                  <strong>{challengeSummary.repeatable}</strong>
+                </div>
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Esemény típusú</span>
+                  <strong>{challengeSummary.event}</strong>
+                </div>
+              </div>
+
               <div className="admin-card">
                 <div className="admin-card-header">
                   <h3 className="admin-card-title">
@@ -1965,14 +2224,36 @@ const Admin: React.FC = () => {
                     Kihívások kezelése
                     <span className="admin-count">{challenges.length}</span>
                   </h3>
-                  <div className="admin-search">
-                    <i className="bi bi-search"></i>
-                    <input
-                      type="text"
-                      placeholder="Keresés cím, típus, nehézség vagy leírás alapján..."
-                      value={challengeSearch}
-                      onChange={(e) => setChallengeSearch(e.target.value)}
-                    />
+                  <div className="admin-header-controls">
+                    <div className="admin-filter-pills">
+                      {([
+                        { key: 'all', label: 'Mind' },
+                        { key: 'READ', label: 'Olvasás' },
+                        { key: 'WATCH', label: 'Nézés' },
+                        { key: 'SOCIAL', label: 'Közösségi' },
+                        { key: 'MIXED', label: 'Vegyes' },
+                        { key: 'DEDICATION', label: 'Kitartás' },
+                        { key: 'EVENT', label: 'Esemény' },
+                      ] as const).map(filter => (
+                        <button
+                          key={filter.key}
+                          className={`admin-pill ${challengeTypeFilter === filter.key ? 'active' : ''}`}
+                          onClick={() => setChallengeTypeFilter(filter.key)}
+                        >
+                          {filter.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="admin-search">
+                      <i className="bi bi-search"></i>
+                      <input
+                        type="text"
+                        placeholder="Keresés cím, típus, nehézség vagy leírás alapján..."
+                        value={challengeSearch}
+                        onChange={(e) => setChallengeSearch(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1992,14 +2273,14 @@ const Admin: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredChallenges.map(ch => (
+                      {pagedChallenges.map(ch => (
                         <tr key={ch.id} className="admin-challenge-row" onClick={() => openChallengeModal(ch)}>
                           <td><span className="admin-news-title">{ch.title}</span></td>
                           <td>
                             <span className="admin-badge admin-badge-blue">{challengeTypeLabels[ch.type]}</span>
                           </td>
                           <td>
-                            <span className="admin-badge admin-badge-purple">{challengeDifficultyLabels[ch.difficulty]}</span>
+                            <span className={`admin-badge ${getChallengeDifficultyBadgeClass(ch.difficulty)}`}>{challengeDifficultyLabels[ch.difficulty]}</span>
                           </td>
                           <td>
                             <div className="admin-challenge-target">
@@ -2054,6 +2335,26 @@ const Admin: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+
+                {filteredChallenges.length > 0 && totalChallengePages > 1 && (
+                  <nav className="admin-pagination-wrap" aria-label="Kihívások lapozása">
+                    <ul className="pagination kk-pagination justify-content-center mb-0">
+                      <li className={`page-item ${challengesPage === 1 ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setChallengesPage(Math.max(1, challengesPage - 1))}>Előző</button>
+                      </li>
+
+                      {getPaginationRange(challengesPage, totalChallengePages).map((page) => (
+                        <li key={page} className={`page-item ${challengesPage === page ? 'active' : ''}`}>
+                          <button className="page-link" onClick={() => setChallengesPage(page)}>{page}</button>
+                        </li>
+                      ))}
+
+                      <li className={`page-item ${challengesPage === totalChallengePages ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setChallengesPage(Math.min(totalChallengePages, challengesPage + 1))}>Következő</button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
 
                 <div className="admin-save-bar">
                   <button className="admin-send-btn" onClick={() => handleSave('Kihívások')}>
@@ -2367,14 +2668,14 @@ const Admin: React.FC = () => {
           )}
 
           {saveModal && (
-            <div className="admin-save-modal-backdrop" onClick={() => setSaveModal(null)}>
-              <div className="admin-save-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="admin-save-modal-title">
+            <div className={`admin-save-modal-backdrop${saveModalClosing ? ' closing' : ''}`} onClick={closeSaveModal}>
+              <div className={`admin-save-modal${saveModalClosing ? ' closing' : ''}`} onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="admin-save-modal-title">
                 <div className="admin-save-modal-icon">
                   <i className="bi bi-check2-circle"></i>
                 </div>
                 <h4 id="admin-save-modal-title">{saveModal.title}</h4>
                 <p>{saveModal.message}</p>
-                <button className="admin-send-btn" onClick={() => setSaveModal(null)}>
+                <button className="admin-send-btn" onClick={closeSaveModal}>
                   Rendben
                 </button>
               </div>

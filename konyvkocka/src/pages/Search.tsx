@@ -27,10 +27,7 @@ const Search: React.FC = () => {
 	const results = useMemo(() => {
 		const q = query.trim().toLowerCase();
 		if (!q) return mockCards;
-		return mockCards.filter((c) => {
-			const haystack = `${c.title} ${c.desc} ${(c.tags || []).join(' ')}`.toLowerCase();
-			return haystack.includes(q);
-		});
+		return mockCards.filter((c) => c.title.toLowerCase().includes(q));
 	}, [query]);
 
 	const totalPages = Math.max(1, Math.ceil(results.length / pageSize));

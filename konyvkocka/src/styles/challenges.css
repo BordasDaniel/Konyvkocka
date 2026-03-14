@@ -86,14 +86,13 @@
   border-left-color: #4caf50;
 }
 
-/* Rarity border colors */
-.challenge-card.rarity-common { border-left-color: #9e9e9e; }
-.challenge-card.rarity-uncommon { border-left-color: #4caf50; }
-.challenge-card.rarity-rare { border-left-color: #2196f3; }
-.challenge-card.rarity-epic { border-left-color: #9c27b0; }
-.challenge-card.rarity-legendary { 
-  border-left-color: #ff9800;
-  background: linear-gradient(180deg, rgba(40,30,20,0.7), rgba(30,25,18,0.6));
+/* Difficulty border colors (DB: EASY, MEDIUM, HARD, EPIC) */
+.challenge-card.difficulty-easy { border-left-color: #4caf50; }
+.challenge-card.difficulty-medium { border-left-color: #2196f3; }
+.challenge-card.difficulty-hard { border-left-color: #ff9800; }
+.challenge-card.difficulty-epic { 
+  border-left-color: #9c27b0;
+  background: linear-gradient(180deg, rgba(36,24,44,0.7), rgba(28,18,34,0.6));
 }
 
 /* Challenge Icon */
@@ -138,7 +137,7 @@
   flex-wrap: wrap;
 }
 
-.badge-rarity {
+.badge-difficulty {
   font-size: 0.7rem;
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
@@ -154,6 +153,25 @@
   font-weight: 600;
   background: rgba(255,255,255,0.1);
   color: var(--text);
+}
+
+.badge-claimable {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+  background: linear-gradient(90deg, rgba(230,192,124,0.95), rgba(194,157,89,0.95));
+  color: #15120e;
+}
+
+.badge-claimed {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+  background: rgba(76,175,80,0.2);
+  border: 1px solid rgba(76,175,80,0.35);
+  color: #b8f1bd;
 }
 
 .challenge-description {
@@ -250,6 +268,34 @@
   font-size: 0.85rem;
   color: var(--text);
   font-weight: 600;
+}
+
+.challenge-claim-btn {
+  width: 100%;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.82rem;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(230,192,124,0.95), rgba(194,157,89,0.95));
+  color: #15120e !important;
+  border: 1px solid rgba(230,192,124,0.65);
+  box-shadow: 0 8px 20px rgba(194,157,89,0.25);
+}
+
+.challenge-claim-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(194,157,89,0.34);
+}
+
+.challenge-claim-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.challenge-claimed-at {
+  font-size: 0.78rem;
+  color: rgba(184, 241, 189, 0.92);
 }
 
 /* Empty state */

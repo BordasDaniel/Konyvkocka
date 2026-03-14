@@ -386,7 +386,16 @@ button.btn-filter{ -webkit-appearance: none; appearance: none; }
   object-fit: cover;
   object-position: center top;
   border-bottom: 2px solid var(--primary);
-  transition: filter 0.3s ease;
+  transition: filter 0.3s ease, opacity 0.24s ease;
+  background: linear-gradient(180deg, rgba(24,24,24,0.94), rgba(14,14,14,0.94));
+}
+
+.search-results .card-img-top.is-loading {
+  opacity: 0.55;
+}
+
+.search-results .card-img-top.is-loaded {
+  opacity: 1;
 }
 
 @media (max-width: 1199.98px) {

@@ -450,6 +450,29 @@
 .about-panel form .form-label{ font-weight:600; color: rgba(255,255,255,0.9); }
 .about-panel form input.form-control, .about-panel form select.form-select{ background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); color: var(--text) }
 .about-panel form .form-range{ accent-color: var(--primary) }
+.about-panel form input.form-control:disabled,
+.about-panel form input.form-control[readonly],
+.about-panel form select.form-select:disabled,
+.about-panel form textarea.form-control:disabled {
+  background: linear-gradient(180deg, rgba(58, 46, 21, 0.32), rgba(34, 29, 17, 0.24));
+  border: 1px solid rgba(194,157,89,0.28);
+  color: rgba(247, 240, 226, 0.72) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.about-panel form .form-check-input:disabled {
+  background-color: rgba(194,157,89,0.22);
+  border-color: rgba(194,157,89,0.38);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.about-panel form .form-check-input:disabled + .form-check-label {
+  color: rgba(230,192,124,0.82);
+  cursor: not-allowed;
+}
 .about-panel h6{ color: var(--secondary); margin-top:0.4rem }
 .settings-actions{ display:flex; justify-content:flex-end; align-items:center }
 .settings-actions .btn{ margin-left:0.45rem }

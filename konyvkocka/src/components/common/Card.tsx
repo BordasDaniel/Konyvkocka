@@ -197,6 +197,7 @@ const Card: React.FC<CardProps> = ({
 }) => {
   const [cards, setCards] = useState<CardData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     // Ha kapunk adatot propból, azt használjuk
@@ -258,6 +259,18 @@ const Card: React.FC<CardProps> = ({
     }
   };
 
+  const handleImageLoad = (cardId: string) => {
+    setLoadedImages((prev) => ({ ...prev, [cardId]: true }));
+  };
+
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>, cardId: string) => {
+    const img = event.currentTarget;
+    if (img.dataset.fallbackApplied === 'true') return;
+    img.dataset.fallbackApplied = 'true';
+    img.src = showMoreCardImage;
+    setLoadedImages((prev) => ({ ...prev, [cardId]: true }));
+  };
+
   if (loading) {
     return (
       <div className="text-center py-5">
@@ -273,7 +286,16 @@ const Card: React.FC<CardProps> = ({
       {cards.map((card) => (
         <div key={card.id} className={gridClass}>
           <div className="card">
-            <img src={card.img} className="card-img-top" alt={`${card.title} borító`} />
+            <img
+              src={card.img}
+              className={`card-img-top ${loadedImages[card.id] ? 'is-loaded' : 'is-loading'}`}
+              alt={`${card.title} borító`}
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              onLoad={() => handleImageLoad(card.id)}
+              onError={(event) => handleImageError(event, card.id)}
+            />
             <div className="card-body">
               <h5 className="card-title">{card.title}</h5>
               <div className="card-meta">

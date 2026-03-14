@@ -18,12 +18,11 @@ interface SubscriptionInfo {
 
 interface PurchaseItem {
   id: number;
-  date: string;
-  product: string;
-  type: 'subscription' | 'ebook' | 'audiobook';
-  price: string;
-  status: 'active' | 'completed' | 'expired';
-  cover?: string;
+  purchaseDate: string;
+  tier: 'ONE_M' | 'QUARTER_Y' | 'FULL_Y';
+  purchaseStatus: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
+  price: number;
+  transactionId: string;
 }
 
 // ========================
@@ -35,8 +34,8 @@ const fetchSubscriptionInfo = async (): Promise<SubscriptionInfo> => {
   return {
     type: 'premium',
     name: 'Premium előfizetés',
-    startDate: '2025-11-15',
-    endDate: '2026-01-15',
+    startDate: '2026-02-15',
+    endDate: '2026-05-15',
     autoRenew: true,
     price: '2.990 Ft/hó',
   };
@@ -45,14 +44,22 @@ const fetchSubscriptionInfo = async (): Promise<SubscriptionInfo> => {
 const fetchPurchaseHistory = async (): Promise<PurchaseItem[]> => {
   // TODO: API hívásra cserélni
   return [
-    { id: 1, date: '2025-11-15', product: 'Premium előfizetés (1 hónap)', type: 'subscription', price: '2.990 Ft', status: 'active', cover: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400' },
-    { id: 2, date: '2025-10-20', product: 'A szél árnyéka - eBook', type: 'ebook', price: '1.490 Ft', status: 'completed', cover: 'https://moly.hu/system/covers/big/covers_582574.jpg' },
-    { id: 3, date: '2025-09-05', product: 'Film csomag (3 hónap)', type: 'subscription', price: '7.990 Ft', status: 'expired', cover: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400' },
-    { id: 4, date: '2025-08-12', product: 'Az éjszaka titkai - Audiobook', type: 'audiobook', price: '2.290 Ft', status: 'completed', cover: 'https://s01.static.libri.hu/cover/56/3/828911_4.jpg' },
-    { id: 5, date: '2025-07-01', product: 'Premium előfizetés (1 hónap)', type: 'subscription', price: '2.990 Ft', status: 'expired', cover: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400' },
-    { id: 6, date: '2025-06-15', product: 'Dűne - eBook', type: 'ebook', price: '1.990 Ft', status: 'completed', cover: 'https://marvin.bline.hu/product_images/920/ID250-141842.JPG' },
+    { id: 1, purchaseDate: '2026-03-12', tier: 'ONE_M', purchaseStatus: 'SUCCESS', price: 2990, transactionId: 'TX-20260312-A1H4K2' },
+    { id: 2, purchaseDate: '2026-02-15', tier: 'ONE_M', purchaseStatus: 'SUCCESS', price: 2990, transactionId: 'TX-20260215-Z8M1P9' },
+    { id: 3, purchaseDate: '2026-01-15', tier: 'ONE_M', purchaseStatus: 'SUCCESS', price: 2990, transactionId: 'TX-20260115-X2N7Q5' },
+    { id: 4, purchaseDate: '2025-12-20', tier: 'QUARTER_Y', purchaseStatus: 'SUCCESS', price: 7490, transactionId: 'TX-20251220-L4S9B3' },
+    { id: 5, purchaseDate: '2025-11-18', tier: 'ONE_M', purchaseStatus: 'FAILED', price: 2990, transactionId: 'TX-20251118-R5V2D8' },
+    { id: 6, purchaseDate: '2025-10-15', tier: 'ONE_M', purchaseStatus: 'REFUNDED', price: 2990, transactionId: 'TX-20251015-J7W3T1' },
+    { id: 7, purchaseDate: '2025-09-03', tier: 'FULL_Y', purchaseStatus: 'SUCCESS', price: 24990, transactionId: 'TX-20250903-K9C2M4' },
+    { id: 8, purchaseDate: '2025-08-11', tier: 'ONE_M', purchaseStatus: 'PENDING', price: 2990, transactionId: 'TX-20250811-N6F3H7' },
+    { id: 9, purchaseDate: '2025-07-14', tier: 'QUARTER_Y', purchaseStatus: 'SUCCESS', price: 7490, transactionId: 'TX-20250714-U2G8Y4' },
+    { id: 10, purchaseDate: '2025-06-10', tier: 'ONE_M', purchaseStatus: 'SUCCESS', price: 2990, transactionId: 'TX-20250610-P4E6L2' },
+    { id: 11, purchaseDate: '2025-05-16', tier: 'ONE_M', purchaseStatus: 'FAILED', price: 2990, transactionId: 'TX-20250516-Q8A1R6' },
+    { id: 12, purchaseDate: '2025-04-09', tier: 'FULL_Y', purchaseStatus: 'SUCCESS', price: 24990, transactionId: 'TX-20250409-H3D7N5' },
   ];
 };
+
+const formatHuf = (value: number): string => `${value.toLocaleString('hu-HU')} Ft`;
 
 // ========================
 // KOMPONENS
@@ -64,7 +71,9 @@ const Subscription: React.FC = () => {
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [purchases, setPurchases] = useState<PurchaseItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'subscription' | 'ebook' | 'audiobook'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'SUCCESS' | 'PENDING' | 'FAILED' | 'REFUNDED'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
 
   // Adatok betöltése
   useEffect(() => {
@@ -98,39 +107,80 @@ const Subscription: React.FC = () => {
   // Szűrt vásárlások
   const filteredPurchases = useMemo(() => {
     if (activeFilter === 'all') return purchases;
-    return purchases.filter(p => p.type === activeFilter);
+    return purchases.filter(p => p.purchaseStatus === activeFilter);
   }, [purchases, activeFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredPurchases.length / pageSize));
+
+  const pagedPurchases = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredPurchases.slice(start, start + pageSize);
+  }, [filteredPurchases, currentPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginationRange = useMemo(() => {
+    const delta = 2;
+    const start = Math.max(1, currentPage - delta);
+    const end = Math.min(totalPages, currentPage + delta);
+    return Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
+  }, [currentPage, totalPages]);
+
+  const jumpToTopNow = () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const scrollingRoot = document.scrollingElement as HTMLElement | null;
+    if (scrollingRoot) scrollingRoot.scrollTop = 0;
+  };
+
+  const changePage = (page: number) => {
+    jumpToTopNow();
+    setCurrentPage(Math.min(totalPages, Math.max(1, page)));
+  };
 
   // Összes költés
   const totalSpent = useMemo(() => {
     const total = purchases.reduce((sum, p) => {
-      const price = parseInt(p.price.replace(/[^\d]/g, ''));
-      return sum + price;
+      if (p.purchaseStatus !== 'SUCCESS') return sum;
+      return sum + p.price;
     }, 0);
-    return total.toLocaleString('hu-HU') + ' Ft';
+    return formatHuf(total);
   }, [purchases]);
 
-  // Típus badge
-  const getTypeBadge = (type: PurchaseItem['type']) => {
-    switch (type) {
-      case 'subscription':
-        return <span className="badge bg-warning text-dark">Előfizetés</span>;
-      case 'ebook':
-        return <span className="badge bg-info">eBook</span>;
-      case 'audiobook':
-        return <span className="badge bg-primary">Audiobook</span>;
+  const successfulPurchases = useMemo(() => purchases.filter((p) => p.purchaseStatus === 'SUCCESS').length, [purchases]);
+
+  // Csomag badge (purchase.Tier)
+  const getTierBadge = (tier: PurchaseItem['tier']) => {
+    switch (tier) {
+      case 'ONE_M':
+        return <span className="badge bg-info text-dark">1 hónap</span>;
+      case 'QUARTER_Y':
+        return <span className="badge bg-primary">3 hónap</span>;
+      case 'FULL_Y':
+        return <span className="badge bg-warning text-dark">12 hónap</span>;
     }
   };
 
-  // Státusz badge
-  const getStatusBadge = (status: PurchaseItem['status']) => {
+  // Státusz badge (purchase.PurchaseStatus)
+  const getStatusBadge = (status: PurchaseItem['purchaseStatus']) => {
     switch (status) {
-      case 'active':
-        return <span className="badge bg-success">Aktív</span>;
-      case 'completed':
-        return <span className="badge bg-success">Teljesítve</span>;
-      case 'expired':
-        return <span className="badge bg-secondary">Lejárt</span>;
+      case 'SUCCESS':
+        return <span className="badge bg-success">Sikeres</span>;
+      case 'PENDING':
+        return <span className="badge bg-warning text-dark">Függőben</span>;
+      case 'FAILED':
+        return <span className="badge bg-danger">Sikertelen</span>;
+      case 'REFUNDED':
+        return <span className="badge bg-secondary">Visszatérítve</span>;
     }
   };
 
@@ -141,13 +191,14 @@ const Subscription: React.FC = () => {
     const invoiceContent = `
 KÖNYVKOCKA - SZÁMLA
 
-Számlaszám: INV-${purchase.id}-${new Date(purchase.date).getFullYear()}
-Dátum: ${new Date(purchase.date).toLocaleDateString('hu-HU')}
+Számlaszám: INV-${purchase.id}-${new Date(purchase.purchaseDate).getFullYear()}
+Dátum: ${new Date(purchase.purchaseDate).toLocaleDateString('hu-HU')}
 
-Termék: ${purchase.product}
-Típus: ${purchase.type}
-Ár: ${purchase.price}
-Státusz: ${purchase.status}
+Termék: Premium előfizetés
+Csomag (Tier): ${purchase.tier}
+Ár: ${formatHuf(purchase.price)}
+Státusz: ${purchase.purchaseStatus}
+Tranzakció azonosító: ${purchase.transactionId}
 
 Köszönjük a vásárlást!
     `;
@@ -156,7 +207,7 @@ Köszönjük a vásárlást!
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `szamla-${purchase.id}-${new Date(purchase.date).getTime()}.txt`;
+    a.download = `szamla-${purchase.id}-${new Date(purchase.purchaseDate).getTime()}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -204,6 +255,7 @@ Köszönjük a vásárlást!
   }
 
   const subBadge = getSubscriptionBadge();
+  const subscriptionExpired = subscription?.type !== 'free' && daysRemaining <= 0;
 
   return (
     <div className="subscription-page">
@@ -231,9 +283,9 @@ Köszönjük a vásárlást!
                 </p>
               </div>
               {subscription?.type !== 'free' && (
-                <div className="status-days">
-                  <span className="days-number">{daysRemaining}</span>
-                  <span className="days-label">nap van hátra</span>
+                <div className={`status-days ${subscriptionExpired ? 'expired' : ''}`}>
+                  <span className="days-number">{subscriptionExpired ? 'Lejárt' : daysRemaining}</span>
+                  <span className="days-label">{subscriptionExpired ? 'előfizetés' : 'nap van hátra'}</span>
                 </div>
               )}
             </div>
@@ -311,9 +363,10 @@ Köszönjük a vásárlást!
               <div className="purchase-filters">
                 {[
                   { key: 'all', label: 'Összes', icon: 'bi-grid-fill' },
-                  { key: 'subscription', label: 'Előfizetés', icon: 'bi-star-fill' },
-                  { key: 'ebook', label: 'eBook', icon: 'bi-book' },
-                  { key: 'audiobook', label: 'Audiobook', icon: 'bi-headphones' },
+                  { key: 'SUCCESS', label: 'Sikeres', icon: 'bi-check2-circle' },
+                  { key: 'PENDING', label: 'Függőben', icon: 'bi-hourglass-split' },
+                  { key: 'FAILED', label: 'Sikertelen', icon: 'bi-x-circle' },
+                  { key: 'REFUNDED', label: 'Visszatérítve', icon: 'bi-arrow-counterclockwise' },
                 ].map(filter => (
                   <button
                     key={filter.key}
@@ -333,35 +386,34 @@ Köszönjük a vásárlást!
                   <tr>
                     <th>Dátum</th>
                     <th>Termék</th>
-                    <th>Típus</th>
+                    <th>Csomag</th>
                     <th>Ár</th>
                     <th>Státusz</th>
+                    <th>Tranzakció</th>
                     <th>Számla</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredPurchases.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-4">
+                      <td colSpan={7} className="text-center py-4">
                         <i className="bi bi-inbox" style={{ fontSize: '2rem', opacity: 0.5 }}></i>
                         <p className="mt-2 mb-0">Nincs megjeleníthető vásárlás</p>
                       </td>
                     </tr>
                   ) : (
-                    filteredPurchases.map(purchase => (
+                    pagedPurchases.map(purchase => (
                       <tr key={purchase.id}>
-                        <td>{new Date(purchase.date).toLocaleDateString('hu-HU')}</td>
+                        <td>{new Date(purchase.purchaseDate).toLocaleDateString('hu-HU')}</td>
                         <td>
                           <div className="product-cell">
-                            {purchase.cover && (
-                              <img src={purchase.cover} alt={purchase.product} className="product-cover" />
-                            )}
-                            <span>{purchase.product}</span>
+                            <span>Premium előfizetés</span>
                           </div>
                         </td>
-                        <td>{getTypeBadge(purchase.type)}</td>
-                        <td>{purchase.price}</td>
-                        <td>{getStatusBadge(purchase.status)}</td>
+                        <td>{getTierBadge(purchase.tier)}</td>
+                        <td>{formatHuf(purchase.price)}</td>
+                        <td>{getStatusBadge(purchase.purchaseStatus)}</td>
+                        <td><code>{purchase.transactionId}</code></td>
                         <td>
                           <button 
                             className="btn-invoice" 
@@ -378,8 +430,31 @@ Köszönjük a vásárlást!
               </table>
             </div>
 
+            {filteredPurchases.length > 0 && totalPages > 1 && (
+              <nav className="kk-pagination-wrap subscription-pagination-wrap" aria-label="Vásárlási előzmények lapozása">
+                <ul className="pagination kk-pagination justify-content-center mb-0">
+                  <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => changePage(currentPage - 1)}>Előző</button>
+                  </li>
+
+                  {paginationRange.map((page) => (
+                    <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                      <button className="page-link" onClick={() => changePage(page)}>{page}</button>
+                    </li>
+                  ))}
+
+                  <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => changePage(currentPage + 1)}>Következő</button>
+                  </li>
+                </ul>
+              </nav>
+            )}
+
             <div className="purchase-footer">
               <div className="purchase-summary">
+                <span>Sikeres előfizetések:</span>
+                <strong>{successfulPurchases} db</strong>
+                <span className="mx-2">•</span>
                 <span>Összes költés:</span>
                 <strong>{totalSpent}</strong>
               </div>

@@ -5,9 +5,10 @@ import '../styles/challenges.css';
 // TÍPUSOK
 // ========================
 
-type ChallengeRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-type ChallengeCategory = 'reading' | 'watching' | 'social' | 'collection' | 'event';
+type ChallengeCategory = 'reading' | 'watching' | 'social' | 'dedication' | 'event';
 type RewardType = 'xp' | 'medal' | 'title' | 'badge';
+type ChallengeStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CLAIMED';
+type ChallengeDifficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'EPIC';
 
 interface Reward {
   type: RewardType;
@@ -20,12 +21,13 @@ interface Challenge {
   title: string;
   description: string;
   category: ChallengeCategory;
-  rarity: ChallengeRarity;
+  difficulty: ChallengeDifficulty;
   rewards: Reward[];
   progress: number;
   goal: number;
   progressLabel: string; // e.g. "Olvasott könyvek"
-  isCompleted: boolean;
+  status: ChallengeStatus;
+  claimedAt?: string;
   expiresAt?: string; // for event challenges
   icon: string;
 }
@@ -41,12 +43,12 @@ const mockChallenges: Challenge[] = [
     title: 'Első lépések',
     description: 'Olvass el 5 könyvet a platformon.',
     category: 'reading',
-    rarity: 'common',
+    difficulty: 'EASY',
     rewards: [{ type: 'xp', value: '250' }],
     progress: 3,
     goal: 5,
     progressLabel: 'Olvasott könyvek',
-    isCompleted: false,
+    status: 'IN_PROGRESS',
     icon: 'bi-book',
   },
   {
@@ -54,7 +56,7 @@ const mockChallenges: Challenge[] = [
     title: 'Könyvmoly',
     description: 'Olvass el 50 könyvet és szerezd meg a "Könyvmoly" címet.',
     category: 'reading',
-    rarity: 'epic',
+    difficulty: 'EPIC',
     rewards: [
       { type: 'title', value: 'Könyvmoly' },
       { type: 'xp', value: '2000' },
@@ -63,7 +65,7 @@ const mockChallenges: Challenge[] = [
     progress: 47,
     goal: 50,
     progressLabel: 'Olvasott könyvek',
-    isCompleted: false,
+    status: 'IN_PROGRESS',
     icon: 'bi-book-fill',
   },
   {
@@ -71,7 +73,7 @@ const mockChallenges: Challenge[] = [
     title: 'Napi olvasó',
     description: 'Olvass minden nap legalább 30 percet egy héten át.',
     category: 'reading',
-    rarity: 'uncommon',
+    difficulty: 'MEDIUM',
     rewards: [
       { type: 'xp', value: '500' },
       { type: 'medal', value: '7 napos sorozat', icon: 'https://assets.ppy.sh/medals/web/all-secret-consolation_prize@2x.png' },
@@ -79,7 +81,7 @@ const mockChallenges: Challenge[] = [
     progress: 5,
     goal: 7,
     progressLabel: 'Napok',
-    isCompleted: false,
+    status: 'IN_PROGRESS',
     icon: 'bi-calendar-check',
   },
   // Watching challenges
@@ -88,7 +90,7 @@ const mockChallenges: Challenge[] = [
     title: 'Filmmánia',
     description: 'Nézz meg 25 filmet a platformon.',
     category: 'watching',
-    rarity: 'uncommon',
+    difficulty: 'MEDIUM',
     rewards: [
       { type: 'xp', value: '750' },
       { type: 'badge', value: 'Filmrajongó' },
@@ -96,7 +98,7 @@ const mockChallenges: Challenge[] = [
     progress: 25,
     goal: 25,
     progressLabel: 'Megtekintett filmek',
-    isCompleted: true,
+    status: 'COMPLETED',
     icon: 'bi-film',
   },
   {
@@ -104,7 +106,7 @@ const mockChallenges: Challenge[] = [
     title: 'Sorozatőrült',
     description: 'Fejezz be 10 teljes sorozatot.',
     category: 'watching',
-    rarity: 'rare',
+    difficulty: 'HARD',
     rewards: [
       { type: 'title', value: 'Sorozatőrült' },
       { type: 'xp', value: '1500' },
@@ -112,7 +114,7 @@ const mockChallenges: Challenge[] = [
     progress: 7,
     goal: 10,
     progressLabel: 'Befejezett sorozatok',
-    isCompleted: false,
+    status: 'IN_PROGRESS',
     icon: 'bi-tv',
   },
   // Social challenges
@@ -121,7 +123,7 @@ const mockChallenges: Challenge[] = [
     title: 'Kritikus',
     description: 'Írj 20 véleményt könyvekről vagy filmekről.',
     category: 'social',
-    rarity: 'uncommon',
+    difficulty: 'MEDIUM',
     rewards: [
       { type: 'xp', value: '600' },
       { type: 'medal', value: 'Kritikus medál', icon: 'https://assets.ppy.sh/medals/web/all-secret-allgood@2x.png' },
@@ -129,7 +131,7 @@ const mockChallenges: Challenge[] = [
     progress: 14,
     goal: 20,
     progressLabel: 'Megírt vélemények',
-    isCompleted: false,
+    status: 'IN_PROGRESS',
     icon: 'bi-chat-quote',
   },
   {
@@ -137,7 +139,7 @@ const mockChallenges: Challenge[] = [
     title: 'Közösségi pillér',
     description: 'Szerezz 100 követőt a profilodon.',
     category: 'social',
-    rarity: 'epic',
+    difficulty: 'EPIC',
     rewards: [
       { type: 'title', value: 'Influencer' },
       { type: 'xp', value: '2500' },
@@ -146,16 +148,16 @@ const mockChallenges: Challenge[] = [
     progress: 42,
     goal: 100,
     progressLabel: 'Követők',
-    isCompleted: false,
+    status: 'IN_PROGRESS',
     icon: 'bi-people-fill',
   },
-  // Collection challenges
+  // Dedication challenges
   {
     id: 8,
     title: 'Gyűjtögető',
     description: 'Adj hozzá 100 tartalmat a könyvtáradhoz.',
-    category: 'collection',
-    rarity: 'rare',
+    category: 'dedication',
+    difficulty: 'HARD',
     rewards: [
       { type: 'xp', value: '1000' },
       { type: 'badge', value: 'Gyűjtő' },
@@ -163,7 +165,7 @@ const mockChallenges: Challenge[] = [
     progress: 87,
     goal: 100,
     progressLabel: 'Tartalmak a könyvtárban',
-    isCompleted: false,
+    status: 'IN_PROGRESS',
     icon: 'bi-collection',
   },
   // Event challenges
@@ -172,7 +174,7 @@ const mockChallenges: Challenge[] = [
     title: '30 napos olvasási maraton',
     description: 'Olvass minden nap 30 napig és nyerj exkluzív medált! Időkorlátosesemény.',
     category: 'event',
-    rarity: 'legendary',
+    difficulty: 'EPIC',
     rewards: [
       { type: 'xp', value: '5000' },
       { type: 'medal', value: 'Maraton bajnok', icon: 'https://assets.ppy.sh/medals/web/all-secret-toofasttoofurious@2x.png' },
@@ -181,7 +183,7 @@ const mockChallenges: Challenge[] = [
     progress: 12,
     goal: 30,
     progressLabel: 'Napok',
-    isCompleted: false,
+    status: 'IN_PROGRESS',
     expiresAt: '2025-01-31',
     icon: 'bi-trophy-fill',
   },
@@ -190,7 +192,7 @@ const mockChallenges: Challenge[] = [
     title: 'Téli kihívás',
     description: 'Olvass el 3 téli témájú könyvet december és január között.',
     category: 'event',
-    rarity: 'rare',
+    difficulty: 'HARD',
     rewards: [
       { type: 'xp', value: '1200' },
       { type: 'medal', value: 'Téli olvasó', icon: 'https://assets.ppy.sh/medals/web/all-secret-deciduousarborist@2x.png' },
@@ -198,9 +200,42 @@ const mockChallenges: Challenge[] = [
     progress: 1,
     goal: 3,
     progressLabel: 'Téli könyvek',
-    isCompleted: false,
+    status: 'IN_PROGRESS',
     expiresAt: '2025-01-31',
     icon: 'bi-snow',
+  },
+  {
+    id: 11,
+    title: 'Klasszikus maraton',
+    description: 'Fejezz be 8 klasszikus művet és szerezd meg a gyűjtő jutalmakat.',
+    category: 'reading',
+    difficulty: 'HARD',
+    rewards: [
+      { type: 'xp', value: '900' },
+      { type: 'badge', value: 'Klasszikus gyűjtő' },
+    ],
+    progress: 8,
+    goal: 8,
+    progressLabel: 'Elolvasott klasszikusok',
+    status: 'CLAIMED',
+    claimedAt: '2026-03-10T18:24:00.000Z',
+    icon: 'bi-journal-bookmark-fill',
+  },
+  {
+    id: 12,
+    title: 'Hétvégi binge mester',
+    description: 'Nézz meg 6 epizódot egy hétvégén belül.',
+    category: 'watching',
+    difficulty: 'MEDIUM',
+    rewards: [
+      { type: 'xp', value: '450' },
+      { type: 'medal', value: 'Binge medál', icon: 'https://assets.ppy.sh/medals/web/all-secret-improved@2x.png' },
+    ],
+    progress: 6,
+    goal: 6,
+    progressLabel: 'Megnézett epizódok',
+    status: 'COMPLETED',
+    icon: 'bi-camera-reels-fill',
   },
 ];
 
@@ -208,24 +243,22 @@ const mockChallenges: Challenge[] = [
 // HELPER FUNCTIONS
 // ========================
 
-const getRarityColor = (rarity: ChallengeRarity): string => {
-  switch (rarity) {
-    case 'common': return '#9e9e9e';
-    case 'uncommon': return '#4caf50';
-    case 'rare': return '#2196f3';
-    case 'epic': return '#9c27b0';
-    case 'legendary': return '#ff9800';
+const getDifficultyColor = (difficulty: ChallengeDifficulty): string => {
+  switch (difficulty) {
+    case 'EASY': return '#4caf50';
+    case 'MEDIUM': return '#2196f3';
+    case 'HARD': return '#ff9800';
+    case 'EPIC': return '#9c27b0';
     default: return '#9e9e9e';
   }
 };
 
-const getRarityLabel = (rarity: ChallengeRarity): string => {
-  switch (rarity) {
-    case 'common': return 'Gyakori';
-    case 'uncommon': return 'Ritka';
-    case 'rare': return 'Nagyon ritka';
-    case 'epic': return 'Epikus';
-    case 'legendary': return 'Legendás';
+const getDifficultyLabel = (difficulty: ChallengeDifficulty): string => {
+  switch (difficulty) {
+    case 'EASY': return 'Könnyű';
+    case 'MEDIUM': return 'Normál';
+    case 'HARD': return 'Nehéz';
+    case 'EPIC': return 'Epikus';
     default: return 'Ismeretlen';
   }
 };
@@ -235,7 +268,7 @@ const getCategoryLabel = (category: ChallengeCategory): string => {
     case 'reading': return 'Olvasás';
     case 'watching': return 'Nézés';
     case 'social': return 'Közösségi';
-    case 'collection': return 'Gyűjtés';
+    case 'dedication': return 'Kitartás';
     case 'event': return 'Esemény';
     default: return 'Egyéb';
   }
@@ -246,7 +279,7 @@ const getCategoryIcon = (category: ChallengeCategory): string => {
     case 'reading': return 'bi-book';
     case 'watching': return 'bi-play-circle';
     case 'social': return 'bi-people';
-    case 'collection': return 'bi-collection';
+    case 'dedication': return 'bi-hourglass-split';
     case 'event': return 'bi-calendar-event';
     default: return 'bi-star';
   }
@@ -266,17 +299,41 @@ const getRewardIcon = (type: RewardType): string => {
 // KOMPONENS
 // ========================
 
-type FilterType = 'all' | 'active' | 'completed' | 'event';
+type FilterType = 'all' | 'active' | 'claimable' | 'claimed' | 'event';
 
 const Challenges: React.FC = () => {
-  const [challenges] = useState<Challenge[]>(mockChallenges);
+  const [challenges, setChallenges] = useState<Challenge[]>(mockChallenges);
+  const [claimingIds, setClaimingIds] = useState<number[]>([]);
   const [filter, setFilter] = useState<FilterType>('all');
   const [categoryFilter, setCategoryFilter] = useState<ChallengeCategory | 'all'>('all');
 
+  const isClaimable = (challenge: Challenge) => challenge.status === 'COMPLETED';
+  const isClaimed = (challenge: Challenge) => challenge.status === 'CLAIMED';
+  const isFinished = (challenge: Challenge) => challenge.status === 'COMPLETED' || challenge.status === 'CLAIMED';
+
+  const handleClaim = (challengeId: number) => {
+    if (claimingIds.includes(challengeId)) return;
+
+    setClaimingIds((prev) => [...prev, challengeId]);
+
+    // Mock: API kérés szimuláció a user_challenge CLAIMED állapotra
+    window.setTimeout(() => {
+      setChallenges((prev) =>
+        prev.map((challenge) =>
+          challenge.id === challengeId
+            ? { ...challenge, status: 'CLAIMED', claimedAt: new Date().toISOString() }
+            : challenge
+        )
+      );
+      setClaimingIds((prev) => prev.filter((id) => id !== challengeId));
+    }, 280);
+  };
+
   const filteredChallenges = challenges.filter(c => {
     // Status filter
-    if (filter === 'active' && c.isCompleted) return false;
-    if (filter === 'completed' && !c.isCompleted) return false;
+    if (filter === 'active' && isFinished(c)) return false;
+    if (filter === 'claimable' && !isClaimable(c)) return false;
+    if (filter === 'claimed' && !isClaimed(c)) return false;
     if (filter === 'event' && c.category !== 'event') return false;
     
     // Category filter
@@ -285,8 +342,9 @@ const Challenges: React.FC = () => {
     return true;
   });
 
-  const activeCount = challenges.filter(c => !c.isCompleted).length;
-  const completedCount = challenges.filter(c => c.isCompleted).length;
+  const activeCount = challenges.filter(c => !isFinished(c)).length;
+  const claimableCount = challenges.filter(c => isClaimable(c)).length;
+  const claimedCount = challenges.filter(c => isClaimed(c)).length;
   const eventCount = challenges.filter(c => c.category === 'event').length;
 
   return (
@@ -321,10 +379,16 @@ const Challenges: React.FC = () => {
                   <i className="bi bi-hourglass-split me-2"></i>Aktív ({activeCount})
                 </button>
                 <button
-                  className={`btn btn-action ${filter === 'completed' ? 'active' : ''}`}
-                  onClick={() => setFilter('completed')}
+                  className={`btn btn-action ${filter === 'claimable' ? 'active' : ''}`}
+                  onClick={() => setFilter('claimable')}
                 >
-                  <i className="bi bi-check-circle-fill me-2"></i>Teljesítve ({completedCount})
+                  <i className="bi bi-gift-fill me-2"></i>Átvehető ({claimableCount})
+                </button>
+                <button
+                  className={`btn btn-action ${filter === 'claimed' ? 'active' : ''}`}
+                  onClick={() => setFilter('claimed')}
+                >
+                  <i className="bi bi-check2-circle me-2"></i>Átvett ({claimedCount})
                 </button>
                 <button
                   className={`btn btn-action ${filter === 'event' ? 'active' : ''}`}
@@ -361,10 +425,10 @@ const Challenges: React.FC = () => {
                   <i className="bi bi-people me-1"></i>Közösségi
                 </button>
                 <button
-                  className={`btn btn-action ${categoryFilter === 'collection' ? 'active' : ''}`}
-                  onClick={() => setCategoryFilter('collection')}
+                  className={`btn btn-action ${categoryFilter === 'dedication' ? 'active' : ''}`}
+                  onClick={() => setCategoryFilter('dedication')}
                 >
-                  <i className="bi bi-collection me-1"></i>Gyűjtés
+                  <i className="bi bi-hourglass-split me-1"></i>Kitartás
                 </button>
               </div>
             </div>
@@ -386,11 +450,11 @@ const Challenges: React.FC = () => {
                   {filteredChallenges.map(challenge => (
                     <div
                       key={challenge.id}
-                      className={`challenge-card ${challenge.isCompleted ? 'completed' : ''} rarity-${challenge.rarity}`}
+                      className={`challenge-card ${isClaimed(challenge) ? 'completed' : ''} difficulty-${challenge.difficulty.toLowerCase()}`}
                     >
                       {/* Left side: Icon */}
-                      <div className="challenge-icon" style={{ borderColor: getRarityColor(challenge.rarity) }}>
-                        <i className={`bi ${challenge.icon}`} style={{ color: getRarityColor(challenge.rarity) }}></i>
+                      <div className="challenge-icon" style={{ borderColor: getDifficultyColor(challenge.difficulty) }}>
+                        <i className={`bi ${challenge.icon}`} style={{ color: getDifficultyColor(challenge.difficulty) }}></i>
                       </div>
 
                       {/* Middle: Content */}
@@ -398,21 +462,33 @@ const Challenges: React.FC = () => {
                         <div className="challenge-header">
                           <h5 className="challenge-title">
                             {challenge.title}
-                            {challenge.isCompleted && (
+                            {isClaimed(challenge) && (
                               <i className="bi bi-check-circle-fill ms-2 text-success"></i>
                             )}
                           </h5>
                           <div className="challenge-badges">
                             <span 
-                              className="badge badge-rarity"
-                              style={{ backgroundColor: getRarityColor(challenge.rarity) }}
+                              className="badge badge-difficulty"
+                              style={{ backgroundColor: getDifficultyColor(challenge.difficulty) }}
                             >
-                              {getRarityLabel(challenge.rarity)}
+                              {getDifficultyLabel(challenge.difficulty)}
                             </span>
                             <span className="badge badge-category">
                               <i className={`bi ${getCategoryIcon(challenge.category)} me-1`}></i>
                               {getCategoryLabel(challenge.category)}
                             </span>
+                            {isClaimable(challenge) && (
+                              <span className="badge badge-claimable">
+                                <i className="bi bi-gift-fill me-1"></i>
+                                Átvehető
+                              </span>
+                            )}
+                            {isClaimed(challenge) && (
+                              <span className="badge badge-claimed">
+                                <i className="bi bi-check2-circle me-1"></i>
+                                Átvéve
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -429,7 +505,7 @@ const Challenges: React.FC = () => {
                               className="progress-bar-fill"
                               style={{ 
                                 width: `${Math.min((challenge.progress / challenge.goal) * 100, 100)}%`,
-                                backgroundColor: challenge.isCompleted ? '#4caf50' : getRarityColor(challenge.rarity)
+                                backgroundColor: isFinished(challenge) ? '#4caf50' : getDifficultyColor(challenge.difficulty)
                               }}
                             ></div>
                           </div>
@@ -461,6 +537,24 @@ const Challenges: React.FC = () => {
                             </div>
                           ))}
                         </div>
+
+                        {isClaimable(challenge) && (
+                          <button
+                            className="btn challenge-claim-btn mt-3"
+                            disabled={claimingIds.includes(challenge.id)}
+                            onClick={() => handleClaim(challenge.id)}
+                          >
+                            <i className="bi bi-gift-fill me-2"></i>
+                            {claimingIds.includes(challenge.id) ? 'Átvétel...' : 'Jutalom átvétele'}
+                          </button>
+                        )}
+
+                        {isClaimed(challenge) && challenge.claimedAt && (
+                          <div className="challenge-claimed-at mt-2">
+                            <i className="bi bi-clock-history me-1"></i>
+                            Átvéve: {new Date(challenge.claimedAt).toLocaleString('hu-HU')}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

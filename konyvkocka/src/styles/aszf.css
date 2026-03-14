@@ -47,7 +47,7 @@
 .aszf-footer-actions {
   margin-top: 1.5rem;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .aszf-footer-actions .btn {
@@ -81,11 +81,11 @@
   }
 
   .aszf-footer-actions {
-    justify-content: stretch;
+    justify-content: center;
   }
 
   .aszf-footer-actions .btn {
-    width: 100%;
+    width: auto;
     text-align: center;
   }
 }

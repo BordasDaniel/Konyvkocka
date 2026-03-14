@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Modal from '../components/common/Modal.tsx';
 import type { CardData } from '../components/common/Card.tsx';
@@ -113,6 +113,8 @@ const History: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'book' | 'movie' | 'series'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'in-progress'>('all');
   const [selectedCard, setSelectedCard] = useState<CardData | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
 
   // Szűrt elemek
   const filteredItems = useMemo(() => {
@@ -133,6 +135,23 @@ const History: React.FC = () => {
     return items;
   }, [activeFilter, statusFilter]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+
+  const pagedItems = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, currentPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   // Időrendi csoportosítás
   const groupedItems = useMemo(() => {
     const now = new Date();
@@ -147,7 +166,7 @@ const History: React.FC = () => {
       { title: 'Korábban', items: [] },
     ];
 
-    filteredItems.forEach(item => {
+    pagedItems.forEach(item => {
       if (item.viewedAt >= today) {
         groups[0].items.push(item);
       } else if (item.viewedAt >= yesterday) {
@@ -161,7 +180,27 @@ const History: React.FC = () => {
 
     // Csak nem üres csoportokat adjuk vissza
     return groups.filter(group => group.items.length > 0);
-  }, [filteredItems]);
+  }, [pagedItems]);
+
+  const jumpToTopNow = () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const scrollingRoot = document.scrollingElement as HTMLElement | null;
+    if (scrollingRoot) scrollingRoot.scrollTop = 0;
+  };
+
+  const changePage = (page: number) => {
+    jumpToTopNow();
+    setCurrentPage(Math.min(totalPages, Math.max(1, page)));
+  };
+
+  const paginationRange = useMemo(() => {
+    const delta = 2;
+    const start = Math.max(1, currentPage - delta);
+    const end = Math.min(totalPages, currentPage + delta);
+    return Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
+  }, [currentPage, totalPages]);
 
   // Típus ikon és szín
   const getTypeInfo = (type: HistoryItem['type']) => {
@@ -378,6 +417,26 @@ const History: React.FC = () => {
                 </div>
               </div>
             ))
+          )}
+
+          {filteredItems.length > 0 && totalPages > 1 && (
+            <nav className="kk-pagination-wrap history-pagination-wrap" aria-label="Előzmények lapozása">
+              <ul className="pagination kk-pagination justify-content-center mb-0">
+                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => changePage(currentPage - 1)}>Előző</button>
+                </li>
+
+                {paginationRange.map((page) => (
+                  <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                    <button className="page-link" onClick={() => changePage(page)}>{page}</button>
+                  </li>
+                ))}
+
+                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => changePage(currentPage + 1)}>Következő</button>
+                </li>
+              </ul>
+            </nav>
           )}
         </div>
       </section>

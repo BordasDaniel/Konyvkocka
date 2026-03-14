@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import NewsArticle, { type NewsArticleData } from '../components/features/NewsArticle';
 
 type NewsFilter = 'all' | 'update' | 'feature' | 'info' | 'event';
@@ -44,6 +44,86 @@ const DEFAULT_ARTICLES: NewsArticleData[] = [
     excerpt: 'A fizetési modál siker/sikertelen visszajelzéssel és tranzakciós azonosítóval érkezik. A formok glass stílust kaptak, az országválasztó stabilabb lett.',
     link: '/fizetes',
     linkText: 'Bővebben'
+  },
+  {
+    id: 5,
+    type: 'update',
+    title: 'Kereső lapozás és gyorsabb találati oldal érkezett',
+    date: '2025.10.18.',
+    tags: 'Frissítés',
+    excerpt: 'A keresés oldalon mostantól lapozással böngészhetők a találatok, gyorsabb képköltéssel és stabilabb poszter fallback megjelenítéssel.',
+    link: '/kereses',
+    linkText: 'Megnézem'
+  },
+  {
+    id: 6,
+    type: 'feature',
+    title: 'Könyvtár fejlesztés - saját gyűjtemény több oldalon',
+    date: '2025.10.14.',
+    tags: 'Új funkció',
+    excerpt: 'A könyvtár nézet mostantól nagyobb gyűjteménynél is kényelmesen használható, oldalakra bontott tartalommal és gyors visszaugrással a lista tetejére.',
+    link: '/konyvtaram',
+    linkText: 'Tovább a könyvtárhoz'
+  },
+  {
+    id: 7,
+    type: 'info',
+    title: 'Új badge ritkaság-jelölések a profil oldalon',
+    date: '2025.10.09.',
+    tags: 'Közlemény',
+    excerpt: 'A profilon megszerzett kitűzők ritkasága mostantól jól elkülönülő színekkel jelenik meg, így azonnal látszik, melyik mennyire különleges.',
+    link: '/profil',
+    linkText: 'Profil megnyitása'
+  },
+  {
+    id: 8,
+    type: 'event',
+    title: 'Közösségi olvasóhét indul exkluzív kihívásokkal',
+    date: '2025.10.04.',
+    tags: 'Esemény',
+    excerpt: 'Hét napon át napi mini kihívások, közös ajánlók és extra pontszerzési lehetőségek várják azokat, akik csatlakoznak az olvasóhéthez.',
+    link: '/kihivasok',
+    linkText: 'Részt veszek'
+  },
+  {
+    id: 9,
+    type: 'feature',
+    title: 'Ranglista lapozás és szűrés tartalomtípus szerint',
+    date: '2025.09.30.',
+    tags: 'Új funkció',
+    excerpt: 'A ranglista oldalon külön szűrhetővé váltak a könyves, filmes és sorozatos pontok, és a hosszabb listák lapozással böngészhetők.',
+    link: '/ranglista',
+    linkText: 'Ranglista megnyitása'
+  },
+  {
+    id: 10,
+    type: 'update',
+    title: 'Kihívások oldalon már átvehetők a teljesített jutalmak',
+    date: '2025.09.24.',
+    tags: 'Frissítés',
+    excerpt: 'A teljesített kihívások külön állapotot kaptak, és egyetlen gombnyomással átvehetők a jutalmak, mielőtt a kihívás átvett állapotba kerül.',
+    link: '/kihivasok',
+    linkText: 'Kihívások megnyitása'
+  },
+  {
+    id: 11,
+    type: 'info',
+    title: 'Profil beállítások: a nem módosítható mezők most egyértelműbbek',
+    date: '2025.09.18.',
+    tags: 'Közlemény',
+    excerpt: 'A beállítások panelen a zárolt vagy rendszerből érkező mezők külön megjelenést kaptak, így könnyebb felismerni, mi módosítható és mi nem.',
+    link: '/profil',
+    linkText: 'Beállítások megnyitása'
+  },
+  {
+    id: 12,
+    type: 'event',
+    title: 'Filmklub hétvége közös toplistával és extra XP-vel',
+    date: '2025.09.11.',
+    tags: 'Esemény',
+    excerpt: 'A hétvégi esemény alatt közösen ajánlhattok filmeket, ranglistán mérhetitek össze a pontokat, és extra XP is jár az aktivitásért.',
+    link: '/ranglista',
+    linkText: 'Részletek megtekintése'
   }
 ];
 
@@ -52,6 +132,8 @@ export default function News() {
   const [articles, setArticles] = useState<NewsArticleData[]>(DEFAULT_ARTICLES);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
 
   useEffect(() => {
     // Initial filter from URL query params or hash
@@ -68,6 +150,10 @@ export default function News() {
   useEffect(() => {
     // Fetch articles when filter changes
     fetchArticles(activeFilter);
+  }, [activeFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
   }, [activeFilter]);
 
   const fetchArticles = async (filter: NewsFilter) => {
@@ -114,6 +200,39 @@ export default function News() {
   const handleFilterClick = (filter: NewsFilter) => {
     setActiveFilter(filter);
   };
+
+  const totalPages = Math.max(1, Math.ceil(articles.length / pageSize));
+
+  const pagedArticles = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return articles.slice(start, start + pageSize);
+  }, [articles, currentPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const jumpToTopNow = () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const scrollingRoot = document.scrollingElement as HTMLElement | null;
+    if (scrollingRoot) scrollingRoot.scrollTop = 0;
+  };
+
+  const changePage = (page: number) => {
+    jumpToTopNow();
+    setCurrentPage(Math.min(totalPages, Math.max(1, page)));
+  };
+
+  const paginationRange = useMemo(() => {
+    const delta = 2;
+    const start = Math.max(1, currentPage - delta);
+    const end = Math.min(totalPages, currentPage + delta);
+    return Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
+  }, [currentPage, totalPages]);
 
   const getFilterIcon = (filter: NewsFilter): string => {
     switch (filter) {
@@ -184,10 +303,30 @@ export default function News() {
             </div>
           )}
 
-          {!loading && !error && articles.map(article => (
+          {!loading && !error && pagedArticles.map(article => (
             <NewsArticle key={article.id} article={article} />
           ))}
         </div>
+
+        {!loading && !error && totalPages > 1 && (
+          <nav className="kk-pagination-wrap news-pagination-wrap" aria-label="Hírek lapozása">
+            <ul className="pagination kk-pagination justify-content-center mb-0">
+              <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                <button className="page-link" onClick={() => changePage(currentPage - 1)}>Előző</button>
+              </li>
+
+              {paginationRange.map((page) => (
+                <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                  <button className="page-link" onClick={() => changePage(page)}>{page}</button>
+                </li>
+              ))}
+
+              <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                <button className="page-link" onClick={() => changePage(currentPage + 1)}>Következő</button>
+              </li>
+            </ul>
+          </nav>
+        )}
       </div>
     </main>
   );
