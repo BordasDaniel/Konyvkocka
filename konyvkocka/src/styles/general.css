@@ -163,6 +163,12 @@ body {
   color: var(--text);
 }
 
+body.kk-scroll-lock .fixed-top,
+body.kk-scroll-lock .fixed-bottom,
+body.kk-scroll-lock .sticky-top {
+  padding-right: var(--scrollbar-compensation, 0px);
+}
+
 
 
 

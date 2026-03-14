@@ -448,6 +448,10 @@ main {
   color: var(--secondary);
 }
 
+.leaderboard-pagination-wrap {
+  margin-top: 1rem;
+}
+
 /* ========================
    INFO PANEL
    ======================== */

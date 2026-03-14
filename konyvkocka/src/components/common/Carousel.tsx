@@ -87,6 +87,12 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
   const [activeIndex, setActiveIndex] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
   const timerRef = useRef<number | null>(null)
+  const animTimeoutRef = useRef<number | null>(null)
+  const activeIndexRef = useRef(0)
+
+  useEffect(() => {
+    activeIndexRef.current = activeIndex
+  }, [activeIndex])
 
   useEffect(() => {
     if (slidesProp && slidesProp.length) setSlides(slidesProp)
@@ -117,7 +123,10 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
     if (isAnimating || slides.length === 0) return
     setIsAnimating(true)
     setActiveIndex(i)
-    setTimeout(() => setIsAnimating(false), 600)
+    if (animTimeoutRef.current) {
+      window.clearTimeout(animTimeoutRef.current)
+    }
+    animTimeoutRef.current = window.setTimeout(() => setIsAnimating(false), 600)
   }, [isAnimating, slides.length])
 
   const goNext = useCallback(() => {
@@ -142,6 +151,9 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
       if (timerRef.current) {
         window.clearInterval(timerRef.current)
       }
+      if (animTimeoutRef.current) {
+        window.clearTimeout(animTimeoutRef.current)
+      }
     }
   }, [slides.length, interval])
 
@@ -156,12 +168,12 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
   }, [slides.length, interval])
 
   const handlePrev = () => {
-    goPrev()
+    goTo((activeIndexRef.current - 1 + slides.length) % slides.length)
     resetTimer()
   }
 
   const handleNext = () => {
-    goNext()
+    goTo((activeIndexRef.current + 1) % slides.length)
     resetTimer()
   }
 
@@ -206,7 +218,13 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
                   </button>
                 </div>
                 <div className="carousel-image">
-                  <img src={s.img} alt={`${s.title} borító`} />
+                  <img
+                    src={s.img}
+                    alt={`${s.title} borító`}
+                    loading={idx === activeIndex ? 'eager' : 'lazy'}
+                    decoding="async"
+                    fetchPriority={idx === activeIndex ? 'high' : 'auto'}
+                  />
                 </div>
               </div>
             </div>

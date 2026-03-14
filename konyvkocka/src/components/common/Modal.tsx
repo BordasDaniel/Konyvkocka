@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import type { CardData } from './Card';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/modal.css';
@@ -23,39 +23,11 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 	const [comments, setComments] = useState<Comment[]>([]);
 	const [commentText, setCommentText] = useState('');
 	const { isAuthenticated } = useAuth();
-
-	useEffect(() => {
-		if (open && card) {
-			// Scrollbar szélesség kompenzáció (hogy ne ugorjon a tartalom)
-			const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
-			document.documentElement.style.overflow = 'hidden';
-			document.body.style.overflow = 'hidden';
-			document.body.style.paddingRight = `${scrollBarWidth}px`;
-			loadComments(card.title);
-			return () => {
-				document.documentElement.style.overflow = '';
-				document.body.style.overflow = '';
-				document.body.style.paddingRight = '';
-			};
-		}
-	}, [open, card]);
-
-	useEffect(() => {
-		const handler = (e: KeyboardEvent) => {
-			if (e.key === 'Escape' && open) onClose?.();
-		};
-		document.addEventListener('keydown', handler);
-		return () => document.removeEventListener('keydown', handler);
-	}, [open, onClose]);
-
-	if (!open || !card) return null;
-
-	const ratingStars = (rating: number) => {
-		const r = Number.isFinite(rating) ? rating : 0;
-		return Array.from({ length: 5 }).map((_, i) => (
-			<i key={i} className={`bi bi-star-fill ${i < Math.round(r) ? 'filled' : ''}`}></i>
-		));
-	};
+	const [visible, setVisible] = useState(false);
+	const [closing, setClosing] = useState(false);
+	const wasOpen = React.useRef(false);
+	const lastCard = React.useRef<typeof card>(undefined);
+	if (card) lastCard.current = card;
 
 	const commentsKey = (title: string) => `comments::${title}`;
 
@@ -67,6 +39,78 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 		} catch (e) {
 			setComments([]);
 		}
+	};
+
+	useEffect(() => {
+		if (open) {
+			setClosing(false);
+			setVisible(true);
+			wasOpen.current = true;
+		} else if (wasOpen.current) {
+			setClosing(true);
+			wasOpen.current = false;
+			const t = setTimeout(() => { setVisible(false); setClosing(false); }, 290);
+			return () => clearTimeout(t);
+		}
+	}, [open]);
+
+	useLayoutEffect(() => {
+		if (visible) {
+			const html = document.documentElement;
+			const body = document.body;
+			const lockCount = Number(body.dataset.kkScrollLocks || '0');
+
+			if (lockCount === 0) {
+				const scrollBarWidth = window.innerWidth - html.clientWidth;
+				html.style.setProperty('--scrollbar-compensation', `${scrollBarWidth}px`);
+				html.style.overflow = 'hidden';
+				body.style.overflow = 'hidden';
+				body.style.paddingRight = `${scrollBarWidth}px`;
+				body.classList.add('kk-scroll-lock');
+			}
+
+			body.dataset.kkScrollLocks = String(lockCount + 1);
+
+			return () => {
+				const current = Number(body.dataset.kkScrollLocks || '1');
+				const next = Math.max(0, current - 1);
+				if (next === 0) {
+					delete body.dataset.kkScrollLocks;
+					html.style.overflow = '';
+					body.style.overflow = '';
+					body.style.paddingRight = '';
+					html.style.removeProperty('--scrollbar-compensation');
+					body.classList.remove('kk-scroll-lock');
+				} else {
+					body.dataset.kkScrollLocks = String(next);
+				}
+			};
+		}
+	}, [visible]);
+
+	useEffect(() => {
+		if (open && card) {
+			loadComments(card.title);
+		}
+	}, [open, card]); // eslint-disable-line react-hooks/exhaustive-deps
+
+	useEffect(() => {
+		const handler = (e: KeyboardEvent) => {
+			if (e.key === 'Escape' && open) onClose?.();
+		};
+		document.addEventListener('keydown', handler);
+		return () => document.removeEventListener('keydown', handler);
+	}, [open, onClose]);
+
+	if (!visible) return null;
+	const displayCard = card ?? lastCard.current;
+	if (!displayCard) return null;
+
+	const ratingStars = (rating: number) => {
+		const r = Number.isFinite(rating) ? rating : 0;
+		return Array.from({ length: 5 }).map((_, i) => (
+			<i key={i} className={`bi bi-star-fill ${i < Math.round(r) ? 'filled' : ''}`}></i>
+		));
 	};
 
 	const saveComment = (title: string, text: string) => {
@@ -83,7 +127,7 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 		if (!isAuthenticated) return;
 		const txt = commentText.trim();
 		if (!txt) return;
-		saveComment(card.title, txt);
+		saveComment(displayCard.title, txt);
 		setCommentText('');
 	};
 
@@ -92,59 +136,59 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 	};
 
 	const handleEpisodeClick = () => {
-		if (card.reader) {
-			window.location.href = `#${card.reader}`;
+		if (displayCard.reader) {
+			window.location.href = `#${displayCard.reader}`;
 		}
 	};
 
 	return (
 		<>
-			<div className="custom-modal-backdrop" style={{ display: open ? 'block' : 'none' }} onClick={onClose}></div>
-			<div className={`modal fade modal-custom show`} style={{ display: 'block' }} role="dialog" onClick={handleBackdropClick}>
+			<div className={`custom-modal-backdrop${closing ? ' closing' : ''}`} style={{ display: 'block' }} onClick={onClose}></div>
+			<div className={`modal fade modal-custom show${closing ? ' closing' : ''}`} style={{ display: 'block' }} role="dialog" onClick={handleBackdropClick}>
 				<div className="modal-dialog modal-xl modal-dialog-centered" role="document">
 					<div className="modal-content bg-dark text-light">
 						<div className="modal-header border-0">
-							<h5 className="modal-title">{card.title}</h5>
+							<h5 className="modal-title">{displayCard.title}</h5>
 							<button type="button" className="btn-close btn-close-white" aria-label="Close" onClick={onClose}></button>
 						</div>
 						<div className="modal-body">
 						<div className="px-3">
 							<div className="row g-2">
 								<div className="col-md-5">
-									<img className="cover" src={card.img} alt={`${card.title} borító`} />
+									<img className="cover" src={displayCard.img} alt={`${displayCard.title} borító`} />
 								</div>
 								<div className="col-md-7">
-										<h4>{card.title}</h4>
+										<h4>{displayCard.title}</h4>
 										<div className="tags-inline">
-											{(card.tags || []).map((t, idx) => (
+											{(displayCard.tags || []).map((t, idx) => (
 												<span key={idx}>{t}</span>
 											))}
 										</div>
-										{card.desc && <p>{card.desc}</p>}
+										{displayCard.desc && <p>{displayCard.desc}</p>}
 
-										{card.trailer && card.type !== 'book' && (
+										{displayCard.trailer && displayCard.type !== 'book' && (
 											<div className="video-wrapper">
 												<iframe
-													src={`${card.trailer}${card.trailer.includes('?') ? '&' : '?'}rel=0`}
-													title={`${card.title} trailer`}
+													src={`${displayCard.trailer}${displayCard.trailer.includes('?') ? '&' : '?'}rel=0`}
+													title={`${displayCard.title} trailer`}
 													allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
 													allowFullScreen
 												></iframe>
 											</div>
 										)}
 
-										{Number.isFinite(card.rating) && (
-											<div className="viewer-rating" aria-hidden="true">
-												<div className="stars">{ratingStars(card.rating)}</div>
-												<div className="rating-num">{card.rating.toFixed(1)}</div>
+{Number.isFinite(displayCard.rating) && (
+								<div className="viewer-rating" aria-hidden="true">
+									<div className="stars">{ratingStars(displayCard.rating)}</div>
+									<div className="rating-num">{displayCard.rating.toFixed(1)}</div>
 											</div>
 										)}
 
 										<div className="episode-list">
 											<strong>Epizódok:</strong>
 											<ul aria-label="Episodic list">
-												{Array.isArray(card.episodes) && card.episodes.length > 0 ? (
-													card.episodes.map((ep, idx) => (
+												{Array.isArray(displayCard.episodes) && displayCard.episodes.length > 0 ? (
+													displayCard.episodes.map((ep, idx) => (
 														<li key={idx} onClick={handleEpisodeClick} tabIndex={0}>
 															{typeof ep === 'string' ? ep : 'Epizód'}
 														</li>

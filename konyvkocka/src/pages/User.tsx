@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import '../styles/user.css';
 
@@ -10,11 +10,24 @@ interface UserProfile {
 	username: string;
 	avatar: string;
 	country: string;
+	countryCode: string;
 	countryFlag: string;
 	level: number;
 	levelProgress: number;
 	isSubscriber: boolean;
+	premium: boolean;
+	premiumExpiresAt: string | null;
+	permissionLevel: 'USER' | 'MODERATOR' | 'ADMIN' | 'BANNED';
 	email: string;
+	creationDate: string;
+	lastLoginDate: string;
+	xp: number;
+	bookPoints: number;
+	seriesPoints: number;
+	moviePoints: number;
+	dayStreak: number;
+	readTimeMin: number;
+	watchTimeMin: number;
 }
 
 interface ViewStats {
@@ -74,19 +87,24 @@ interface MedalGroup {
 	medals: Medal[];
 }
 
+interface MedalDetails {
+	category: string;
+	rarity: string;
+	description: string;
+}
+
 interface UserSettings {
 	username: string;
 	email: string;
+	countryCode: string;
 	avatarDataUrl: string | null;
+	selectedBadges: string[];
 	profileVisibility: 'public' | 'friends' | 'private';
 	showCountryOnProfile: boolean;
 	showOnlineStatus: boolean;
 	allowFriendRequests: boolean;
 	allowMentions: boolean;
 	language: 'hu' | 'en';
-	textSize: 'small' | 'normal' | 'large';
-	reducedMotion: boolean;
-	highContrast: boolean;
 	autoplayMedia: boolean;
 	showMatureContent: boolean;
 	pushNotificationsEnabled: boolean;
@@ -101,6 +119,14 @@ interface UserSettings {
 	timezone: string;
 }
 
+const BADGE_OPTIONS = ['Kiemelt olvasó', 'Top 100', 'Fürge Nyúl Kihívás', 'Könyvmoly', 'Filmkritikus', 'Kihívásvadász'];
+const PERMISSION_LEVEL_LABELS: Record<UserProfile['permissionLevel'], string> = {
+	USER: 'Felhasználó',
+	MODERATOR: 'Moderátor',
+	ADMIN: 'Admin',
+	BANNED: 'Korlátozott',
+};
+
 // ========================
 // MOCK ADATOK - Később fetch-ből jönnek
 // ========================
@@ -112,11 +138,24 @@ const fetchUserProfile = async (): Promise<UserProfile> => {
 		username: 'BordasDaniel',
 		avatar: 'https://i.pinimg.com/236x/5a/bd/98/5abd985735a8fd4adcb0e795de6a1005.jpg',
 		country: 'Magyarország',
+		countryCode: 'HU',
 		countryFlag: 'https://flagcdn.com/w20/hu.png',
 		level: 98,
 		levelProgress: 27,
 		isSubscriber: true,
+		premium: true,
+		premiumExpiresAt: '2026-12-31',
+		permissionLevel: 'USER',
 		email: 'daniel@example.com',
+		creationDate: '2020-03-15',
+		lastLoginDate: '2026-03-14',
+		xp: 840,
+		bookPoints: 8450,
+		seriesPoints: 2160,
+		moviePoints: 980,
+		dayStreak: 47,
+		readTimeMin: 18320,
+		watchTimeMin: 5220,
 	};
 };
 
@@ -148,7 +187,7 @@ const fetchViewStats = async (): Promise<Record<string, ViewStats>> => {
 				readSectionSubtitle: '124 film, 89 sorozat, 8 könyv teljes • 57 könyv részben • 23 folyamatban',
 				readSectionActivity: 'Utolsó aktivitás: 2 nappal ezelőtt',
 				readSectionButton: 'Mutasd a tartalmakat',
-				favSectionTitle: 'Összes kedvenc',
+				favSectionTitle: 'Legutóbbi kedvenc',
 				favSectionSubtitle: '23 kedvenc könyv • 45 kedvenc film • 32 kedvenc sorozat',
 				favSectionActivity: 'Frissítve: ma',
 				favSectionButton: 'Mutasd a kedvenceket',
@@ -179,7 +218,7 @@ const fetchViewStats = async (): Promise<Record<string, ViewStats>> => {
 				readSectionSubtitle: '8 befejezve • 57 olvasás alatt • 7 félbehagyva • 357 tervben • 513 archivált',
 				readSectionActivity: 'Utolsó könyv: 1 nappal ezelőtt',
 				readSectionButton: 'Mutasd a könyveket',
-				favSectionTitle: 'Kedvenc könyvek',
+				favSectionTitle: 'Legutóbbi kedvenc könyvek',
 				favSectionSubtitle: '23 kedvenc könyv a listádon',
 				favSectionActivity: 'Frissítve: 3 nappal ezelőtt',
 				favSectionButton: 'Mutasd a kedvenc könyveket',
@@ -197,23 +236,23 @@ const fetchViewStats = async (): Promise<Record<string, ViewStats>> => {
 			reviewsSent: '14',
 			badges: ['Színészrajongó', 'Filmfan', 'Sorozatőrült'],
 			labels: {
-				labelReadingPoints: 'Film/Sorozat pontok',
+				labelReadingPoints: 'Média pontok',
 				labelReadingTime: 'Nézési idő',
 				labelCompletion: 'Befejezési arány:',
 				labelReadBooks: 'Elolvasott könyvek:',
-				labelMediaViewed: 'Megtekintett filmek/sorozatok:',
+				labelMediaViewed: 'Megtekintett média tartalmak:',
 				labelLongestStreak: 'Leghosszabb nézési sorozat:',
-				labelReviewsSent: 'Film/Sorozat vélemények:',
+				labelReviewsSent: 'Média vélemények:',
 			},
 			sections: {
-				readSectionTitle: 'Legutóbb megtekintett filmek és sorozatok',
+				readSectionTitle: 'Legutóbb megtekintett média tartalmak',
 				readSectionSubtitle: '124 film befejezve • 89 sorozat befejezve • 23 folyamatban • 12 félbehagyva',
 				readSectionActivity: 'Utoljára nézett: tegnap',
-				readSectionButton: 'Mutasd a filmeket/sorozatokat',
-				favSectionTitle: 'Kedvenc filmek és sorozatok',
+				readSectionButton: 'Mutasd a média tartalmakat',
+				favSectionTitle: 'Legutóbbi kedvenc média tartalmak',
 				favSectionSubtitle: '45 kedvenc film • 32 kedvenc sorozat',
 				favSectionActivity: 'Frissítve: ma',
-				favSectionButton: 'Mutasd a kedvenc filmeket',
+				favSectionButton: 'Mutasd a kedvenc média tartalmakat',
 			},
 		},
 	};
@@ -310,7 +349,77 @@ const fetchMedalGroups = async (): Promise<MedalGroup[]> => {
 
 type ViewType = 'all' | 'book' | 'media' | 'settings';
 
-type OpenSelectId = 'profileVisibility' | 'language' | 'textSize' | 'contrast' | null;
+type OpenSelectId = 'profileVisibility' | 'language' | 'badge-0' | 'badge-1' | 'badge-2' | 'notificationFrequency' | 'timezone' | null;
+type SaveModalState = { title: string; message: string } | null;
+type MedalModalState = { medal: Medal; groupTitle: string; details: MedalDetails } | null;
+type MedalRarityKey = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
+
+const MEDAL_DB_DETAILS: Record<number, Partial<MedalDetails>> = {
+	1: { rarity: 'Ritka', description: 'Amikor mások még a startgombot keresik, te már célba értél a tavaszi hajrában.' },
+	2: { rarity: 'Epikus', description: 'A nyári maratonon nem csak végigmentél, hanem közben még mosolyogtál is.' },
+	3: { rarity: 'Legendás', description: 'Az őszi fesztivál úgy lett kipipálva, mintha ez csak bemelegítés lett volna.' },
+	4: { description: 'Visszajöttél, és a rendszer is csak annyit mondott: na végre!' },
+	5: { description: 'Hét nap fókusz, hét nap lendület, hét nap "csak még egy fejezet".' },
+	6: { rarity: 'Ritka', description: '30 napos sorozat? Itt már nem motivációról beszélünk, hanem szokásról.' },
+	7: { rarity: 'Legendás', description: '100 nap kitartás. Ez már nem streak, ez karakterfejlődés.' },
+	8: { description: 'A gyűjteményed elkezdett önálló életet élni. És ez még csak a kezdet.' },
+	9: { rarity: 'Ritka', description: 'Haladó gyűjtő szint elérve: a polc már rád néz fel.' },
+	10: { description: 'Első vélemény kipipálva. A közösség innentől hivatalosan ismer.' },
+	11: { rarity: 'Epikus', description: 'A kritikáid után még a csillagok is rendezettebb sorban állnak.' },
+	12: { rarity: 'Epikus', description: 'Tökéletesnek hívják, de te ezt csak "egy átlagos napnak" nevezed.' },
+	13: { description: 'Első esemény megvolt. Onnantól már tudtad: ez az a hely.' },
+	14: { rarity: 'Ritka', description: 'Tanulás közben feloldva. Mert néha a fejlődés a legjobb jutalom.' },
+	15: { rarity: 'Epikus', description: 'Afterparty mód: bekapcsolva. Még egy utolsó kör? Persze.' },
+	16: { rarity: 'Legendás', description: 'Talán majd máskor? Te inkább most rögtön megszereznéd.' },
+	17: { rarity: 'Legendás', description: 'Titokzatos: ? ? ? ? ? ? ? ... és valahol itt kezdődik a legenda.' },
+	18: { rarity: 'Legendás', description: 'Mesteri teljesítmény, ahol a "jó" már rég nem elég.' },
+	19: { rarity: 'Legendás', description: 'Ő ott biztosúr! De hogy pontosan miért, azt csak kevesen tudják.' },
+	20: { rarity: 'Legendás', description: 'Maraton kitűző: amikor a célvonal már csak formalitás.' },
+};
+
+const getMedalDetails = (medal: Medal, groupTitle: string): MedalDetails => {
+	const groupCategoryMap: Record<string, string> = {
+		Események: 'Esemény',
+		Kitartás: 'Aktivitás',
+		Megszerezve: 'Gyűjtemény',
+		Különlegesek: 'Különleges',
+	};
+
+	const defaults: MedalDetails = {
+		category: groupCategoryMap[groupTitle] ?? 'Általános',
+		rarity: medal.isLocked ? 'Legendás' : 'Gyakori',
+		description: `${medal.label} kitűző a(z) ${groupTitle.toLowerCase()} kategóriában. Jelenleg ez az egyik legmenőbb jelölésed.`,
+	};
+
+	return {
+		...defaults,
+		...MEDAL_DB_DETAILS[medal.id],
+	};
+};
+
+const getMedalRarityKey = (rarity: string): MedalRarityKey => {
+	const normalized = rarity.trim().toLowerCase();
+
+	if (normalized === 'common' || normalized === 'gyakori') return 'COMMON';
+	if (normalized === 'rare' || normalized === 'ritka') return 'RARE';
+	if (normalized === 'epic' || normalized === 'epikus') return 'EPIC';
+	if (normalized === 'legendary' || normalized === 'legendás') return 'LEGENDARY';
+
+	return 'COMMON';
+};
+
+const NOTIFICATION_FREQUENCY_OPTIONS: Array<{ value: UserSettings['notificationFrequency']; label: string }> = [
+	{ value: 'immediate', label: 'Azonnal' },
+	{ value: 'daily', label: 'Napi' },
+	{ value: 'weekly', label: 'Heti' },
+	{ value: 'none', label: 'Egyáltalán nem' },
+];
+
+const TIMEZONE_OPTIONS: Array<{ value: string; label: string }> = [
+	{ value: 'Europe/Budapest', label: 'Europe/Budapest (GMT+1)' },
+	{ value: 'Europe/London', label: 'Europe/London (GMT+0)' },
+	{ value: 'America/New_York', label: 'America/New_York (GMT-5)' },
+];
 
 interface LocationState {
 	view?: 'settings';
@@ -320,10 +429,6 @@ const User: React.FC = () => {
 	const location = useLocation();
 	const locationState = location.state as LocationState | null;
 	const [openSelect, setOpenSelect] = useState<OpenSelectId>(null);
-	const profileVisibilityRef = useRef<HTMLDivElement>(null);
-	const languageRef = useRef<HTMLDivElement>(null);
-	const textSizeRef = useRef<HTMLDivElement>(null);
-	const contrastRef = useRef<HTMLDivElement>(null);
 
 	// Állapotok - activeView alapértelmezése a location.state alapján
 	const [activeView, setActiveView] = useState<ViewType>(() => {
@@ -338,6 +443,15 @@ const User: React.FC = () => {
 	const [books, setBooks] = useState<Book[]>([]);
 	const [medalGroups, setMedalGroups] = useState<MedalGroup[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [saveModal, setSaveModal] = useState<SaveModalState>(null);
+	const [medalModal, setMedalModal] = useState<MedalModalState>(null);
+	const [medalModalVisible, setMedalModalVisible] = useState(false);
+	const [medalModalClosing, setMedalModalClosing] = useState(false);
+	const lastMedalModal = useRef<MedalModalState>(null);
+	if (medalModal) lastMedalModal.current = medalModal;
+	const [badgesExpanded, setBadgesExpanded] = useState(false);
+	const [badgesLoaded, setBadgesLoaded] = useState(false);
+	const [isLoadingBadges, setIsLoadingBadges] = useState(false);
 
 	// Collapse állapotok
 	const [readBooksOpen, setReadBooksOpen] = useState(false);
@@ -347,16 +461,15 @@ const User: React.FC = () => {
 	const [settings, setSettings] = useState<UserSettings>({
 		username: '',
 		email: '',
+		countryCode: 'HU',
 		avatarDataUrl: null,
+		selectedBadges: ['Kiemelt olvasó', 'Top 100', 'Fürge Nyúl Kihívás'],
 		profileVisibility: 'public',
 		showCountryOnProfile: true,
 		showOnlineStatus: true,
 		allowFriendRequests: true,
 		allowMentions: true,
 		language: 'hu',
-		textSize: 'normal',
-		reducedMotion: false,
-		highContrast: false,
 		autoplayMedia: true,
 		showMatureContent: false,
 		pushNotificationsEnabled: true,
@@ -376,6 +489,21 @@ const User: React.FC = () => {
 			...prev,
 			[key]: value,
 		}));
+	};
+
+	const handleBadgeSelect = (position: number, badge: string) => {
+		setSettings(prev => {
+			const next = [...prev.selectedBadges];
+			const duplicateIndex = next.findIndex((item, index) => index !== position && item === badge);
+			if (duplicateIndex !== -1) {
+				next[duplicateIndex] = next[position];
+			}
+			next[position] = badge;
+			return {
+				...prev,
+				selectedBadges: next,
+			};
+		});
 	};
 
 	const handleAvatarFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -432,14 +560,8 @@ const User: React.FC = () => {
 
 	useEffect(() => {
 		const clickAway = (event: MouseEvent) => {
-			const target = event.target as Node;
-			const inAny =
-				profileVisibilityRef.current?.contains(target) ||
-				languageRef.current?.contains(target) ||
-				textSizeRef.current?.contains(target) ||
-				contrastRef.current?.contains(target);
-
-			if (!inAny) {
+			const target = event.target as HTMLElement;
+			if (!target.closest('.custom-select-wrapper')) {
 				setOpenSelect(null);
 			}
 		};
@@ -448,6 +570,105 @@ const User: React.FC = () => {
 		return () => document.removeEventListener('click', clickAway);
 	}, []);
 
+	useLayoutEffect(() => {
+		if (!saveModal) return;
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') {
+				if (saveModal) setSaveModal(null);
+			}
+		};
+
+		const html = document.documentElement;
+		const body = document.body;
+		const lockCount = Number(body.dataset.kkScrollLocks || '0');
+
+		if (lockCount === 0) {
+			const scrollBarWidth = window.innerWidth - html.clientWidth;
+			html.style.setProperty('--scrollbar-compensation', `${scrollBarWidth}px`);
+			html.style.overflow = 'hidden';
+			body.style.overflow = 'hidden';
+			body.style.paddingRight = `${scrollBarWidth}px`;
+			body.classList.add('kk-scroll-lock');
+		}
+
+		body.dataset.kkScrollLocks = String(lockCount + 1);
+		html.style.height = '100%';
+		body.style.height = '100%';
+		document.addEventListener('keydown', onKeyDown);
+
+		return () => {
+			const current = Number(body.dataset.kkScrollLocks || '1');
+			const next = Math.max(0, current - 1);
+			if (next === 0) {
+				delete body.dataset.kkScrollLocks;
+				html.style.overflow = '';
+				body.style.overflow = '';
+				body.style.paddingRight = '';
+				html.style.removeProperty('--scrollbar-compensation');
+				body.classList.remove('kk-scroll-lock');
+			} else {
+				body.dataset.kkScrollLocks = String(next);
+			}
+
+			html.style.height = '';
+			body.style.height = '';
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, [saveModal]);
+
+	useEffect(() => {
+		if (medalModal) {
+			setMedalModalClosing(false);
+			setMedalModalVisible(true);
+		} else if (medalModalVisible) {
+			setMedalModalClosing(true);
+			const t = setTimeout(() => { setMedalModalVisible(false); setMedalModalClosing(false); }, 290);
+			return () => clearTimeout(t);
+		}
+	}, [medalModal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+	useLayoutEffect(() => {
+		if (!medalModalVisible) return;
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') setMedalModal(null);
+		};
+
+		const html = document.documentElement;
+		const body = document.body;
+		const lockCount = Number(body.dataset.kkScrollLocks || '0');
+
+		if (lockCount === 0) {
+			const scrollBarWidth = window.innerWidth - html.clientWidth;
+			html.style.setProperty('--scrollbar-compensation', `${scrollBarWidth}px`);
+			html.style.overflow = 'hidden';
+			body.style.overflow = 'hidden';
+			body.style.paddingRight = `${scrollBarWidth}px`;
+			body.classList.add('kk-scroll-lock');
+		}
+
+		body.dataset.kkScrollLocks = String(lockCount + 1);
+		document.addEventListener('keydown', onKeyDown);
+
+		return () => {
+			const current = Number(body.dataset.kkScrollLocks || '1');
+			const next = Math.max(0, current - 1);
+			if (next === 0) {
+				delete body.dataset.kkScrollLocks;
+				html.style.overflow = '';
+				body.style.overflow = '';
+				body.style.paddingRight = '';
+				html.style.removeProperty('--scrollbar-compensation');
+				body.classList.remove('kk-scroll-lock');
+			} else {
+				body.dataset.kkScrollLocks = String(next);
+			}
+
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, [medalModalVisible]);
+
 	// Location state változásának figyelése (pl. navigáció a Beállításokhoz)
 	useEffect(() => {
 		if (locationState?.view === 'settings') {
@@ -455,39 +676,62 @@ const User: React.FC = () => {
 		}
 	}, [locationState]);
 
+	useEffect(() => {
+		setReadBooksOpen(false);
+		setFavBooksOpen(false);
+		setMedalModal(null);
+		setMedalModalVisible(false);
+		setMedalModalClosing(false);
+		setBadgesExpanded(false);
+	}, [activeView]);
+
+	const openMedalModal = (medal: Medal, groupTitle: string) => {
+		setMedalModal({
+			medal,
+			groupTitle,
+			details: getMedalDetails(medal, groupTitle),
+		});
+	};
+
 	// Adatok betöltése
 	useEffect(() => {
 		const loadData = async () => {
 			setIsLoading(true);
 			try {
 				// TODO: Később ezek API hívások lesznek
-				const [profileData, statsData, booksData, medalsData] = await Promise.all([
+				const [profileData, statsData, booksData] = await Promise.all([
 					fetchUserProfile(),
 					fetchViewStats(),
 					fetchBooks(),
-					fetchMedalGroups(),
 				]);
 
 				setProfile(profileData);
 				setDefaultAvatar(profileData.avatar);
 				setAllStats(statsData);
 				setBooks(booksData);
-				setMedalGroups(medalsData);
 
 				// Beállítások inicializálása profil adatokból
 				setSettings(prev => ({
 					...prev,
 					username: profileData.username,
 					email: profileData.email,
+					countryCode: profileData.countryCode,
 				}));
 
 				// localStorage beállítások betöltése
 				const savedSettings = localStorage.getItem('kk_profile_settings');
 				if (savedSettings) {
 					const parsed = JSON.parse(savedSettings) as Partial<UserSettings>;
+					const legacySelectedTitles = (parsed as { selectedTitles?: string[] }).selectedTitles;
+					const normalizedSelectedBadges = Array.isArray(parsed.selectedBadges)
+						? parsed.selectedBadges.slice(0, 3)
+						: Array.isArray(legacySelectedTitles)
+							? legacySelectedTitles.slice(0, 3)
+							: undefined;
 					setSettings(prev => ({
 						...prev,
 						...parsed,
+						selectedBadges: normalizedSelectedBadges ?? prev.selectedBadges,
 						username: profileData.username,
 					}));
 					if (parsed.avatarDataUrl && typeof parsed.avatarDataUrl === 'string') {
@@ -505,6 +749,34 @@ const User: React.FC = () => {
 		loadData();
 	}, []);
 
+	useEffect(() => {
+		if (!badgesExpanded || badgesLoaded || isLoadingBadges) return;
+
+		let cancelled = false;
+
+		const loadBadgeGroups = async () => {
+			setIsLoadingBadges(true);
+			try {
+				const medalsData = await fetchMedalGroups();
+				if (cancelled) return;
+				setMedalGroups(medalsData);
+				setBadgesLoaded(true);
+			} catch (error) {
+				console.error('Hiba a kitűzők betöltésekor:', error);
+			} finally {
+				if (!cancelled) {
+					setIsLoadingBadges(false);
+				}
+			}
+		};
+
+		loadBadgeGroups();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [badgesExpanded, badgesLoaded, isLoadingBadges]);
+
 	// Jelenlegi nézet statisztikái
 	const currentStats = allStats[activeView] || allStats['all'];
 
@@ -518,16 +790,15 @@ const User: React.FC = () => {
 		const payload = {
 			username: settings.username,
 			email: settings.email,
+			countryCode: settings.countryCode,
 			avatarDataUrl: settings.avatarDataUrl,
+			selectedBadges: settings.selectedBadges,
 			profileVisibility: settings.profileVisibility,
 			showCountryOnProfile: settings.showCountryOnProfile,
 			showOnlineStatus: settings.showOnlineStatus,
 			allowFriendRequests: settings.allowFriendRequests,
 			allowMentions: settings.allowMentions,
 			language: settings.language,
-			textSize: settings.textSize,
-			reducedMotion: settings.reducedMotion,
-			highContrast: settings.highContrast,
 			autoplayMedia: settings.autoplayMedia,
 			showMatureContent: settings.showMatureContent,
 			pushNotificationsEnabled: settings.pushNotificationsEnabled,
@@ -542,7 +813,10 @@ const User: React.FC = () => {
 		// TODO: API hívás: await fetch('/api/user/settings', { method: 'PUT', body: JSON.stringify(payload) });
 		localStorage.setItem('kk_profile_settings', JSON.stringify(payload));
 		syncAuthAvatar(settings.avatarDataUrl);
-		alert('Beállítások elmentve.');
+		setSaveModal({
+			title: 'Mentés kész',
+			message: 'A beállítások sikeresen elmentésre kerültek.',
+		});
 	};
 
 	// Adatok exportálása
@@ -562,14 +836,6 @@ const User: React.FC = () => {
 		a.click();
 		a.remove();
 		URL.revokeObjectURL(url);
-	};
-
-	// Kijelentkezés
-	const handleLogout = () => {
-		// TODO: API hívás: await fetch('/api/auth/logout', { method: 'POST' });
-		localStorage.removeItem('kk_session');
-		alert('Kijelentkezve. Átirányítás a bejelentkezéshez.');
-		window.location.href = '#/belepes';
 	};
 
 	// Fiók törlése
@@ -667,7 +933,7 @@ const User: React.FC = () => {
 									type="button"
 									onClick={() => setActiveView('media')}
 								>
-									<i className="bi bi-film me-1"></i>FILMEK/Sorozatok
+									<i className="bi bi-film me-1"></i>MÉDIA
 								</button>
 								<button
 									className={`btn btn-action ${activeView === 'settings' ? 'active' : ''}`}
@@ -738,7 +1004,7 @@ const User: React.FC = () => {
 								<div className="row">
 									<div className="col-md-6 mb-3">
 										<label className="form-label">Profil láthatósága</label>
-										<div className="custom-select-wrapper position-relative" ref={profileVisibilityRef}>
+										<div className="custom-select-wrapper position-relative">
 											<button
 												className="form-select text-start"
 												type="button"
@@ -790,7 +1056,7 @@ const User: React.FC = () => {
 									</div>
 									<div className="col-md-6 mb-3">
 										<label className="form-label">Nyelv</label>
-										<div className="custom-select-wrapper position-relative" ref={languageRef}>
+										<div className="custom-select-wrapper position-relative">
 											<button
 												className="form-select text-start"
 												type="button"
@@ -914,6 +1180,63 @@ const User: React.FC = () => {
 										onChange={(e) => updateSetting('email', e.target.value)}
 									/>
 								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Országkód</label>
+									<input
+										className="form-control"
+										value={settings.countryCode}
+										maxLength={2}
+										onChange={(e) => updateSetting('countryCode', e.target.value.toUpperCase())}
+									/>
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Jogosultság</label>
+									<input className="form-control" value={PERMISSION_LEVEL_LABELS[profile.permissionLevel]} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Prémium státusz</label>
+									<input className="form-control" value={profile.premium ? 'Aktív' : 'Inaktív'} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Prémium lejárat</label>
+									<input className="form-control" value={profile.premiumExpiresAt ?? 'Nincs beállítva'} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Fiók létrehozása</label>
+									<input className="form-control" value={profile.creationDate} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Utolsó belépés</label>
+									<input className="form-control" value={profile.lastLoginDate} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">XP</label>
+									<input className="form-control" value={profile.xp} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Napi streak</label>
+									<input className="form-control" value={profile.dayStreak} disabled />
+								</div>
+								<div className="col-md-4 mb-3">
+									<label className="form-label">Book pontok</label>
+									<input className="form-control" value={profile.bookPoints} disabled />
+								</div>
+								<div className="col-md-4 mb-3">
+									<label className="form-label">Series pontok</label>
+									<input className="form-control" value={profile.seriesPoints} disabled />
+								</div>
+								<div className="col-md-4 mb-3">
+									<label className="form-label">Movie pontok</label>
+									<input className="form-control" value={profile.moviePoints} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Olvasási idő (perc)</label>
+									<input className="form-control" value={profile.readTimeMin} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Nézési idő (perc)</label>
+									<input className="form-control" value={profile.watchTimeMin} disabled />
+								</div>
 							</div>
 						</form>
 					</div>
@@ -980,30 +1303,102 @@ const User: React.FC = () => {
 						</div>
 						<form>
 							<div className="row">
+								<div className="col-12 mb-3">
+									<label className="form-label">Megjelenített jelvények (maximum 3)</label>
+									<div className="row g-2 settings-title-grid">
+										{[0, 1, 2].map((position) => (
+											<div className="col-12 col-md-4" key={position}>
+												<label className="form-label small mb-1">Jelvény {position + 1}</label>
+												<div className="custom-select-wrapper position-relative">
+													<button
+														className="form-select text-start"
+														type="button"
+														aria-expanded={openSelect === `badge-${position}`}
+														onClick={(e) => {
+															e.stopPropagation();
+															setOpenSelect(prev => (prev === `badge-${position}` ? null : `badge-${position}`));
+														}}
+													>
+														<span>{settings.selectedBadges[position]}</span>
+													</button>
+													<div className={`custom-select-menu ${openSelect === `badge-${position}` ? 'show' : ''}`}>
+														{BADGE_OPTIONS.map((badge) => (
+															<div
+																key={badge}
+																className="country-item"
+																onClick={() => {
+																	handleBadgeSelect(position, badge);
+																	setOpenSelect(null);
+																}}
+															>
+																{badge}
+															</div>
+														))}
+													</div>
+												</div>
+											</div>
+										))}
+									</div>
+								</div>
 								<div className="col-md-6 mb-3">
 									<label className="form-label">Értesítési gyakoriság</label>
-									<select
-										className="form-select"
-										value={settings.notificationFrequency}
-										onChange={(e) => updateSetting('notificationFrequency', e.target.value as UserSettings['notificationFrequency'])}
-									>
-										<option value="immediate">Azonnal</option>
-										<option value="daily">Napi</option>
-										<option value="weekly">Heti</option>
-										<option value="none">Egyáltalán nem</option>
-									</select>
+									<div className="custom-select-wrapper position-relative">
+										<button
+											className="form-select text-start"
+											type="button"
+											aria-expanded={openSelect === 'notificationFrequency'}
+											onClick={(e) => {
+												e.stopPropagation();
+												setOpenSelect(prev => (prev === 'notificationFrequency' ? null : 'notificationFrequency'));
+											}}
+										>
+											<span>{NOTIFICATION_FREQUENCY_OPTIONS.find(item => item.value === settings.notificationFrequency)?.label ?? 'Heti'}</span>
+										</button>
+										<div className={`custom-select-menu ${openSelect === 'notificationFrequency' ? 'show' : ''}`}>
+											{NOTIFICATION_FREQUENCY_OPTIONS.map((option) => (
+												<div
+													key={option.value}
+													className="country-item"
+													onClick={() => {
+														updateSetting('notificationFrequency', option.value);
+														setOpenSelect(null);
+													}}
+												>
+													{option.label}
+												</div>
+											))}
+										</div>
+									</div>
 								</div>
 								<div className="col-md-6 mb-3">
 									<label className="form-label">Időzóna</label>
-									<select
-										className="form-select"
-										value={settings.timezone}
-										onChange={(e) => updateSetting('timezone', e.target.value)}
-									>
-										<option value="Europe/Budapest">Europe/Budapest (GMT+1)</option>
-										<option value="Europe/London">Europe/London (GMT+0)</option>
-										<option value="America/New_York">America/New_York (GMT-5)</option>
-									</select>
+									<div className="custom-select-wrapper position-relative">
+										<button
+											className="form-select text-start"
+											type="button"
+											aria-expanded={openSelect === 'timezone'}
+											onClick={(e) => {
+												e.stopPropagation();
+												setOpenSelect(prev => (prev === 'timezone' ? null : 'timezone'));
+											}}
+										>
+											<span>{TIMEZONE_OPTIONS.find(item => item.value === settings.timezone)?.label ?? settings.timezone}</span>
+										</button>
+										<div className={`custom-select-menu ${openSelect === 'timezone' ? 'show' : ''}`}>
+											{TIMEZONE_OPTIONS.map((option) => (
+												<div
+													key={option.value}
+													className="country-item"
+													onClick={() => {
+														updateSetting('timezone', option.value);
+														setOpenSelect(null);
+													}}
+												>
+													{option.label}
+												</div>
+											))}
+										</div>
+									</div>
 								</div>
 							</div>
 							<hr style={{ borderColor: 'rgba(255,255,255,0.06)' }} className="my-4" />
@@ -1067,109 +1462,6 @@ const User: React.FC = () => {
 								</div>
 							</div>
 							<hr style={{ borderColor: 'rgba(255,255,255,0.06)' }} className="my-4" />
-							<h6 className="mb-3" style={{ color: 'var(--h1Text)' }}>Megjelenés és kisegítő lehetőségek</h6>
-							<div className="row">
-								<div className="col-md-6 mb-3">
-									<label className="form-label">Betűméret</label>
-									<div className="custom-select-wrapper position-relative" ref={textSizeRef}>
-										<button
-											className="form-select text-start"
-											type="button"
-											id="textSizeDropdown"
-											aria-expanded={openSelect === 'textSize'}
-											onClick={(e) => {
-												e.stopPropagation();
-												setOpenSelect(prev => (prev === 'textSize' ? null : 'textSize'));
-											}}
-										>
-											<span>
-												{settings.textSize === 'small' ? 'Kicsi' : settings.textSize === 'large' ? 'Nagy' : 'Normál'}
-											</span>
-										</button>
-										<div className={`custom-select-menu ${openSelect === 'textSize' ? 'show' : ''}`}>
-											<div
-												className="country-item"
-												onClick={() => {
-													updateSetting('textSize', 'small');
-													setOpenSelect(null);
-												}}
-											>
-												Kicsi
-											</div>
-											<div
-												className="country-item"
-												onClick={() => {
-													updateSetting('textSize', 'normal');
-													setOpenSelect(null);
-												}}
-											>
-												Normál
-											</div>
-											<div
-												className="country-item"
-												onClick={() => {
-													updateSetting('textSize', 'large');
-													setOpenSelect(null);
-												}}
-											>
-												Nagy
-											</div>
-										</div>
-									</div>
-								</div>
-								<div className="col-md-6 mb-3">
-									<label className="form-label">Kontraszt</label>
-									<div className="custom-select-wrapper position-relative" ref={contrastRef}>
-										<button
-											className="form-select text-start"
-											type="button"
-											id="contrastDropdown"
-											aria-expanded={openSelect === 'contrast'}
-											onClick={(e) => {
-												e.stopPropagation();
-												setOpenSelect(prev => (prev === 'contrast' ? null : 'contrast'));
-											}}
-										>
-											<span>{settings.highContrast ? 'Magas kontraszt' : 'Normál'}</span>
-										</button>
-										<div className={`custom-select-menu ${openSelect === 'contrast' ? 'show' : ''}`}>
-											<div
-												className="country-item"
-												onClick={() => {
-													updateSetting('highContrast', false);
-													setOpenSelect(null);
-												}}
-											>
-												Normál
-											</div>
-											<div
-												className="country-item"
-												onClick={() => {
-													updateSetting('highContrast', true);
-													setOpenSelect(null);
-												}}
-											>
-												Magas kontraszt
-											</div>
-										</div>
-									</div>
-								</div>
-								<div className="col-12 col-md-6 mb-2">
-									<div className="form-check form-switch">
-										<input
-											className="form-check-input"
-											type="checkbox"
-											id="reducedMotion"
-											checked={settings.reducedMotion}
-											onChange={(e) => updateSetting('reducedMotion', e.target.checked)}
-										/>
-										<label className="form-check-label" htmlFor="reducedMotion">
-											Kevesebb animáció (reduced motion)
-										</label>
-									</div>
-								</div>
-							</div>
-							<hr style={{ borderColor: 'rgba(255,255,255,0.06)' }} className="my-4" />
 							<h6 className="mb-3" style={{ color: 'var(--h1Text)' }}>Tartalom</h6>
 							<div className="row">
 								<div className="col-12 col-md-6 mb-2">
@@ -1217,6 +1509,15 @@ const User: React.FC = () => {
 							<button className="btn btn-outline-light btn-sm" type="button">
 								<i className="bi bi-facebook me-1"></i> Csatlakozás Facebook-kal
 							</button>
+							<button className="btn btn-outline-light btn-sm" type="button">
+								<i className="bi bi-apple me-1"></i> Csatlakozás Apple-lel
+							</button>
+							<button className="btn btn-outline-light btn-sm" type="button">
+								<i className="bi bi-microsoft me-1"></i> Csatlakozás Microsofttal
+							</button>
+							<button className="btn btn-outline-light btn-sm" type="button">
+								<i className="bi bi-discord me-1"></i> Csatlakozás Discorddal
+							</button>
 						</div>
 					</div>
 
@@ -1224,12 +1525,9 @@ const User: React.FC = () => {
 					<div className="about-panel p-4 mb-4">
 						<div className="row">
 							<div className="col-12 col-md-6 mb-3 mb-md-0">
-								<div className="d-flex gap-2">
-									<button type="button" className="btn btn-primary" onClick={handleSaveSettings}>
-										<i className="bi bi-check-circle me-1"></i> Mentés
-									</button>
-									<button type="button" className="btn btn-secondary" onClick={() => setActiveView('all')}>
-										<i className="bi bi-arrow-left me-1"></i> Vissza
+								<div className="d-flex flex-wrap gap-2">
+									<button className="btn btn-sm btn-danger" type="button" onClick={handleDeleteAccount} title="Fiók törlése">
+										<i className="bi bi-trash me-1"></i> Fiók törlése
 									</button>
 								</div>
 							</div>
@@ -1238,15 +1536,33 @@ const User: React.FC = () => {
 									<button className="btn btn-sm btn-outline-light" type="button" onClick={handleExportData} title="Adatok exportálása">
 										<i className="bi bi-download me-1"></i> Export
 									</button>
-									<button className="btn btn-sm btn-secondary" type="button" onClick={handleLogout} title="Kijelentkezés">
-										<i className="bi bi-box-arrow-right me-1"></i> Kijelentkezés
-									</button>
-									<button className="btn btn-sm btn-danger" type="button" onClick={handleDeleteAccount} title="Fiók törlése">
-										<i className="bi bi-trash me-1"></i> Fiók törlése
+									<button type="button" className="btn btn-primary" onClick={handleSaveSettings}>
+										<i className="bi bi-check-circle me-1"></i> Mentés
 									</button>
 								</div>
 							</div>
 						</div>
+					</div>
+				</div>
+			)}
+
+			{saveModal && (
+				<div className="user-save-modal-backdrop" onClick={() => setSaveModal(null)}>
+					<div
+						className="user-save-modal"
+						onClick={(event) => event.stopPropagation()}
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="user-save-modal-title"
+					>
+						<div className="user-save-modal-icon">
+							<i className="bi bi-check2-circle"></i>
+						</div>
+						<h4 id="user-save-modal-title">{saveModal.title}</h4>
+						<p>{saveModal.message}</p>
+						<button className="admin-send-btn" onClick={() => setSaveModal(null)}>
+							Rendben
+						</button>
 					</div>
 				</div>
 			)}
@@ -1275,7 +1591,7 @@ const User: React.FC = () => {
 									<div className="col-md-4">
 										<div className="stat-title">Jelvények</div>
 										<div className="mt-2 badge-row">
-											{currentStats.badges.map((badge, index) => (
+											{(settings.selectedBadges.length > 0 ? settings.selectedBadges : currentStats.badges.slice(0, 3)).map((badge, index) => (
 												<span key={index} className="badge-custom">{badge}</span>
 											))}
 										</div>
@@ -1330,10 +1646,6 @@ const User: React.FC = () => {
 								<div className="d-flex justify-content-between align-items-center mb-2">
 									<div>
 										<h6 className="mb-1">{currentStats.sections.readSectionTitle}</h6>
-										<p className="mb-0 text-muted">{currentStats.sections.readSectionSubtitle}</p>
-									</div>
-									<div className="text-end">
-										<small className="text-muted">{currentStats.sections.readSectionActivity}</small>
 									</div>
 								</div>
 
@@ -1352,18 +1664,10 @@ const User: React.FC = () => {
 											<li key={book.id} className="list-group-item book-item">
 												<div className="d-flex gap-3 align-items-center">
 													<img src={book.cover} alt={book.title} className="book-logo" />
-													<div className="flex-grow-1">
+													<div className="grow">
 														<div className="book-title">{book.title}</div>
-														<div className="book-meta">
-															Kezdte: {book.startDate} • Befejezte: {book.endDate} • Olvasás: {book.readingTime}
-														</div>
 													</div>
 													<div className="text-end text-nowrap">
-														{book.score !== null ? (
-															<div><span className="badge badge-score">{book.score}</span></div>
-														) : (
-															<div className="no-score">Nincs értékelés</div>
-														)}
 														<div className="book-points">Pontok: <strong>{book.points.toLocaleString()}</strong></div>
 														<div className="mt-1">{getStatusBadge(book.status)}</div>
 													</div>
@@ -1383,10 +1687,6 @@ const User: React.FC = () => {
 								<div className="d-flex justify-content-between align-items-center mb-2">
 									<div>
 										<h6 className="mb-1">{currentStats.sections.favSectionTitle}</h6>
-										<p className="mb-0 text-muted">{currentStats.sections.favSectionSubtitle}</p>
-									</div>
-									<div className="text-end">
-										<small className="text-muted">{currentStats.sections.favSectionActivity}</small>
 									</div>
 								</div>
 
@@ -1405,18 +1705,10 @@ const User: React.FC = () => {
 											<li key={book.id} className="list-group-item book-item">
 												<div className="d-flex gap-3 align-items-center">
 													<img src={book.cover} alt={book.title} className="book-logo" />
-													<div className="flex-grow-1">
+													<div className="grow">
 														<div className="book-title">{book.title}</div>
-														<div className="book-meta">
-															Kezdte: {book.startDate} • Befejezte: {book.endDate} • Olvasás: {book.readingTime}
-														</div>
 													</div>
 													<div className="text-end text-nowrap">
-														{book.score !== null ? (
-															<div><span className="badge badge-score">{book.score}</span></div>
-														) : (
-															<div className="no-score">Nincs értékelés</div>
-														)}
 														<div className="book-points">Pontok: <strong>{book.points.toLocaleString()}</strong></div>
 														<div className="mt-1">{getStatusBadge(book.status)}</div>
 													</div>
@@ -1431,30 +1723,105 @@ const User: React.FC = () => {
 				</div>
 			)}
 
-			{/* Medals Section */}
+			{/* Badges Section */}
 			{activeView !== 'settings' && (
 				<section id="medalsSection" className="medals-section">
-					<h3 className="mt-4 mb-3" style={{ color: 'var(--h1Text)' }}>Jelvények</h3>
+					<div className="row mt-4">
+						<div className="col-12">
+							<div className="stat-card about-panel">
+								<div className="d-flex justify-content-between align-items-center mb-2">
+									<div>
+										<h6 className="mb-1">Kitűzők</h6>
+									</div>
+								</div>
 
-					{medalGroups.map((group, groupIndex) => (
-						<div key={groupIndex} className="group about-panel p-3">
-							<div className="group-title">{group.title}</div>
-							<div className="medal-grid">
-								{group.medals.map((medal) => (
-									<div
-										key={medal.id}
-										className={`medal-tile ${medal.isLocked ? 'medal-locked' : 'medal-earned'}`}
-									>
-										<img src={medal.image} alt={medal.label} className="medal" />
-										<div className="medal-label">{medal.label}</div>
-										<div className="medal-date">{medal.date || '—'}</div>
+								<button
+									className="btn btn-sm btn-outline-light mb-3"
+									type="button"
+									onClick={() => {
+										setBadgesExpanded(prev => {
+											const next = !prev;
+											if (!next) {
+												setMedalModal(null);
+											}
+											return next;
+										});
+									}}
+									aria-expanded={badgesExpanded}
+								>
+									{badgesExpanded ? 'Kitűzők elrejtése' : 'Mutasd a kitűzőket'}
+								</button>
+
+								{badgesExpanded && isLoadingBadges && (
+									<div className="group p-3">
+										<div className="text-muted">Kitűzők betöltése...</div>
+									</div>
+								)}
+
+								{badgesExpanded && badgesLoaded && medalGroups.map((group, groupIndex) => (
+									<div key={groupIndex} className="group p-3">
+										<div className="group-title">{group.title}</div>
+										<div className="medal-grid">
+											{group.medals.map((medal) => (
+												<button
+													key={medal.id}
+													type="button"
+													className={`medal-tile ${medal.isLocked ? 'medal-locked' : 'medal-earned'}`}
+													onClick={() => openMedalModal(medal, group.title)}
+													aria-label={`${medal.label} kitűző részletek`}
+												>
+													<img src={medal.image} alt={medal.label} className="medal" />
+													<div className="medal-label">{medal.label}</div>
+													<div className="medal-date">{medal.date || '—'}</div>
+												</button>
+											))}
+										</div>
 									</div>
 								))}
 							</div>
 						</div>
-					))}
+					</div>
 				</section>
 			)}
+
+			{medalModalVisible && (() => {
+				const dm = medalModal ?? lastMedalModal.current;
+				if (!dm) return null;
+				const rarityKey = getMedalRarityKey(dm.details.rarity);
+				return (
+					<div className={`user-medal-modal-backdrop${medalModalClosing ? ' closing' : ''}`} onClick={() => setMedalModal(null)}>
+						<div
+							className={`user-medal-modal${medalModalClosing ? ' closing' : ''}`}
+							onClick={(event) => event.stopPropagation()}
+							role="dialog"
+							aria-modal="true"
+							aria-labelledby="user-medal-modal-title"
+						>
+							<div className="user-medal-modal-header">
+								<img src={dm.medal.image} alt={dm.medal.label} className="user-medal-modal-image" />
+								<div>
+									<h4 id="user-medal-modal-title">{dm.medal.label}</h4>
+									<p>
+										{dm.groupTitle} • <span className={`medal-rarity medal-rarity-${rarityKey.toLowerCase()}`}>{dm.details.rarity}</span>
+									</p>
+								</div>
+							</div>
+
+							<div className="user-medal-modal-grid">
+								<div><strong>Kategória:</strong> <span>{dm.details.category}</span></div>
+								<div><strong>Állapot:</strong> <span>{dm.medal.isLocked ? 'Zárolt' : 'Megszerezve'}</span></div>
+								<div><strong>Megszerzés:</strong> <span>{dm.medal.date ?? 'Még nincs megszerezve'}</span></div>
+							</div>
+
+							<p className="user-medal-modal-description">{dm.details.description}</p>
+
+							<button className="admin-send-btn" onClick={() => setMedalModal(null)}>
+								Rendben
+							</button>
+						</div>
+					</div>
+				);
+			})()}
 		</main>
 	);
 };

@@ -38,7 +38,7 @@ export const mockCards: CardData[] = [
   },
   {
     id: '2',
-    img: 'https://m.media-amazon.com/images/M/MV5BYzdjMDAxZGItMjI2My00ODA1LTlkNzItOWFjMDU5ZDJlYWY3XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg',
+    img: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
     title: 'Interstellar',
     tags: ['Sci-fi', 'Dráma'],
     rating: 4.3,
@@ -50,7 +50,7 @@ export const mockCards: CardData[] = [
   },
   {
     id: '3',
-    img: 'https://books.google.hu/books/publisher/content?id=B4zqEAAAQBAJ&hl=hu&pg=PA1&img=1&zoom=3&bul=1&sig=ACfU3U0ZEhTqEsyQ00i0Dg2e8n0r7s5xiw&w=1280',
+    img: 'https://covers.openlibrary.org/b/isbn/9780156012195-L.jpg',
     title: 'A kis herceg',
     tags: ['Gyerek', 'Klasszikus'],
     rating: 2.0,
@@ -73,7 +73,7 @@ export const mockCards: CardData[] = [
   },
   {
     id: '5',
-    img: 'https://marvin.bline.hu/product_images/1376/B251773.JPG',
+    img: 'https://covers.openlibrary.org/b/isbn/9780451524935-L.jpg',
     title: '1984',
     tags: ['Dystopia', 'Sci-fi'],
     rating: 2.1,
@@ -92,6 +92,98 @@ export const mockCards: CardData[] = [
     trailer: 'https://www.youtube.com/embed/1Fg5iWmQjwk',
     episodes: ['1: Teljes film'],
     type: 'movie'
+  },
+  {
+    id: '7',
+    img: 'https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg',
+    title: 'Dűne',
+    tags: ['Sci-fi', 'Kaland'],
+    rating: 4.1,
+    desc: 'A sivatag bolygóján egy fiatal örökösnek kell szembenéznie a sorsával és a birodalmi hatalmi harcokkal.',
+    trailer: 'https://www.youtube.com/embed/n9xhJrPXop4',
+    episodes: ['1: Teljes film'],
+    type: 'movie'
+  },
+  {
+    id: '8',
+    img: 'https://image.tmdb.org/t/p/w500/4GDy0PHYX3VRXUtwK5ysFbg3kEx.jpg',
+    title: 'Shutter Island',
+    tags: ['Thriller', 'Krimi'],
+    rating: 4.2,
+    desc: 'Egy különös eltűnés nyomozása egy elzárt szigeten, ahol semmi sem az, aminek látszik.',
+    trailer: 'https://www.youtube.com/embed/5iaYLCiq5RM',
+    episodes: ['1: Teljes film'],
+    type: 'movie'
+  },
+  {
+    id: '9',
+    img: 'https://covers.openlibrary.org/b/isbn/9780747532699-L.jpg',
+    title: 'Harry Potter és a bölcsek köve',
+    tags: ['Fantasy', 'Ifjúsági'],
+    rating: 4.6,
+    desc: 'Egy árva fiú ráébred, hogy varázsló, és ezzel egy teljesen új világ nyílik meg előtte.',
+    trailer: 'https://www.youtube.com/embed/mNgwNXKBEW0',
+    episodes: ['Olvasás'],
+    reader: '/olvaso',
+    type: 'book'
+  },
+  {
+    id: '10',
+    img: 'https://covers.openlibrary.org/b/isbn/9780141034324-L.jpg',
+    title: 'Sherlock Holmes',
+    tags: ['Krimi', 'Kaland'],
+    rating: 3.9,
+    desc: 'Arthur Conan Doyle klasszikus detektívtörténetei újranyomott gyűjteményes kiadásban.',
+    trailer: '',
+    episodes: ['Olvasás'],
+    reader: '/olvaso',
+    type: 'book'
+  },
+  {
+    id: '11',
+    img: 'https://image.tmdb.org/t/p/w500/iZf0KyrE25z1sage4SYFLCCrMi9.jpg',
+    title: '1917',
+    tags: ['Háborús', 'Dráma'],
+    rating: 4.0,
+    desc: 'Két fiatal katonának lehetetlen küldetést kell teljesítenie az első világháború frontvonalán.',
+    trailer: 'https://www.youtube.com/embed/YqNYrYUiMfg',
+    episodes: ['1: Teljes film'],
+    type: 'movie'
+  },
+  {
+    id: '12',
+    img: 'https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg',
+    title: 'Breaking Bad',
+    tags: ['Sorozat', 'Dráma'],
+    rating: 4.9,
+    desc: 'Egy kémiatanár kétségbeesett döntése olyan spirált indít el, amely mindent átír az életében.',
+    trailer: 'https://www.youtube.com/embed/HhesaQXLuRY',
+    episodes: ['S1E1', 'S1E2', 'S1E3'],
+    reader: '/nezes',
+    type: 'series'
+  },
+  {
+    id: '13',
+    img: 'https://covers.openlibrary.org/b/isbn/9780575086258-L.jpg',
+    title: 'Metro 2033',
+    tags: ['Posztapokaliptikus', 'Sci-fi'],
+    rating: 4.1,
+    desc: 'A moszkvai metró alagútjaiban túlélők küzdenek a reményért és az emberiesség maradékáért.',
+    trailer: '',
+    episodes: ['Olvasás'],
+    reader: '/olvaso',
+    type: 'book'
+  },
+  {
+    id: '14',
+    img: 'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg',
+    title: 'A sötét lovag',
+    tags: ['Akció', 'Krimi'],
+    rating: 5.0,
+    desc: 'Batman és Joker párharca Gotham jövőjéért egy feszült és emlékezetes történetben.',
+    trailer: 'https://www.youtube.com/embed/EXeTwQWrcwY',
+    episodes: ['1: Teljes film'],
+    type: 'movie'
   }
 ];
 
@@ -105,6 +197,7 @@ const Card: React.FC<CardProps> = ({
 }) => {
   const [cards, setCards] = useState<CardData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     // Ha kapunk adatot propból, azt használjuk
@@ -166,6 +259,18 @@ const Card: React.FC<CardProps> = ({
     }
   };
 
+  const handleImageLoad = (cardId: string) => {
+    setLoadedImages((prev) => ({ ...prev, [cardId]: true }));
+  };
+
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>, cardId: string) => {
+    const img = event.currentTarget;
+    if (img.dataset.fallbackApplied === 'true') return;
+    img.dataset.fallbackApplied = 'true';
+    img.src = showMoreCardImage;
+    setLoadedImages((prev) => ({ ...prev, [cardId]: true }));
+  };
+
   if (loading) {
     return (
       <div className="text-center py-5">
@@ -181,7 +286,16 @@ const Card: React.FC<CardProps> = ({
       {cards.map((card) => (
         <div key={card.id} className={gridClass}>
           <div className="card">
-            <img src={card.img} className="card-img-top" alt={`${card.title} borító`} />
+            <img
+              src={card.img}
+              className={`card-img-top ${loadedImages[card.id] ? 'is-loaded' : 'is-loading'}`}
+              alt={`${card.title} borító`}
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              onLoad={() => handleImageLoad(card.id)}
+              onError={(event) => handleImageError(event, card.id)}
+            />
             <div className="card-body">
               <h5 className="card-title">{card.title}</h5>
               <div className="card-meta">

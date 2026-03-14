@@ -97,6 +97,10 @@ main
   gap: 1rem;
 }
 
+.news-pagination-wrap{
+  margin-top: 1.25rem;
+}
+
 /* Card */
 .news-card{
   background: linear-gradient(rgba(6,6,6,0.6), rgba(6,6,6,0.55));

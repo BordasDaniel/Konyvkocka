@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import '../styles/leaderboard.css';
 
 // ========================
@@ -294,12 +294,14 @@ export default function Leaderboard() {
   const [locationFilter, setLocationFilter] = useState<LocationFilter>('world');
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>(MOCK_LEADERBOARD);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [currentUser, setCurrentUser] = useState<{
     username: string;
     avatar: string;
     countryFlag: string;
     isSubscriber: boolean;
   } | null>(null);
+  const pageSize = 10;
 
   // Mock function - később lecserélni API hívásra
   const fetchCurrentUser = async () => {
@@ -324,6 +326,10 @@ export default function Leaderboard() {
   // Szűrés alkalmazása
   useEffect(() => {
     filterLeaderboard();
+  }, [contentFilter, locationFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
   }, [contentFilter, locationFilter]);
 
   const filterLeaderboard = async () => {
@@ -371,7 +377,7 @@ export default function Leaderboard() {
     switch (filter) {
       case 'all': return 'Összes';
       case 'book': return 'Könyvek';
-      case 'media': return 'Filmek/Sorozatok';
+      case 'media': return 'Média';
     }
   };
 
@@ -394,6 +400,32 @@ export default function Leaderboard() {
     if (rank === 2) return <i className="bi bi-trophy-fill rank-trophy silver"></i>;
     if (rank === 3) return <i className="bi bi-trophy-fill rank-trophy bronze"></i>;
     return null;
+  };
+
+  const totalPages = Math.max(1, Math.ceil(leaderboardData.length / pageSize));
+  const pagedLeaderboardData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return leaderboardData.slice(start, start + pageSize);
+  }, [leaderboardData, currentPage]);
+
+  const paginationRange = useMemo(() => {
+    const delta = 2;
+    const start = Math.max(1, currentPage - delta);
+    const end = Math.min(totalPages, currentPage + delta);
+    return Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
+  }, [currentPage, totalPages]);
+
+  const jumpToTopNow = () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const scrollingRoot = document.scrollingElement as HTMLElement | null;
+    if (scrollingRoot) scrollingRoot.scrollTop = 0;
+  };
+
+  const changePage = (page: number) => {
+    jumpToTopNow();
+    setCurrentPage(Math.min(totalPages, Math.max(1, page)));
   };
 
   return (
@@ -547,7 +579,7 @@ export default function Leaderboard() {
         {/* Rangsor lista */}
         {!loading && (
           <div className="leaderboard-list">
-            {leaderboardData.map((entry) => (
+            {pagedLeaderboardData.map((entry) => (
               <div 
                 key={entry.username} 
                 className={`leaderboard-row ${getRankClass(entry.rank)}`}
@@ -631,6 +663,26 @@ export default function Leaderboard() {
           </div>
         )}
       </div>
+
+      {!loading && leaderboardData.length > 0 && totalPages > 1 && (
+        <nav className="kk-pagination-wrap leaderboard-pagination-wrap" aria-label="Ranglista lapozása">
+          <ul className="pagination kk-pagination justify-content-center mb-0">
+            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+              <button className="page-link" onClick={() => changePage(currentPage - 1)}>Előző</button>
+            </li>
+
+            {paginationRange.map((page) => (
+              <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                <button className="page-link" onClick={() => changePage(page)}>{page}</button>
+              </li>
+            ))}
+
+            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+              <button className="page-link" onClick={() => changePage(currentPage + 1)}>Következő</button>
+            </li>
+          </ul>
+        </nav>
+      )}
 
         {/* Info panel */}
         <div className="leaderboard-info mt-4">

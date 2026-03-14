@@ -6,7 +6,58 @@ function Navbar() {
     const { user, isAuthenticated, logout } = useAuth();
     const navigate = useNavigate();
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [mobileProfileMenuOpen, setMobileProfileMenuOpen] = useState(false);
+    const [mobilePanelHeight, setMobilePanelHeight] = useState<number>(0);
     const dropdownRef = useRef<HTMLLIElement>(null);
+    const mobileMainPanelRef = useRef<HTMLUListElement>(null);
+    const mobileProfilePanelRef = useRef<HTMLUListElement>(null);
+    const navbarCollapseRef = useRef<HTMLDivElement>(null);
+    const navbarTogglerRef = useRef<HTMLButtonElement>(null);
+
+    const mainNavItems = [
+        { to: '/', label: 'Kezdőlap', icon: 'bi-house-door' },
+        { to: '/kereses', label: 'Keresés', icon: 'bi-search' },
+        { to: '/tamogatas', label: 'Támogatás', icon: 'bi-life-preserver' },
+        { to: '/rolunk', label: 'Rólunk', icon: 'bi-people' },
+        { to: '/hirek', label: 'Hírek', icon: 'bi-newspaper' },
+        { to: '/ranglista', label: 'Ranglista', icon: 'bi-trophy' },
+    ];
+
+    const closeMobileProfilePanel = () => {
+        setMobileProfileMenuOpen(false);
+    };
+
+    const syncMobilePanelHeight = () => {
+      const targetPanel = mobileProfileMenuOpen ? mobileProfilePanelRef.current : mobileMainPanelRef.current;
+      if (targetPanel) {
+        setMobilePanelHeight(targetPanel.scrollHeight);
+      }
+    };
+
+    const closeNavbarCollapse = () => {
+        if (navbarCollapseRef.current?.classList.contains('show')) {
+            navbarCollapseRef.current.classList.remove('show');
+        }
+
+        if (navbarTogglerRef.current) {
+            navbarTogglerRef.current.classList.add('collapsed');
+            navbarTogglerRef.current.setAttribute('aria-expanded', 'false');
+        }
+    };
+
+    const handleNavigationClick = () => {
+        closeMobileProfilePanel();
+        closeNavbarCollapse();
+    };
+
+    const handleNavbarToggleClick = () => {
+      // Bootstrap collapse animation changes layout asynchronously, so re-measure on next frames.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          syncMobilePanelHeight();
+        });
+      });
+    };
 
     // Dropdown bezárása kattintásra kívül
     useEffect(() => {
@@ -20,9 +71,18 @@ function Navbar() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    useEffect(() => {
+        syncMobilePanelHeight();
+        window.addEventListener('resize', syncMobilePanelHeight);
+
+        return () => window.removeEventListener('resize', syncMobilePanelHeight);
+    }, [mobileProfileMenuOpen, isAuthenticated, user?.isAdmin, user?.username]);
+
     const handleLogout = () => {
         logout();
         setDropdownOpen(false);
+        setMobileProfileMenuOpen(false);
+      closeNavbarCollapse();
         navigate('/');
     };
 
@@ -36,38 +96,160 @@ function Navbar() {
         </div>
 
         {/* Hamburger menu */}
-        <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+        <button
+          className="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#mainNavbar"
+          ref={navbarTogglerRef}
+          onClick={handleNavbarToggleClick}
+        >
           <span className="navbar-toggler-icon"></span>
         </button>
 
         {/* Menü */}
-        <div className="collapse navbar-collapse" id="mainNavbar">
-          {/* Bal oldali menü elemek */}
-          <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-            <li className="nav-item">
-              <NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Kezdőlap</NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/kereses" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Keresés</NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/tamogatas" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Támogatás</NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/rolunk" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Rólunk</NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/hirek" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Hírek</NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink to="/ranglista" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Ranglista</NavLink>
-            </li>
+        <div className="collapse navbar-collapse" id="mainNavbar" ref={navbarCollapseRef}>
+          {/* Mobil: csúszó főmenü/profil panel */}
+          <div className="mobile-menu-switcher d-lg-none" style={{ height: mobilePanelHeight ? `${mobilePanelHeight}px` : undefined }}>
+            <div className={`mobile-menu-track ${mobileProfileMenuOpen ? 'show-profile' : ''}`}>
+              <ul className="navbar-nav mobile-menu-panel mb-2 mb-lg-0" ref={mobileMainPanelRef}>
+                {mainNavItems.map((item) => (
+                  <li className="nav-item" key={item.to}>
+                    <NavLink
+                      to={item.to}
+                      className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+                      onClick={handleNavigationClick}
+                    >
+                      <i className={`bi ${item.icon} mobile-main-icon me-2`} aria-hidden="true"></i>
+                      {item.label}
+                    </NavLink>
+                  </li>
+                ))}
+
+                {isAuthenticated && user ? (
+                  <li className="nav-item">
+                    <button
+                      className="nav-link btn btn-link mobile-profile-toggle"
+                      type="button"
+                      onClick={() => setMobileProfileMenuOpen(true)}
+                      aria-expanded={mobileProfileMenuOpen}
+                    >
+                      <img
+                        src={user.avatar}
+                        alt={user.username}
+                        className="rounded-circle"
+                        style={{ width: '32px', height: '32px', objectFit: 'cover' }}
+                      />
+                      <span>{user.username}</span>
+                      <i className="bi bi-chevron-right ms-auto"></i>
+                    </button>
+                  </li>
+                ) : (
+                  <li className="nav-item">
+                    <NavLink className="nav-link" to="/belepes" onClick={handleNavigationClick}>
+                      <i className="bi bi-person-circle me-2"></i>Bejelentkezés
+                    </NavLink>
+                  </li>
+                )}
+              </ul>
+
+              <ul className="navbar-nav mobile-menu-panel mobile-profile-panel" ref={mobileProfilePanelRef}>
+                {isAuthenticated && user && (
+                  <>
+                    <li className="nav-item">
+                      <button
+                        className="nav-link btn btn-link mobile-back-btn"
+                        type="button"
+                        onClick={closeMobileProfilePanel}
+                      >
+                        <i className="bi bi-chevron-left me-2"></i>Vissza a menühöz
+                      </button>
+                    </li>
+
+                    <li className="nav-item">
+                      <NavLink to="/profil" className="nav-link" onClick={handleNavigationClick}>
+                        <i className="bi bi-person-circle me-2"></i>Profil
+                      </NavLink>
+                    </li>
+                    <li className="nav-item">
+                      <NavLink to="/konyvtaram" className="nav-link" onClick={handleNavigationClick}>
+                        <i className="bi bi-collection me-2"></i>Könyvtáram
+                      </NavLink>
+                    </li>
+                    <li className="nav-item">
+                      <NavLink to="/elozmenyeim" className="nav-link" onClick={handleNavigationClick}>
+                        <i className="bi bi-clock-history me-2"></i>Előzmény
+                      </NavLink>
+                    </li>
+                    <li className="nav-item">
+                      <NavLink to="/ertesitesek" className="nav-link" onClick={handleNavigationClick}>
+                        <span style={{ position: 'relative', display: 'inline-block' }}>
+                          <i className="bi bi-bell-fill me-2"></i>
+                          <span className="navbar-notification-dot"></span>
+                        </span>
+                        Értesítések
+                      </NavLink>
+                    </li>
+                    <li className="nav-item">
+                      <NavLink to="/kihivasok" className="nav-link" onClick={handleNavigationClick}>
+                        <i className="bi bi-trophy-fill me-2"></i>Kihívások
+                      </NavLink>
+                    </li>
+
+                    <li><hr className="dropdown-divider" /></li>
+
+                    <li className="nav-item">
+                      <NavLink
+                        to="/profil"
+                        className="nav-link"
+                        onClick={handleNavigationClick}
+                        state={{ view: 'settings' }}
+                      >
+                        <i className="bi bi-gear me-2"></i>Beállítások
+                      </NavLink>
+                    </li>
+                    <li className="nav-item">
+                      <NavLink to="/vasarlas" className="nav-link" onClick={handleNavigationClick}>
+                        <i className="bi bi-bag-check me-2"></i>Vásárlások
+                      </NavLink>
+                    </li>
+
+                    {user.isAdmin && (
+                      <>
+                        <li><hr className="dropdown-divider" /></li>
+                        <li className="nav-item">
+                          <NavLink to="/admin" className="nav-link" onClick={handleNavigationClick}>
+                            <i className="bi bi-shield-lock me-2"></i>Admin
+                          </NavLink>
+                        </li>
+                      </>
+                    )}
+
+                    <li><hr className="dropdown-divider" /></li>
+
+                    <li className="nav-item">
+                      <button className="nav-link btn btn-link text-danger mobile-logout" onClick={handleLogout}>
+                        <i className="bi bi-box-arrow-right me-2"></i>Kijelentkezés
+                      </button>
+                    </li>
+                  </>
+                )}
+              </ul>
+            </div>
+          </div>
+
+          {/* Desktop: bal oldali menü elemek */}
+          <ul className="navbar-nav me-auto mb-2 mb-lg-0 d-none d-lg-flex">
+            {mainNavItems.map((item) => (
+              <li className="nav-item" key={`desktop-${item.to}`}>
+                <NavLink to={item.to} className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>{item.label}</NavLink>
+              </li>
+            ))}
           </ul>
 
-          {/* Jobb oldali elemek */}
-          <ul className="navbar-nav">
+          {/* Desktop: jobb oldali elemek */}
+          <ul className="navbar-nav d-none d-lg-flex">
             {isAuthenticated && user ? (
-              // Bejelentkezett felhasználó - dropdown menü
               <li className="nav-item dropdown" ref={dropdownRef}>
                 <button
                   className="nav-link dropdown-toggle d-flex align-items-center gap-2 btn btn-link"
@@ -96,43 +278,23 @@ function Navbar() {
                   )}
                 </button>
                 <ul className={`dropdown-menu dropdown-menu-end dropdown-menu-dark ${dropdownOpen ? 'show' : ''}`}>
-                  {/* Profil */}
                   <li>
-                    <NavLink
-                      to="/profil"
-                      className="dropdown-item"
-                      onClick={() => setDropdownOpen(false)}
-                    >
+                    <NavLink to="/profil" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                       <i className="bi bi-person-circle me-2"></i>Profil
                     </NavLink>
                   </li>
-                  {/* Könyvtáram */}
                   <li>
-                    <NavLink
-                      to="/konyvtaram"
-                      className="dropdown-item"
-                      onClick={() => setDropdownOpen(false)}
-                    >
+                    <NavLink to="/konyvtaram" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                       <i className="bi bi-collection me-2"></i>Könyvtáram
                     </NavLink>
                   </li>
-                  {/* Előzmények */}
                   <li>
-                    <NavLink
-                      to="/elozmenyeim"
-                      className="dropdown-item"
-                      onClick={() => setDropdownOpen(false)}
-                    >
+                    <NavLink to="/elozmenyeim" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                       <i className="bi bi-clock-history me-2"></i>Előzmény
                     </NavLink>
                   </li>
-                  {/* Értesítések (badge-el) */}
                   <li>
-                    <NavLink
-                      to="/ertesitesek"
-                      className="dropdown-item"
-                      onClick={() => setDropdownOpen(false)}
-                    >
+                    <NavLink to="/ertesitesek" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                       <span style={{ position: 'relative', display: 'inline-block' }}>
                         <i className="bi bi-bell-fill me-2"></i>
                         <span className="navbar-notification-dot"></span>
@@ -140,18 +302,12 @@ function Navbar() {
                       Értesítések
                     </NavLink>
                   </li>
-                  {/* Kihívások */}
                   <li>
-                    <NavLink
-                      to="/kihivasok"
-                      className="dropdown-item"
-                      onClick={() => setDropdownOpen(false)}
-                    >
+                    <NavLink to="/kihivasok" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                       <i className="bi bi-trophy-fill me-2"></i>Kihívások
                     </NavLink>
                   </li>
                   <li><hr className="dropdown-divider" /></li>
-                  {/* Beállítások */}
                   <li>
                     <NavLink
                       to="/profil"
@@ -162,13 +318,8 @@ function Navbar() {
                       <i className="bi bi-gear me-2"></i>Beállítások
                     </NavLink>
                   </li>
-                  {/* Vásárlások */}
                   <li>
-                    <NavLink
-                      to="/vasarlas"
-                      className="dropdown-item"
-                      onClick={() => setDropdownOpen(false)}
-                    >
+                    <NavLink to="/vasarlas" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                       <i className="bi bi-bag-check me-2"></i>Vásárlások
                     </NavLink>
                   </li>
@@ -176,30 +327,21 @@ function Navbar() {
                     <>
                       <li><hr className="dropdown-divider" /></li>
                       <li>
-                        <NavLink
-                          to="/admin"
-                          className="dropdown-item"
-                          onClick={() => setDropdownOpen(false)}
-                        >
+                        <NavLink to="/admin" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                           <i className="bi bi-shield-lock me-2"></i>Admin
                         </NavLink>
                       </li>
                     </>
                   )}
                   <li><hr className="dropdown-divider" /></li>
-                  {/* Kijelentkezés (piros) */}
                   <li>
-                    <button
-                      className="dropdown-item text-danger"
-                      onClick={handleLogout}
-                    >
+                    <button className="dropdown-item text-danger" onClick={handleLogout}>
                       <i className="bi bi-box-arrow-right me-2"></i>Kijelentkezés
                     </button>
                   </li>
                 </ul>
               </li>
             ) : (
-              // Nem bejelentkezett - bejelentkezés link
               <li className="nav-item">
                 <NavLink className="nav-link" to="/belepes">
                   <i className="bi bi-person-circle"></i> Bejelentkezés

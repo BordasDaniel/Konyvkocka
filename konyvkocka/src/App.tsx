@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout.tsx'
 import PageTitle from './components/common/PageTitle.tsx'
 import Home from './pages/Home.tsx'
 import About from './pages/About.tsx'
+import Aszf from './pages/Aszf.tsx'
 import Login from './pages/Login.tsx'
 import Search from './pages/Search.tsx'
 import News from './pages/News.tsx'
@@ -27,8 +28,24 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+
+  useEffect(() => {
+    const scrollTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const pageContent = document.querySelector<HTMLElement>('.page-content');
+      if (pageContent) pageContent.scrollTop = 0;
+    };
+
+    scrollTop();
+    const raf = window.requestAnimationFrame(scrollTop);
+    return () => window.cancelAnimationFrame(raf);
+  }, [location.pathname, location.search, location.hash]);
   
   return (
     <Layout>
@@ -36,6 +53,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/rolunk" element={<About />} />
+        <Route path="/aszf" element={<Aszf />} />
         <Route path="/belepes" element={<Login />} />
         <Route path="/kereses" element={<Search />} />
         <Route path="/konyvtaram" element={<Library />} />

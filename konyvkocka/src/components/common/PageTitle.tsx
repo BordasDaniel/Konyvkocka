@@ -15,6 +15,9 @@ const PageTitle = () => {
       case '/rolunk':
         title = 'Rólunk | KönyvKocka';
         break;
+      case '/aszf':
+        title = 'ÁSZF | KönyvKocka';
+        break;
       case '/belepes':
         title = 'Bejelentkezés | KönyvKocka';
         break;
@@ -59,6 +62,9 @@ const PageTitle = () => {
         break;
       case '/jelszo-visszaallitas':
         title = 'Jelszó visszaállítás | KönyvKocka';
+        break;
+      case '/admin':
+        title = 'Admin | KönyvKocka';
         break;
       default:
         // Handle dynamic routes or 404 if needed, though 404 is usually handled by the route matching
