@@ -286,6 +286,14 @@
 
 .settings-hint{ color: rgba(255,255,255,0.8) !important; }
 
+.settings-title-grid {
+  margin-top: 0.2rem;
+}
+
+.settings-title-grid .form-select {
+  min-height: 42px;
+}
+
 /* File input: make the button match the site's glass theme */
 #settingsPanel input[type="file"].form-control{
   background: linear-gradient(180deg, rgba(18, 18, 18, 0.55), rgba(10, 10, 10, 0.35));
@@ -444,4 +452,80 @@
   .purchase-total strong{
     font-size: 1.05rem;
   }
+}
+
+.user-save-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  background: rgba(4, 4, 4, 0.58);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.user-save-modal {
+  width: min(360px, 100%);
+  background: linear-gradient(180deg, rgba(13, 11, 9, 0.98), rgba(9, 8, 7, 0.96));
+  border: 1px solid rgba(194, 157, 89, 0.2);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.user-save-modal-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 0.9rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(74, 222, 128, 0.12);
+  color: #4ade80;
+  font-size: 1.8rem;
+}
+
+.user-save-modal h4 {
+  margin: 0 0 0.45rem;
+  color: var(--h1Text);
+}
+
+.user-save-modal p {
+  margin: 0 0 1.2rem;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.5;
+}
+
+.admin-send-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.5rem;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: var(--bg);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.admin-send-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(194, 157, 89, 0.4);
+}
+
+.admin-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.user-save-modal .admin-send-btn {
+  width: 100%;
+  justify-content: center;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import '../styles/user.css';
 
@@ -10,11 +10,24 @@ interface UserProfile {
 	username: string;
 	avatar: string;
 	country: string;
+	countryCode: string;
 	countryFlag: string;
 	level: number;
 	levelProgress: number;
 	isSubscriber: boolean;
+	premium: boolean;
+	premiumExpiresAt: string | null;
+	permissionLevel: 'USER' | 'MODERATOR' | 'ADMIN' | 'BANNED';
 	email: string;
+	creationDate: string;
+	lastLoginDate: string;
+	xp: number;
+	bookPoints: number;
+	seriesPoints: number;
+	moviePoints: number;
+	dayStreak: number;
+	readTimeMin: number;
+	watchTimeMin: number;
 }
 
 interface ViewStats {
@@ -77,16 +90,15 @@ interface MedalGroup {
 interface UserSettings {
 	username: string;
 	email: string;
+	countryCode: string;
 	avatarDataUrl: string | null;
+	selectedBadges: string[];
 	profileVisibility: 'public' | 'friends' | 'private';
 	showCountryOnProfile: boolean;
 	showOnlineStatus: boolean;
 	allowFriendRequests: boolean;
 	allowMentions: boolean;
 	language: 'hu' | 'en';
-	textSize: 'small' | 'normal' | 'large';
-	reducedMotion: boolean;
-	highContrast: boolean;
 	autoplayMedia: boolean;
 	showMatureContent: boolean;
 	pushNotificationsEnabled: boolean;
@@ -101,6 +113,14 @@ interface UserSettings {
 	timezone: string;
 }
 
+const BADGE_OPTIONS = ['Kiemelt olvasó', 'Top 100', 'Fürge Nyúl Kihívás', 'Könyvmoly', 'Filmkritikus', 'Kihívásvadász'];
+const PERMISSION_LEVEL_LABELS: Record<UserProfile['permissionLevel'], string> = {
+	USER: 'Felhasználó',
+	MODERATOR: 'Moderátor',
+	ADMIN: 'Admin',
+	BANNED: 'Korlátozott',
+};
+
 // ========================
 // MOCK ADATOK - Később fetch-ből jönnek
 // ========================
@@ -112,11 +132,24 @@ const fetchUserProfile = async (): Promise<UserProfile> => {
 		username: 'BordasDaniel',
 		avatar: 'https://i.pinimg.com/236x/5a/bd/98/5abd985735a8fd4adcb0e795de6a1005.jpg',
 		country: 'Magyarország',
+		countryCode: 'HU',
 		countryFlag: 'https://flagcdn.com/w20/hu.png',
 		level: 98,
 		levelProgress: 27,
 		isSubscriber: true,
+		premium: true,
+		premiumExpiresAt: '2026-12-31',
+		permissionLevel: 'USER',
 		email: 'daniel@example.com',
+		creationDate: '2020-03-15',
+		lastLoginDate: '2026-03-14',
+		xp: 840,
+		bookPoints: 8450,
+		seriesPoints: 2160,
+		moviePoints: 980,
+		dayStreak: 47,
+		readTimeMin: 18320,
+		watchTimeMin: 5220,
 	};
 };
 
@@ -310,7 +343,21 @@ const fetchMedalGroups = async (): Promise<MedalGroup[]> => {
 
 type ViewType = 'all' | 'book' | 'media' | 'settings';
 
-type OpenSelectId = 'profileVisibility' | 'language' | 'textSize' | 'contrast' | null;
+type OpenSelectId = 'profileVisibility' | 'language' | 'badge-0' | 'badge-1' | 'badge-2' | 'notificationFrequency' | 'timezone' | null;
+type SaveModalState = { title: string; message: string } | null;
+
+const NOTIFICATION_FREQUENCY_OPTIONS: Array<{ value: UserSettings['notificationFrequency']; label: string }> = [
+	{ value: 'immediate', label: 'Azonnal' },
+	{ value: 'daily', label: 'Napi' },
+	{ value: 'weekly', label: 'Heti' },
+	{ value: 'none', label: 'Egyáltalán nem' },
+];
+
+const TIMEZONE_OPTIONS: Array<{ value: string; label: string }> = [
+	{ value: 'Europe/Budapest', label: 'Europe/Budapest (GMT+1)' },
+	{ value: 'Europe/London', label: 'Europe/London (GMT+0)' },
+	{ value: 'America/New_York', label: 'America/New_York (GMT-5)' },
+];
 
 interface LocationState {
 	view?: 'settings';
@@ -320,10 +367,6 @@ const User: React.FC = () => {
 	const location = useLocation();
 	const locationState = location.state as LocationState | null;
 	const [openSelect, setOpenSelect] = useState<OpenSelectId>(null);
-	const profileVisibilityRef = useRef<HTMLDivElement>(null);
-	const languageRef = useRef<HTMLDivElement>(null);
-	const textSizeRef = useRef<HTMLDivElement>(null);
-	const contrastRef = useRef<HTMLDivElement>(null);
 
 	// Állapotok - activeView alapértelmezése a location.state alapján
 	const [activeView, setActiveView] = useState<ViewType>(() => {
@@ -338,6 +381,7 @@ const User: React.FC = () => {
 	const [books, setBooks] = useState<Book[]>([]);
 	const [medalGroups, setMedalGroups] = useState<MedalGroup[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [saveModal, setSaveModal] = useState<SaveModalState>(null);
 
 	// Collapse állapotok
 	const [readBooksOpen, setReadBooksOpen] = useState(false);
@@ -347,16 +391,15 @@ const User: React.FC = () => {
 	const [settings, setSettings] = useState<UserSettings>({
 		username: '',
 		email: '',
+		countryCode: 'HU',
 		avatarDataUrl: null,
+		selectedBadges: ['Kiemelt olvasó', 'Top 100', 'Fürge Nyúl Kihívás'],
 		profileVisibility: 'public',
 		showCountryOnProfile: true,
 		showOnlineStatus: true,
 		allowFriendRequests: true,
 		allowMentions: true,
 		language: 'hu',
-		textSize: 'normal',
-		reducedMotion: false,
-		highContrast: false,
 		autoplayMedia: true,
 		showMatureContent: false,
 		pushNotificationsEnabled: true,
@@ -376,6 +419,21 @@ const User: React.FC = () => {
 			...prev,
 			[key]: value,
 		}));
+	};
+
+	const handleBadgeSelect = (position: number, badge: string) => {
+		setSettings(prev => {
+			const next = [...prev.selectedBadges];
+			const duplicateIndex = next.findIndex((item, index) => index !== position && item === badge);
+			if (duplicateIndex !== -1) {
+				next[duplicateIndex] = next[position];
+			}
+			next[position] = badge;
+			return {
+				...prev,
+				selectedBadges: next,
+			};
+		});
 	};
 
 	const handleAvatarFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -432,14 +490,8 @@ const User: React.FC = () => {
 
 	useEffect(() => {
 		const clickAway = (event: MouseEvent) => {
-			const target = event.target as Node;
-			const inAny =
-				profileVisibilityRef.current?.contains(target) ||
-				languageRef.current?.contains(target) ||
-				textSizeRef.current?.contains(target) ||
-				contrastRef.current?.contains(target);
-
-			if (!inAny) {
+			const target = event.target as HTMLElement;
+			if (!target.closest('.custom-select-wrapper')) {
 				setOpenSelect(null);
 			}
 		};
@@ -447,6 +499,30 @@ const User: React.FC = () => {
 		document.addEventListener('click', clickAway);
 		return () => document.removeEventListener('click', clickAway);
 	}, []);
+
+	useEffect(() => {
+		if (!saveModal) return;
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') {
+				setSaveModal(null);
+			}
+		};
+
+		document.documentElement.style.overflow = 'hidden';
+		document.documentElement.style.height = '100%';
+		document.body.style.overflow = 'hidden';
+		document.body.style.height = '100%';
+		document.addEventListener('keydown', onKeyDown);
+
+		return () => {
+			document.documentElement.style.overflow = '';
+			document.documentElement.style.height = '';
+			document.body.style.overflow = '';
+			document.body.style.height = '';
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, [saveModal]);
 
 	// Location state változásának figyelése (pl. navigáció a Beállításokhoz)
 	useEffect(() => {
@@ -479,15 +555,23 @@ const User: React.FC = () => {
 					...prev,
 					username: profileData.username,
 					email: profileData.email,
+					countryCode: profileData.countryCode,
 				}));
 
 				// localStorage beállítások betöltése
 				const savedSettings = localStorage.getItem('kk_profile_settings');
 				if (savedSettings) {
 					const parsed = JSON.parse(savedSettings) as Partial<UserSettings>;
+					const legacySelectedTitles = (parsed as { selectedTitles?: string[] }).selectedTitles;
+					const normalizedSelectedBadges = Array.isArray(parsed.selectedBadges)
+						? parsed.selectedBadges.slice(0, 3)
+						: Array.isArray(legacySelectedTitles)
+							? legacySelectedTitles.slice(0, 3)
+							: undefined;
 					setSettings(prev => ({
 						...prev,
 						...parsed,
+						selectedBadges: normalizedSelectedBadges ?? prev.selectedBadges,
 						username: profileData.username,
 					}));
 					if (parsed.avatarDataUrl && typeof parsed.avatarDataUrl === 'string') {
@@ -518,16 +602,15 @@ const User: React.FC = () => {
 		const payload = {
 			username: settings.username,
 			email: settings.email,
+			countryCode: settings.countryCode,
 			avatarDataUrl: settings.avatarDataUrl,
+			selectedBadges: settings.selectedBadges,
 			profileVisibility: settings.profileVisibility,
 			showCountryOnProfile: settings.showCountryOnProfile,
 			showOnlineStatus: settings.showOnlineStatus,
 			allowFriendRequests: settings.allowFriendRequests,
 			allowMentions: settings.allowMentions,
 			language: settings.language,
-			textSize: settings.textSize,
-			reducedMotion: settings.reducedMotion,
-			highContrast: settings.highContrast,
 			autoplayMedia: settings.autoplayMedia,
 			showMatureContent: settings.showMatureContent,
 			pushNotificationsEnabled: settings.pushNotificationsEnabled,
@@ -542,7 +625,10 @@ const User: React.FC = () => {
 		// TODO: API hívás: await fetch('/api/user/settings', { method: 'PUT', body: JSON.stringify(payload) });
 		localStorage.setItem('kk_profile_settings', JSON.stringify(payload));
 		syncAuthAvatar(settings.avatarDataUrl);
-		alert('Beállítások elmentve.');
+		setSaveModal({
+			title: 'Mentés kész',
+			message: 'A beállítások sikeresen elmentésre kerültek.',
+		});
 	};
 
 	// Adatok exportálása
@@ -562,14 +648,6 @@ const User: React.FC = () => {
 		a.click();
 		a.remove();
 		URL.revokeObjectURL(url);
-	};
-
-	// Kijelentkezés
-	const handleLogout = () => {
-		// TODO: API hívás: await fetch('/api/auth/logout', { method: 'POST' });
-		localStorage.removeItem('kk_session');
-		alert('Kijelentkezve. Átirányítás a bejelentkezéshez.');
-		window.location.href = '#/belepes';
 	};
 
 	// Fiók törlése
@@ -738,7 +816,7 @@ const User: React.FC = () => {
 								<div className="row">
 									<div className="col-md-6 mb-3">
 										<label className="form-label">Profil láthatósága</label>
-										<div className="custom-select-wrapper position-relative" ref={profileVisibilityRef}>
+										<div className="custom-select-wrapper position-relative">
 											<button
 												className="form-select text-start"
 												type="button"
@@ -790,7 +868,7 @@ const User: React.FC = () => {
 									</div>
 									<div className="col-md-6 mb-3">
 										<label className="form-label">Nyelv</label>
-										<div className="custom-select-wrapper position-relative" ref={languageRef}>
+										<div className="custom-select-wrapper position-relative">
 											<button
 												className="form-select text-start"
 												type="button"
@@ -914,6 +992,63 @@ const User: React.FC = () => {
 										onChange={(e) => updateSetting('email', e.target.value)}
 									/>
 								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Országkód</label>
+									<input
+										className="form-control"
+										value={settings.countryCode}
+										maxLength={2}
+										onChange={(e) => updateSetting('countryCode', e.target.value.toUpperCase())}
+									/>
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Jogosultság</label>
+									<input className="form-control" value={PERMISSION_LEVEL_LABELS[profile.permissionLevel]} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Prémium státusz</label>
+									<input className="form-control" value={profile.premium ? 'Aktív' : 'Inaktív'} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Prémium lejárat</label>
+									<input className="form-control" value={profile.premiumExpiresAt ?? 'Nincs beállítva'} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Fiók létrehozása</label>
+									<input className="form-control" value={profile.creationDate} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Utolsó belépés</label>
+									<input className="form-control" value={profile.lastLoginDate} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">XP</label>
+									<input className="form-control" value={profile.xp} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Napi streak</label>
+									<input className="form-control" value={profile.dayStreak} disabled />
+								</div>
+								<div className="col-md-4 mb-3">
+									<label className="form-label">Book pontok</label>
+									<input className="form-control" value={profile.bookPoints} disabled />
+								</div>
+								<div className="col-md-4 mb-3">
+									<label className="form-label">Series pontok</label>
+									<input className="form-control" value={profile.seriesPoints} disabled />
+								</div>
+								<div className="col-md-4 mb-3">
+									<label className="form-label">Movie pontok</label>
+									<input className="form-control" value={profile.moviePoints} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Olvasási idő (perc)</label>
+									<input className="form-control" value={profile.readTimeMin} disabled />
+								</div>
+								<div className="col-md-6 mb-3">
+									<label className="form-label">Nézési idő (perc)</label>
+									<input className="form-control" value={profile.watchTimeMin} disabled />
+								</div>
 							</div>
 						</form>
 					</div>
@@ -980,30 +1115,102 @@ const User: React.FC = () => {
 						</div>
 						<form>
 							<div className="row">
+								<div className="col-12 mb-3">
+									<label className="form-label">Megjelenített jelvények (maximum 3)</label>
+									<div className="row g-2 settings-title-grid">
+										{[0, 1, 2].map((position) => (
+											<div className="col-12 col-md-4" key={position}>
+												<label className="form-label small mb-1">Jelvény {position + 1}</label>
+												<div className="custom-select-wrapper position-relative">
+													<button
+														className="form-select text-start"
+														type="button"
+														aria-expanded={openSelect === `badge-${position}`}
+														onClick={(e) => {
+															e.stopPropagation();
+															setOpenSelect(prev => (prev === `badge-${position}` ? null : `badge-${position}`));
+														}}
+													>
+														<span>{settings.selectedBadges[position]}</span>
+													</button>
+													<div className={`custom-select-menu ${openSelect === `badge-${position}` ? 'show' : ''}`}>
+														{BADGE_OPTIONS.map((badge) => (
+															<div
+																key={badge}
+																className="country-item"
+																onClick={() => {
+																	handleBadgeSelect(position, badge);
+																	setOpenSelect(null);
+																}}
+															>
+																{badge}
+															</div>
+														))}
+													</div>
+												</div>
+											</div>
+										))}
+									</div>
+								</div>
 								<div className="col-md-6 mb-3">
 									<label className="form-label">Értesítési gyakoriság</label>
-									<select
-										className="form-select"
-										value={settings.notificationFrequency}
-										onChange={(e) => updateSetting('notificationFrequency', e.target.value as UserSettings['notificationFrequency'])}
-									>
-										<option value="immediate">Azonnal</option>
-										<option value="daily">Napi</option>
-										<option value="weekly">Heti</option>
-										<option value="none">Egyáltalán nem</option>
-									</select>
+									<div className="custom-select-wrapper position-relative">
+										<button
+											className="form-select text-start"
+											type="button"
+											aria-expanded={openSelect === 'notificationFrequency'}
+											onClick={(e) => {
+												e.stopPropagation();
+												setOpenSelect(prev => (prev === 'notificationFrequency' ? null : 'notificationFrequency'));
+											}}
+										>
+											<span>{NOTIFICATION_FREQUENCY_OPTIONS.find(item => item.value === settings.notificationFrequency)?.label ?? 'Heti'}</span>
+										</button>
+										<div className={`custom-select-menu ${openSelect === 'notificationFrequency' ? 'show' : ''}`}>
+											{NOTIFICATION_FREQUENCY_OPTIONS.map((option) => (
+												<div
+													key={option.value}
+													className="country-item"
+													onClick={() => {
+														updateSetting('notificationFrequency', option.value);
+														setOpenSelect(null);
+													}}
+												>
+													{option.label}
+												</div>
+											))}
+										</div>
+									</div>
 								</div>
 								<div className="col-md-6 mb-3">
 									<label className="form-label">Időzóna</label>
-									<select
-										className="form-select"
-										value={settings.timezone}
-										onChange={(e) => updateSetting('timezone', e.target.value)}
-									>
-										<option value="Europe/Budapest">Europe/Budapest (GMT+1)</option>
-										<option value="Europe/London">Europe/London (GMT+0)</option>
-										<option value="America/New_York">America/New_York (GMT-5)</option>
-									</select>
+									<div className="custom-select-wrapper position-relative">
+										<button
+											className="form-select text-start"
+											type="button"
+											aria-expanded={openSelect === 'timezone'}
+											onClick={(e) => {
+												e.stopPropagation();
+												setOpenSelect(prev => (prev === 'timezone' ? null : 'timezone'));
+											}}
+										>
+											<span>{TIMEZONE_OPTIONS.find(item => item.value === settings.timezone)?.label ?? settings.timezone}</span>
+										</button>
+										<div className={`custom-select-menu ${openSelect === 'timezone' ? 'show' : ''}`}>
+											{TIMEZONE_OPTIONS.map((option) => (
+												<div
+													key={option.value}
+													className="country-item"
+													onClick={() => {
+														updateSetting('timezone', option.value);
+														setOpenSelect(null);
+													}}
+												>
+													{option.label}
+												</div>
+											))}
+										</div>
+									</div>
 								</div>
 							</div>
 							<hr style={{ borderColor: 'rgba(255,255,255,0.06)' }} className="my-4" />
@@ -1067,109 +1274,6 @@ const User: React.FC = () => {
 								</div>
 							</div>
 							<hr style={{ borderColor: 'rgba(255,255,255,0.06)' }} className="my-4" />
-							<h6 className="mb-3" style={{ color: 'var(--h1Text)' }}>Megjelenés és kisegítő lehetőségek</h6>
-							<div className="row">
-								<div className="col-md-6 mb-3">
-									<label className="form-label">Betűméret</label>
-									<div className="custom-select-wrapper position-relative" ref={textSizeRef}>
-										<button
-											className="form-select text-start"
-											type="button"
-											id="textSizeDropdown"
-											aria-expanded={openSelect === 'textSize'}
-											onClick={(e) => {
-												e.stopPropagation();
-												setOpenSelect(prev => (prev === 'textSize' ? null : 'textSize'));
-											}}
-										>
-											<span>
-												{settings.textSize === 'small' ? 'Kicsi' : settings.textSize === 'large' ? 'Nagy' : 'Normál'}
-											</span>
-										</button>
-										<div className={`custom-select-menu ${openSelect === 'textSize' ? 'show' : ''}`}>
-											<div
-												className="country-item"
-												onClick={() => {
-													updateSetting('textSize', 'small');
-													setOpenSelect(null);
-												}}
-											>
-												Kicsi
-											</div>
-											<div
-												className="country-item"
-												onClick={() => {
-													updateSetting('textSize', 'normal');
-													setOpenSelect(null);
-												}}
-											>
-												Normál
-											</div>
-											<div
-												className="country-item"
-												onClick={() => {
-													updateSetting('textSize', 'large');
-													setOpenSelect(null);
-												}}
-											>
-												Nagy
-											</div>
-										</div>
-									</div>
-								</div>
-								<div className="col-md-6 mb-3">
-									<label className="form-label">Kontraszt</label>
-									<div className="custom-select-wrapper position-relative" ref={contrastRef}>
-										<button
-											className="form-select text-start"
-											type="button"
-											id="contrastDropdown"
-											aria-expanded={openSelect === 'contrast'}
-											onClick={(e) => {
-												e.stopPropagation();
-												setOpenSelect(prev => (prev === 'contrast' ? null : 'contrast'));
-											}}
-										>
-											<span>{settings.highContrast ? 'Magas kontraszt' : 'Normál'}</span>
-										</button>
-										<div className={`custom-select-menu ${openSelect === 'contrast' ? 'show' : ''}`}>
-											<div
-												className="country-item"
-												onClick={() => {
-													updateSetting('highContrast', false);
-													setOpenSelect(null);
-												}}
-											>
-												Normál
-											</div>
-											<div
-												className="country-item"
-												onClick={() => {
-													updateSetting('highContrast', true);
-													setOpenSelect(null);
-												}}
-											>
-												Magas kontraszt
-											</div>
-										</div>
-									</div>
-								</div>
-								<div className="col-12 col-md-6 mb-2">
-									<div className="form-check form-switch">
-										<input
-											className="form-check-input"
-											type="checkbox"
-											id="reducedMotion"
-											checked={settings.reducedMotion}
-											onChange={(e) => updateSetting('reducedMotion', e.target.checked)}
-										/>
-										<label className="form-check-label" htmlFor="reducedMotion">
-											Kevesebb animáció (reduced motion)
-										</label>
-									</div>
-								</div>
-							</div>
-							<hr style={{ borderColor: 'rgba(255,255,255,0.06)' }} className="my-4" />
 							<h6 className="mb-3" style={{ color: 'var(--h1Text)' }}>Tartalom</h6>
 							<div className="row">
 								<div className="col-12 col-md-6 mb-2">
@@ -1217,6 +1321,15 @@ const User: React.FC = () => {
 							<button className="btn btn-outline-light btn-sm" type="button">
 								<i className="bi bi-facebook me-1"></i> Csatlakozás Facebook-kal
 							</button>
+							<button className="btn btn-outline-light btn-sm" type="button">
+								<i className="bi bi-apple me-1"></i> Csatlakozás Apple-lel
+							</button>
+							<button className="btn btn-outline-light btn-sm" type="button">
+								<i className="bi bi-microsoft me-1"></i> Csatlakozás Microsofttal
+							</button>
+							<button className="btn btn-outline-light btn-sm" type="button">
+								<i className="bi bi-discord me-1"></i> Csatlakozás Discorddal
+							</button>
 						</div>
 					</div>
 
@@ -1224,12 +1337,9 @@ const User: React.FC = () => {
 					<div className="about-panel p-4 mb-4">
 						<div className="row">
 							<div className="col-12 col-md-6 mb-3 mb-md-0">
-								<div className="d-flex gap-2">
-									<button type="button" className="btn btn-primary" onClick={handleSaveSettings}>
-										<i className="bi bi-check-circle me-1"></i> Mentés
-									</button>
-									<button type="button" className="btn btn-secondary" onClick={() => setActiveView('all')}>
-										<i className="bi bi-arrow-left me-1"></i> Vissza
+								<div className="d-flex flex-wrap gap-2">
+									<button className="btn btn-sm btn-danger" type="button" onClick={handleDeleteAccount} title="Fiók törlése">
+										<i className="bi bi-trash me-1"></i> Fiók törlése
 									</button>
 								</div>
 							</div>
@@ -1238,15 +1348,33 @@ const User: React.FC = () => {
 									<button className="btn btn-sm btn-outline-light" type="button" onClick={handleExportData} title="Adatok exportálása">
 										<i className="bi bi-download me-1"></i> Export
 									</button>
-									<button className="btn btn-sm btn-secondary" type="button" onClick={handleLogout} title="Kijelentkezés">
-										<i className="bi bi-box-arrow-right me-1"></i> Kijelentkezés
-									</button>
-									<button className="btn btn-sm btn-danger" type="button" onClick={handleDeleteAccount} title="Fiók törlése">
-										<i className="bi bi-trash me-1"></i> Fiók törlése
+									<button type="button" className="btn btn-primary" onClick={handleSaveSettings}>
+										<i className="bi bi-check-circle me-1"></i> Mentés
 									</button>
 								</div>
 							</div>
 						</div>
+					</div>
+				</div>
+			)}
+
+			{saveModal && (
+				<div className="user-save-modal-backdrop" onClick={() => setSaveModal(null)}>
+					<div
+						className="user-save-modal"
+						onClick={(event) => event.stopPropagation()}
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="user-save-modal-title"
+					>
+						<div className="user-save-modal-icon">
+							<i className="bi bi-check2-circle"></i>
+						</div>
+						<h4 id="user-save-modal-title">{saveModal.title}</h4>
+						<p>{saveModal.message}</p>
+						<button className="admin-send-btn" onClick={() => setSaveModal(null)}>
+							Rendben
+						</button>
 					</div>
 				</div>
 			)}
@@ -1275,7 +1403,7 @@ const User: React.FC = () => {
 									<div className="col-md-4">
 										<div className="stat-title">Jelvények</div>
 										<div className="mt-2 badge-row">
-											{currentStats.badges.map((badge, index) => (
+											{(settings.selectedBadges.length > 0 ? settings.selectedBadges : currentStats.badges.slice(0, 3)).map((badge, index) => (
 												<span key={index} className="badge-custom">{badge}</span>
 											))}
 										</div>
@@ -1352,7 +1480,7 @@ const User: React.FC = () => {
 											<li key={book.id} className="list-group-item book-item">
 												<div className="d-flex gap-3 align-items-center">
 													<img src={book.cover} alt={book.title} className="book-logo" />
-													<div className="flex-grow-1">
+													<div className="grow">
 														<div className="book-title">{book.title}</div>
 														<div className="book-meta">
 															Kezdte: {book.startDate} • Befejezte: {book.endDate} • Olvasás: {book.readingTime}
@@ -1405,7 +1533,7 @@ const User: React.FC = () => {
 											<li key={book.id} className="list-group-item book-item">
 												<div className="d-flex gap-3 align-items-center">
 													<img src={book.cover} alt={book.title} className="book-logo" />
-													<div className="flex-grow-1">
+													<div className="grow">
 														<div className="book-title">{book.title}</div>
 														<div className="book-meta">
 															Kezdte: {book.startDate} • Befejezte: {book.endDate} • Olvasás: {book.readingTime}

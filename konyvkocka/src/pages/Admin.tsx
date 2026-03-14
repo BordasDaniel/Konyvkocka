@@ -790,10 +790,10 @@ const Admin: React.FC = () => {
   };
 
   const permissionLevelLabels: Record<AdminUser['permissionLevel'], string> = {
-    user: 'USER',
-    moderator: 'MODERATOR',
-    admin: 'ADMIN',
-    banned: 'BANNED',
+    user: 'Felhasználó',
+    moderator: 'Moderátor',
+    admin: 'Admin',
+    banned: 'Korlátozott',
   };
 
   const subscriptionLabels: Record<AdminUser['subscription'], string> = {
@@ -868,7 +868,7 @@ const Admin: React.FC = () => {
     switch (permissionLevel) {
       case 'admin': return <span className="admin-badge admin-badge-red">Admin</span>;
       case 'moderator': return <span className="admin-badge admin-badge-blue">Moderátor</span>;
-      case 'banned': return <span className="admin-badge admin-badge-red">Banned</span>;
+      case 'banned': return <span className="admin-badge admin-badge-red">Korlátozott</span>;
       default: return <span className="admin-badge admin-badge-gray">Felhasználó</span>;
     }
   };
@@ -1256,7 +1256,7 @@ const Admin: React.FC = () => {
                           <h4>Hozzáférés és moderáció</h4>
                           <div className="admin-user-form-grid">
                             <label className="admin-user-field">
-                              <span>Permission level</span>
+                              <span>Jogosultság</span>
                               <div className="admin-custom-select">
                                 <button
                                   type="button"
