@@ -87,6 +87,12 @@ interface MedalGroup {
 	medals: Medal[];
 }
 
+interface MedalDetails {
+	category: string;
+	rarity: string;
+	description: string;
+}
+
 interface UserSettings {
 	username: string;
 	email: string;
@@ -181,7 +187,7 @@ const fetchViewStats = async (): Promise<Record<string, ViewStats>> => {
 				readSectionSubtitle: '124 film, 89 sorozat, 8 könyv teljes • 57 könyv részben • 23 folyamatban',
 				readSectionActivity: 'Utolsó aktivitás: 2 nappal ezelőtt',
 				readSectionButton: 'Mutasd a tartalmakat',
-				favSectionTitle: 'Összes kedvenc',
+				favSectionTitle: 'Legutóbbi kedvenc',
 				favSectionSubtitle: '23 kedvenc könyv • 45 kedvenc film • 32 kedvenc sorozat',
 				favSectionActivity: 'Frissítve: ma',
 				favSectionButton: 'Mutasd a kedvenceket',
@@ -212,7 +218,7 @@ const fetchViewStats = async (): Promise<Record<string, ViewStats>> => {
 				readSectionSubtitle: '8 befejezve • 57 olvasás alatt • 7 félbehagyva • 357 tervben • 513 archivált',
 				readSectionActivity: 'Utolsó könyv: 1 nappal ezelőtt',
 				readSectionButton: 'Mutasd a könyveket',
-				favSectionTitle: 'Kedvenc könyvek',
+				favSectionTitle: 'Legutóbbi kedvenc könyvek',
 				favSectionSubtitle: '23 kedvenc könyv a listádon',
 				favSectionActivity: 'Frissítve: 3 nappal ezelőtt',
 				favSectionButton: 'Mutasd a kedvenc könyveket',
@@ -230,23 +236,23 @@ const fetchViewStats = async (): Promise<Record<string, ViewStats>> => {
 			reviewsSent: '14',
 			badges: ['Színészrajongó', 'Filmfan', 'Sorozatőrült'],
 			labels: {
-				labelReadingPoints: 'Film/Sorozat pontok',
+				labelReadingPoints: 'Média pontok',
 				labelReadingTime: 'Nézési idő',
 				labelCompletion: 'Befejezési arány:',
 				labelReadBooks: 'Elolvasott könyvek:',
-				labelMediaViewed: 'Megtekintett filmek/sorozatok:',
+				labelMediaViewed: 'Megtekintett média tartalmak:',
 				labelLongestStreak: 'Leghosszabb nézési sorozat:',
-				labelReviewsSent: 'Film/Sorozat vélemények:',
+				labelReviewsSent: 'Média vélemények:',
 			},
 			sections: {
-				readSectionTitle: 'Legutóbb megtekintett filmek és sorozatok',
+				readSectionTitle: 'Legutóbb megtekintett média tartalmak',
 				readSectionSubtitle: '124 film befejezve • 89 sorozat befejezve • 23 folyamatban • 12 félbehagyva',
 				readSectionActivity: 'Utoljára nézett: tegnap',
-				readSectionButton: 'Mutasd a filmeket/sorozatokat',
-				favSectionTitle: 'Kedvenc filmek és sorozatok',
+				readSectionButton: 'Mutasd a média tartalmakat',
+				favSectionTitle: 'Legutóbbi kedvenc média tartalmak',
 				favSectionSubtitle: '45 kedvenc film • 32 kedvenc sorozat',
 				favSectionActivity: 'Frissítve: ma',
-				favSectionButton: 'Mutasd a kedvenc filmeket',
+				favSectionButton: 'Mutasd a kedvenc média tartalmakat',
 			},
 		},
 	};
@@ -345,6 +351,50 @@ type ViewType = 'all' | 'book' | 'media' | 'settings';
 
 type OpenSelectId = 'profileVisibility' | 'language' | 'badge-0' | 'badge-1' | 'badge-2' | 'notificationFrequency' | 'timezone' | null;
 type SaveModalState = { title: string; message: string } | null;
+type MedalModalState = { medal: Medal; groupTitle: string; details: MedalDetails } | null;
+
+const MEDAL_DB_DETAILS: Record<number, Partial<MedalDetails>> = {
+	1: { rarity: 'Ritka', description: 'Amikor mások még a startgombot keresik, te már célba értél a tavaszi hajrában.' },
+	2: { rarity: 'Epikus', description: 'A nyári maratonon nem csak végigmentél, hanem közben még mosolyogtál is.' },
+	3: { rarity: 'Legendás', description: 'Az őszi fesztivál úgy lett kipipálva, mintha ez csak bemelegítés lett volna.' },
+	4: { description: 'Visszajöttél, és a rendszer is csak annyit mondott: na végre!' },
+	5: { description: 'Hét nap fókusz, hét nap lendület, hét nap "csak még egy fejezet".' },
+	6: { rarity: 'Ritka', description: '30 napos sorozat? Itt már nem motivációról beszélünk, hanem szokásról.' },
+	7: { rarity: 'Legendás', description: '100 nap kitartás. Ez már nem streak, ez karakterfejlődés.' },
+	8: { description: 'A gyűjteményed elkezdett önálló életet élni. És ez még csak a kezdet.' },
+	9: { rarity: 'Ritka', description: 'Haladó gyűjtő szint elérve: a polc már rád néz fel.' },
+	10: { description: 'Első vélemény kipipálva. A közösség innentől hivatalosan ismer.' },
+	11: { rarity: 'Epikus', description: 'A kritikáid után még a csillagok is rendezettebb sorban állnak.' },
+	12: { rarity: 'Epikus', description: 'Tökéletesnek hívják, de te ezt csak "egy átlagos napnak" nevezed.' },
+	13: { description: 'Első esemény megvolt. Onnantól már tudtad: ez az a hely.' },
+	14: { rarity: 'Ritka', description: 'Tanulás közben feloldva. Mert néha a fejlődés a legjobb jutalom.' },
+	15: { rarity: 'Epikus', description: 'Afterparty mód: bekapcsolva. Még egy utolsó kör? Persze.' },
+	16: { rarity: 'Legendás', description: 'Talán majd máskor? Te inkább most rögtön megszereznéd.' },
+	17: { rarity: 'Legendás', description: 'Titokzatos: ? ? ? ? ? ? ? ... és valahol itt kezdődik a legenda.' },
+	18: { rarity: 'Legendás', description: 'Mesteri teljesítmény, ahol a "jó" már rég nem elég.' },
+	19: { rarity: 'Legendás', description: 'Ő ott biztosúr! De hogy pontosan miért, azt csak kevesen tudják.' },
+	20: { rarity: 'Legendás', description: 'Maraton kitűző: amikor a célvonal már csak formalitás.' },
+};
+
+const getMedalDetails = (medal: Medal, groupTitle: string): MedalDetails => {
+	const groupCategoryMap: Record<string, string> = {
+		Események: 'Esemény',
+		Kitartás: 'Aktivitás',
+		Megszerezve: 'Gyűjtemény',
+		Különlegesek: 'Különleges',
+	};
+
+	const defaults: MedalDetails = {
+		category: groupCategoryMap[groupTitle] ?? 'Általános',
+		rarity: medal.isLocked ? 'Legendás' : 'Gyakori',
+		description: `${medal.label} kitűző a(z) ${groupTitle.toLowerCase()} kategóriában. Jelenleg ez az egyik legmenőbb jelölésed.`,
+	};
+
+	return {
+		...defaults,
+		...MEDAL_DB_DETAILS[medal.id],
+	};
+};
 
 const NOTIFICATION_FREQUENCY_OPTIONS: Array<{ value: UserSettings['notificationFrequency']; label: string }> = [
 	{ value: 'immediate', label: 'Azonnal' },
@@ -382,6 +432,10 @@ const User: React.FC = () => {
 	const [medalGroups, setMedalGroups] = useState<MedalGroup[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [saveModal, setSaveModal] = useState<SaveModalState>(null);
+	const [medalModal, setMedalModal] = useState<MedalModalState>(null);
+	const [badgesExpanded, setBadgesExpanded] = useState(false);
+	const [badgesLoaded, setBadgesLoaded] = useState(false);
+	const [isLoadingBadges, setIsLoadingBadges] = useState(false);
 
 	// Collapse állapotok
 	const [readBooksOpen, setReadBooksOpen] = useState(false);
@@ -505,7 +559,7 @@ const User: React.FC = () => {
 
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.key === 'Escape') {
-				setSaveModal(null);
+				if (saveModal) setSaveModal(null);
 			}
 		};
 
@@ -524,6 +578,26 @@ const User: React.FC = () => {
 		};
 	}, [saveModal]);
 
+	useEffect(() => {
+		if (!medalModal) return;
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') {
+				setMedalModal(null);
+			}
+		};
+
+		document.documentElement.style.overflow = 'hidden';
+		document.body.style.overflow = 'hidden';
+		document.addEventListener('keydown', onKeyDown);
+
+		return () => {
+			document.documentElement.style.overflow = '';
+			document.body.style.overflow = '';
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, [medalModal]);
+
 	// Location state változásának figyelése (pl. navigáció a Beállításokhoz)
 	useEffect(() => {
 		if (locationState?.view === 'settings') {
@@ -531,24 +605,37 @@ const User: React.FC = () => {
 		}
 	}, [locationState]);
 
+	useEffect(() => {
+		setReadBooksOpen(false);
+		setFavBooksOpen(false);
+		setMedalModal(null);
+		setBadgesExpanded(false);
+	}, [activeView]);
+
+	const openMedalModal = (medal: Medal, groupTitle: string) => {
+		setMedalModal({
+			medal,
+			groupTitle,
+			details: getMedalDetails(medal, groupTitle),
+		});
+	};
+
 	// Adatok betöltése
 	useEffect(() => {
 		const loadData = async () => {
 			setIsLoading(true);
 			try {
 				// TODO: Később ezek API hívások lesznek
-				const [profileData, statsData, booksData, medalsData] = await Promise.all([
+				const [profileData, statsData, booksData] = await Promise.all([
 					fetchUserProfile(),
 					fetchViewStats(),
 					fetchBooks(),
-					fetchMedalGroups(),
 				]);
 
 				setProfile(profileData);
 				setDefaultAvatar(profileData.avatar);
 				setAllStats(statsData);
 				setBooks(booksData);
-				setMedalGroups(medalsData);
 
 				// Beállítások inicializálása profil adatokból
 				setSettings(prev => ({
@@ -588,6 +675,34 @@ const User: React.FC = () => {
 
 		loadData();
 	}, []);
+
+	useEffect(() => {
+		if (!badgesExpanded || badgesLoaded || isLoadingBadges) return;
+
+		let cancelled = false;
+
+		const loadBadgeGroups = async () => {
+			setIsLoadingBadges(true);
+			try {
+				const medalsData = await fetchMedalGroups();
+				if (cancelled) return;
+				setMedalGroups(medalsData);
+				setBadgesLoaded(true);
+			} catch (error) {
+				console.error('Hiba a kitűzők betöltésekor:', error);
+			} finally {
+				if (!cancelled) {
+					setIsLoadingBadges(false);
+				}
+			}
+		};
+
+		loadBadgeGroups();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [badgesExpanded, badgesLoaded, isLoadingBadges]);
 
 	// Jelenlegi nézet statisztikái
 	const currentStats = allStats[activeView] || allStats['all'];
@@ -745,7 +860,7 @@ const User: React.FC = () => {
 									type="button"
 									onClick={() => setActiveView('media')}
 								>
-									<i className="bi bi-film me-1"></i>FILMEK/Sorozatok
+									<i className="bi bi-film me-1"></i>MÉDIA
 								</button>
 								<button
 									className={`btn btn-action ${activeView === 'settings' ? 'active' : ''}`}
@@ -1458,10 +1573,6 @@ const User: React.FC = () => {
 								<div className="d-flex justify-content-between align-items-center mb-2">
 									<div>
 										<h6 className="mb-1">{currentStats.sections.readSectionTitle}</h6>
-										<p className="mb-0 text-muted">{currentStats.sections.readSectionSubtitle}</p>
-									</div>
-									<div className="text-end">
-										<small className="text-muted">{currentStats.sections.readSectionActivity}</small>
 									</div>
 								</div>
 
@@ -1482,16 +1593,8 @@ const User: React.FC = () => {
 													<img src={book.cover} alt={book.title} className="book-logo" />
 													<div className="grow">
 														<div className="book-title">{book.title}</div>
-														<div className="book-meta">
-															Kezdte: {book.startDate} • Befejezte: {book.endDate} • Olvasás: {book.readingTime}
-														</div>
 													</div>
 													<div className="text-end text-nowrap">
-														{book.score !== null ? (
-															<div><span className="badge badge-score">{book.score}</span></div>
-														) : (
-															<div className="no-score">Nincs értékelés</div>
-														)}
 														<div className="book-points">Pontok: <strong>{book.points.toLocaleString()}</strong></div>
 														<div className="mt-1">{getStatusBadge(book.status)}</div>
 													</div>
@@ -1511,10 +1614,6 @@ const User: React.FC = () => {
 								<div className="d-flex justify-content-between align-items-center mb-2">
 									<div>
 										<h6 className="mb-1">{currentStats.sections.favSectionTitle}</h6>
-										<p className="mb-0 text-muted">{currentStats.sections.favSectionSubtitle}</p>
-									</div>
-									<div className="text-end">
-										<small className="text-muted">{currentStats.sections.favSectionActivity}</small>
 									</div>
 								</div>
 
@@ -1535,16 +1634,8 @@ const User: React.FC = () => {
 													<img src={book.cover} alt={book.title} className="book-logo" />
 													<div className="grow">
 														<div className="book-title">{book.title}</div>
-														<div className="book-meta">
-															Kezdte: {book.startDate} • Befejezte: {book.endDate} • Olvasás: {book.readingTime}
-														</div>
 													</div>
 													<div className="text-end text-nowrap">
-														{book.score !== null ? (
-															<div><span className="badge badge-score">{book.score}</span></div>
-														) : (
-															<div className="no-score">Nincs értékelés</div>
-														)}
 														<div className="book-points">Pontok: <strong>{book.points.toLocaleString()}</strong></div>
 														<div className="mt-1">{getStatusBadge(book.status)}</div>
 													</div>
@@ -1559,29 +1650,97 @@ const User: React.FC = () => {
 				</div>
 			)}
 
-			{/* Medals Section */}
+			{/* Badges Section */}
 			{activeView !== 'settings' && (
 				<section id="medalsSection" className="medals-section">
-					<h3 className="mt-4 mb-3" style={{ color: 'var(--h1Text)' }}>Jelvények</h3>
+					<div className="row mt-4">
+						<div className="col-12">
+							<div className="stat-card about-panel">
+								<div className="d-flex justify-content-between align-items-center mb-2">
+									<div>
+										<h6 className="mb-1">Kitűzők</h6>
+									</div>
+								</div>
 
-					{medalGroups.map((group, groupIndex) => (
-						<div key={groupIndex} className="group about-panel p-3">
-							<div className="group-title">{group.title}</div>
-							<div className="medal-grid">
-								{group.medals.map((medal) => (
-									<div
-										key={medal.id}
-										className={`medal-tile ${medal.isLocked ? 'medal-locked' : 'medal-earned'}`}
-									>
-										<img src={medal.image} alt={medal.label} className="medal" />
-										<div className="medal-label">{medal.label}</div>
-										<div className="medal-date">{medal.date || '—'}</div>
+								<button
+									className="btn btn-sm btn-outline-light mb-3"
+									type="button"
+									onClick={() => {
+										setBadgesExpanded(prev => {
+											const next = !prev;
+											if (!next) {
+												setMedalModal(null);
+											}
+											return next;
+										});
+									}}
+									aria-expanded={badgesExpanded}
+								>
+									{badgesExpanded ? 'Kitűzők elrejtése' : 'Mutasd a kitűzőket'}
+								</button>
+
+								{badgesExpanded && isLoadingBadges && (
+									<div className="group p-3">
+										<div className="text-muted">Kitűzők betöltése...</div>
+									</div>
+								)}
+
+								{badgesExpanded && badgesLoaded && medalGroups.map((group, groupIndex) => (
+									<div key={groupIndex} className="group p-3">
+										<div className="group-title">{group.title}</div>
+										<div className="medal-grid">
+											{group.medals.map((medal) => (
+												<button
+													key={medal.id}
+													type="button"
+													className={`medal-tile ${medal.isLocked ? 'medal-locked' : 'medal-earned'}`}
+													onClick={() => openMedalModal(medal, group.title)}
+													aria-label={`${medal.label} kitűző részletek`}
+												>
+													<img src={medal.image} alt={medal.label} className="medal" />
+													<div className="medal-label">{medal.label}</div>
+													<div className="medal-date">{medal.date || '—'}</div>
+												</button>
+											))}
+										</div>
 									</div>
 								))}
 							</div>
 						</div>
-					))}
+					</div>
 				</section>
+			)}
+
+			{medalModal && (
+				<div className="user-medal-modal-backdrop" onClick={() => setMedalModal(null)}>
+					<div
+						className="user-medal-modal"
+						onClick={(event) => event.stopPropagation()}
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="user-medal-modal-title"
+					>
+						<div className="user-medal-modal-header">
+							<img src={medalModal.medal.image} alt={medalModal.medal.label} className="user-medal-modal-image" />
+							<div>
+								<h4 id="user-medal-modal-title">{medalModal.medal.label}</h4>
+								<p>{medalModal.groupTitle} • {medalModal.details.rarity}</p>
+							</div>
+						</div>
+
+						<div className="user-medal-modal-grid">
+							<div><strong>Kategória:</strong> <span>{medalModal.details.category}</span></div>
+							<div><strong>Állapot:</strong> <span>{medalModal.medal.isLocked ? 'Zárolt' : 'Megszerezve'}</span></div>
+							<div><strong>Megszerzés:</strong> <span>{medalModal.medal.date ?? 'Még nincs megszerezve'}</span></div>
+						</div>
+
+						<p className="user-medal-modal-description">{medalModal.details.description}</p>
+
+						<button className="admin-send-btn" onClick={() => setMedalModal(null)}>
+							Rendben
+						</button>
+					</div>
+				</div>
 			)}
 		</main>
 	);
