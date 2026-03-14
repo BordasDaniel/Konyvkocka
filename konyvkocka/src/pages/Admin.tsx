@@ -41,14 +41,36 @@ interface AdminUser {
 
 interface AdminContent {
   id: number;
+  contentType: 'BOOK' | 'MOVIE' | 'SERIES';
   title: string;
-  type: 'book' | 'movie' | 'series';
-  cover: string;
-  author: string;
-  addedDate: string;
-  views: number;
+  released: number;
   rating: number;
-  status: 'active' | 'draft' | 'hidden';
+  description: string;
+  ageRatingId: number | null;
+  trailerUrl: string | null;
+  rewardXP: number;
+  rewardPoints: number;
+  hasSubtitles: boolean;
+  isOriginalLanguage: boolean;
+  isOfflineAvailable: boolean;
+  updatedAt: string | null;
+  coverOrPosterApiName: string;
+  pageNum: number | null;
+  bookType: 'BOOK' | 'AUDIOBOOK' | 'EBOOK' | null;
+  pdfUrl: string | null;
+  audioUrl: string | null;
+  epubUrl: string | null;
+  audioLength: number | null;
+  narratorName: string | null;
+  originalLanguage: string | null;
+  streamUrl: string | null;
+  length: number | null;
+  tagIds: number[];
+}
+
+interface AdminTagOption {
+  id: number;
+  name: string;
 }
 
 interface AdminNewsItem {
@@ -118,13 +140,174 @@ const MOCK_USERS: AdminUser[] = [
 ];
 
 const MOCK_CONTENT: AdminContent[] = [
-  { id: 1, title: 'A szél árnyéka', type: 'book', cover: 'https://moly.hu/system/covers/big/covers_582574.jpg', author: 'Carlos Ruiz Zafón', addedDate: '2024-05-12', views: 12450, rating: 9.2, status: 'active' },
-  { id: 2, title: 'Inception', type: 'movie', cover: 'https://image.tmdb.org/t/p/w500/ljsZTbVsrQSqZgWeep2B1QiDKuh.jpg', author: 'Christopher Nolan', addedDate: '2024-03-01', views: 34200, rating: 9.5, status: 'active' },
-  { id: 3, title: 'Breaking Bad', type: 'series', cover: 'https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg', author: 'Vince Gilligan', addedDate: '2024-01-15', views: 28900, rating: 9.7, status: 'active' },
-  { id: 4, title: '1984', type: 'book', cover: 'https://moly.hu/system/covers/big/covers_227576.jpg', author: 'George Orwell', addedDate: '2024-06-20', views: 8700, rating: 9.1, status: 'active' },
-  { id: 5, title: 'Interstellar', type: 'movie', cover: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', author: 'Christopher Nolan', addedDate: '2024-02-10', views: 41300, rating: 9.8, status: 'active' },
-  { id: 6, title: 'Dűne', type: 'book', cover: 'https://marvin.bline.hu/product_images/920/ID250-141842.JPG', author: 'Frank Herbert', addedDate: '2025-01-05', views: 5600, rating: 8.8, status: 'draft' },
-  { id: 7, title: 'The Witcher', type: 'series', cover: 'https://image.tmdb.org/t/p/w500/7vjaCdMw15FEbXyLQTVa04URsPm.jpg', author: 'Lauren Schmidt Hissrich', addedDate: '2024-08-14', views: 19200, rating: 8.2, status: 'hidden' },
+  {
+    id: 1,
+    contentType: 'BOOK',
+    title: 'A szel arnyeka',
+    released: 2001,
+    rating: 9.2,
+    description: 'Barcelonaban egy fiatal fiu egy kulonleges konyvet talal a Feledett Konyvek Temetojeben.',
+    ageRatingId: 2,
+    trailerUrl: null,
+    rewardXP: 120,
+    rewardPoints: 60,
+    hasSubtitles: false,
+    isOriginalLanguage: true,
+    isOfflineAvailable: true,
+    updatedAt: '2026-03-12T09:45:00',
+    coverOrPosterApiName: 'https://moly.hu/system/covers/big/covers_582574.jpg',
+    pageNum: 560,
+    bookType: 'BOOK',
+    pdfUrl: '/assets/pdf/szel-arnyeka.pdf',
+    audioUrl: null,
+    epubUrl: '/assets/pdf/szel-arnyeka.epub',
+    audioLength: null,
+    narratorName: null,
+    originalLanguage: 'es',
+    streamUrl: null,
+    length: null,
+    tagIds: [1, 3, 7],
+  },
+  {
+    id: 2,
+    contentType: 'MOVIE',
+    title: 'Inception',
+    released: 2010,
+    rating: 9.5,
+    description: 'Egy kulonleges csapat alommanipulacioval probal beultetni egy otletet.',
+    ageRatingId: 4,
+    trailerUrl: 'https://www.youtube.com/watch?v=YoHD9XEInc0',
+    rewardXP: 80,
+    rewardPoints: 40,
+    hasSubtitles: true,
+    isOriginalLanguage: true,
+    isOfflineAvailable: false,
+    updatedAt: '2026-03-10T15:30:00',
+    coverOrPosterApiName: 'https://image.tmdb.org/t/p/w500/ljsZTbVsrQSqZgWeep2B1QiDKuh.jpg',
+    pageNum: null,
+    bookType: null,
+    pdfUrl: null,
+    audioUrl: null,
+    epubUrl: null,
+    audioLength: null,
+    narratorName: null,
+    originalLanguage: null,
+    streamUrl: 'https://cdn.konyvkocka.local/stream/inception.m3u8',
+    length: 148,
+    tagIds: [2, 4, 8],
+  },
+  {
+    id: 3,
+    contentType: 'SERIES',
+    title: 'Breaking Bad',
+    released: 2008,
+    rating: 9.7,
+    description: 'Egy kemiatanar a csaladja jovojeert drogkartell-vilagba sodrodik.',
+    ageRatingId: 5,
+    trailerUrl: 'https://www.youtube.com/watch?v=HhesaQXLuRY',
+    rewardXP: 150,
+    rewardPoints: 75,
+    hasSubtitles: true,
+    isOriginalLanguage: true,
+    isOfflineAvailable: false,
+    updatedAt: '2026-03-09T19:10:00',
+    coverOrPosterApiName: 'https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg',
+    pageNum: null,
+    bookType: null,
+    pdfUrl: null,
+    audioUrl: null,
+    epubUrl: null,
+    audioLength: null,
+    narratorName: null,
+    originalLanguage: null,
+    streamUrl: null,
+    length: null,
+    tagIds: [3, 4, 8],
+  },
+  {
+    id: 4,
+    contentType: 'BOOK',
+    title: '1984',
+    released: 1949,
+    rating: 9.1,
+    description: 'Disztopikus regeny totalis megfigyelesrol es az igazsag manipulalasarol.',
+    ageRatingId: 3,
+    trailerUrl: null,
+    rewardXP: 110,
+    rewardPoints: 55,
+    hasSubtitles: false,
+    isOriginalLanguage: false,
+    isOfflineAvailable: true,
+    updatedAt: '2026-03-11T11:25:00',
+    coverOrPosterApiName: 'https://moly.hu/system/covers/big/covers_227576.jpg',
+    pageNum: 328,
+    bookType: 'EBOOK',
+    pdfUrl: '/assets/pdf/1984.pdf',
+    audioUrl: null,
+    epubUrl: '/assets/pdf/1984.epub',
+    audioLength: null,
+    narratorName: null,
+    originalLanguage: 'en',
+    streamUrl: null,
+    length: null,
+    tagIds: [1, 7],
+  },
+  {
+    id: 5,
+    contentType: 'MOVIE',
+    title: 'Interstellar',
+    released: 2014,
+    rating: 9.8,
+    description: 'Egy csapat urhajos uj lakhelyet keres az emberisegnek.',
+    ageRatingId: 4,
+    trailerUrl: 'https://www.youtube.com/watch?v=zSWdZVtXT7E',
+    rewardXP: 95,
+    rewardPoints: 45,
+    hasSubtitles: true,
+    isOriginalLanguage: true,
+    isOfflineAvailable: true,
+    updatedAt: '2026-03-13T08:40:00',
+    coverOrPosterApiName: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
+    pageNum: null,
+    bookType: null,
+    pdfUrl: null,
+    audioUrl: null,
+    epubUrl: null,
+    audioLength: null,
+    narratorName: null,
+    originalLanguage: null,
+    streamUrl: 'https://cdn.konyvkocka.local/stream/interstellar.m3u8',
+    length: 169,
+    tagIds: [2, 3, 8],
+  },
+  {
+    id: 6,
+    contentType: 'BOOK',
+    title: 'Dune',
+    released: 1965,
+    rating: 8.8,
+    description: 'Sci-fi klasszikus a hatalomrol, hitrol es tulelesrol az Arrakis bolygon.',
+    ageRatingId: 3,
+    trailerUrl: null,
+    rewardXP: 130,
+    rewardPoints: 65,
+    hasSubtitles: false,
+    isOriginalLanguage: true,
+    isOfflineAvailable: true,
+    updatedAt: '2026-03-07T16:55:00',
+    coverOrPosterApiName: 'https://marvin.bline.hu/product_images/920/ID250-141842.JPG',
+    pageNum: 688,
+    bookType: 'AUDIOBOOK',
+    pdfUrl: null,
+    audioUrl: '/assets/audio/dune.mp3',
+    epubUrl: '/assets/pdf/dune.epub',
+    audioLength: 4100,
+    narratorName: 'Simon Vance',
+    originalLanguage: 'en',
+    streamUrl: null,
+    length: null,
+    tagIds: [2, 5, 7],
+  },
 ];
 
 const MOCK_NEWS: AdminNewsItem[] = [
@@ -182,6 +365,17 @@ const MOCK_TITLE_OPTIONS: AdminTitleOption[] = [
   { id: 2, name: 'Kihívásvadász', description: 'Több event challenge teljesítéséért.', rarity: 'RARE' },
   { id: 3, name: 'Aréna Bajnok', description: 'Nehéz kihívások teljesítéséért.', rarity: 'EPIC' },
   { id: 4, name: 'Legendák Őrzője', description: 'Különleges, ritka achievement cím.', rarity: 'LEGENDARY' },
+];
+
+const MOCK_TAG_OPTIONS: AdminTagOption[] = [
+  { id: 1, name: 'Klasszikus' },
+  { id: 2, name: 'Sci-Fi' },
+  { id: 3, name: 'Drama' },
+  { id: 4, name: 'Thriller' },
+  { id: 5, name: 'Fantasy' },
+  { id: 6, name: 'Akcio' },
+  { id: 7, name: 'Bestseller' },
+  { id: 8, name: 'Dijazott' },
 ];
 
 const MOCK_CHALLENGES: AdminChallenge[] = [
@@ -286,15 +480,19 @@ const Admin: React.FC = () => {
   const [challenges, setChallenges] = useState<AdminChallenge[]>(MOCK_CHALLENGES);
   const [badges] = useState<AdminBadgeOption[]>(MOCK_BADGE_OPTIONS);
   const [titles] = useState<AdminTitleOption[]>(MOCK_TITLE_OPTIONS);
+  const [tags] = useState<AdminTagOption[]>(MOCK_TAG_OPTIONS);
   const [userSearch, setUserSearch] = useState('');
   const [contentSearch, setContentSearch] = useState('');
   const [newsSearch, setNewsSearch] = useState('');
   const [challengeSearch, setChallengeSearch] = useState('');
-  const [contentTypeFilter, setContentTypeFilter] = useState<'all' | 'book' | 'movie' | 'series'>('all');
+  const [contentTypeFilter, setContentTypeFilter] = useState<'all' | 'BOOK' | 'MOVIE' | 'SERIES'>('all');
   const [userTypeFilter, setUserTypeFilter] = useState<'all' | 'premium' | 'staff' | 'banned'>('all');
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [userDraft, setUserDraft] = useState<AdminUser | null>(null);
   const [activeUserDropdown, setActiveUserDropdown] = useState<'permissionLevel' | 'subscription' | null>(null);
+  const [selectedContentId, setSelectedContentId] = useState<number | null>(null);
+  const [contentDraft, setContentDraft] = useState<AdminContent | null>(null);
+  const [activeContentDropdown, setActiveContentDropdown] = useState<'bookType' | 'tags' | null>(null);
   const [selectedNewsId, setSelectedNewsId] = useState<number | null>(null);
   const [newsDraft, setNewsDraft] = useState<AdminNewsItem | null>(null);
   const [newsTagDropdownOpen, setNewsTagDropdownOpen] = useState(false);
@@ -308,6 +506,7 @@ const Admin: React.FC = () => {
   const [announcementSent, setAnnouncementSent] = useState(false);
 
   const selectedUser = userDraft;
+  const selectedContent = contentDraft;
   const selectedNews = newsDraft;
   const selectedChallenge = challengeDraft;
 
@@ -350,13 +549,14 @@ const Admin: React.FC = () => {
   const filteredContent = useMemo(() => {
     let items = content;
     if (contentTypeFilter !== 'all') {
-      items = items.filter(c => c.type === contentTypeFilter);
+      items = items.filter(c => c.contentType === contentTypeFilter);
     }
     if (contentSearch.trim()) {
       const q = contentSearch.toLowerCase();
       items = items.filter(c =>
         c.title.toLowerCase().includes(q) ||
-        c.author.toLowerCase().includes(q)
+        c.description.toLowerCase().includes(q) ||
+        c.coverOrPosterApiName.toLowerCase().includes(q)
       );
     }
     return items;
@@ -399,6 +599,12 @@ const Admin: React.FC = () => {
     setUserDraft({ ...user });
   };
 
+  const openContentModal = (item: AdminContent) => {
+    setSelectedContentId(item.id);
+    setContentDraft({ ...item });
+    setActiveContentDropdown(null);
+  };
+
   const openNewsModal = (item: AdminNewsItem) => {
     setSelectedNewsId(item.id);
     setNewsDraft({ ...item });
@@ -417,6 +623,12 @@ const Admin: React.FC = () => {
     setActiveUserDropdown(null);
   };
 
+  const closeContentModal = () => {
+    setSelectedContentId(null);
+    setContentDraft(null);
+    setActiveContentDropdown(null);
+  };
+
   const closeNewsModal = () => {
     setSelectedNewsId(null);
     setNewsDraft(null);
@@ -433,6 +645,10 @@ const Admin: React.FC = () => {
     setUserDraft(prev => prev ? { ...prev, [field]: value } : prev);
   };
 
+  const updateContentDraft = <K extends keyof AdminContent>(field: K, value: AdminContent[K]) => {
+    setContentDraft(prev => prev ? { ...prev, [field]: value } : prev);
+  };
+
   const saveUserDraft = () => {
     if (!userDraft) return;
 
@@ -446,6 +662,16 @@ const Admin: React.FC = () => {
     ));
 
     closeUserModal();
+  };
+
+  const saveContentDraft = () => {
+    if (!contentDraft) return;
+
+    setContent(prev => prev.map(item =>
+      item.id === contentDraft.id ? contentDraft : item
+    ));
+
+    closeContentModal();
   };
 
   const updateNewsDraft = <K extends keyof AdminNewsItem>(field: K, value: AdminNewsItem[K]) => {
@@ -495,15 +721,19 @@ const Admin: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!selectedUserId && !selectedNewsId && !selectedChallengeId) return;
+    const hasEditorModal = Boolean(selectedUserId || selectedContentId || selectedNewsId || selectedChallengeId);
+    const hasAnyModal = hasEditorModal || Boolean(saveModal);
+    if (!hasAnyModal) return;
 
     const scrollY = window.scrollY;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         if (selectedUserId) closeUserModal();
+        if (selectedContentId) closeContentModal();
         if (selectedNewsId) closeNewsModal();
         if (selectedChallengeId) closeChallengeModal();
+        if (saveModal) setSaveModal(null);
       }
     };
 
@@ -511,10 +741,12 @@ const Admin: React.FC = () => {
     document.documentElement.style.height = '100%';
     document.body.style.overflow = 'hidden';
     document.body.style.height = '100%';
-    document.body.style.touchAction = 'none';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
+    if (hasEditorModal) {
+      document.body.style.touchAction = 'none';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+    }
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
@@ -527,17 +759,20 @@ const Admin: React.FC = () => {
       document.body.style.top = '';
       document.body.style.width = '';
       window.removeEventListener('keydown', handleKeyDown);
-      window.scrollTo(0, scrollY);
+      if (hasEditorModal) {
+        window.scrollTo(0, scrollY);
+      }
     };
-  }, [selectedUserId, selectedNewsId, selectedChallengeId]);
+  }, [selectedUserId, selectedContentId, selectedNewsId, selectedChallengeId, saveModal]);
 
   useEffect(() => {
-    if (!selectedUserId && !selectedNewsId && !selectedChallengeId) return;
+    if (!selectedUserId && !selectedContentId && !selectedNewsId && !selectedChallengeId) return;
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!target.closest('.admin-custom-select')) {
         setActiveUserDropdown(null);
+        setActiveContentDropdown(null);
         setNewsTagDropdownOpen(false);
         setActiveChallengeDropdown(null);
       }
@@ -545,7 +780,7 @@ const Admin: React.FC = () => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedUserId, selectedNewsId, selectedChallengeId]);
+  }, [selectedUserId, selectedContentId, selectedNewsId, selectedChallengeId]);
 
   const getUserHealth = (user: AdminUser) => {
     if (user.permissionLevel === 'banned') return 'Korlátozott';
@@ -584,22 +819,29 @@ const Admin: React.FC = () => {
 
   const getBadgeById = (id: number | null) => badges.find(b => b.id === id) ?? null;
   const getTitleById = (id: number | null) => titles.find(t => t.id === id) ?? null;
+  const getTagById = (id: number) => tags.find(tag => tag.id === id) ?? null;
 
-  // Tartalom státusz váltás
-  const cycleContentStatus = (id: number) => {
-    const statuses: AdminContent['status'][] = ['active', 'draft', 'hidden'];
-    setContent(prev => prev.map(c => {
-      if (c.id !== id) return c;
-      const idx = statuses.indexOf(c.status);
-      return { ...c, status: statuses[(idx + 1) % statuses.length] };
-    }));
-  };
-
-  // Tartalom törlése
   const deleteContent = (id: number) => {
     if (window.confirm('Biztosan törlöd ezt a tartalmat?')) {
       setContent(prev => prev.filter(c => c.id !== id));
+      if (selectedContentId === id) {
+        closeContentModal();
+      }
     }
+  };
+
+  const addTagToContentDraft = (tagId: number) => {
+    setContentDraft(prev => {
+      if (!prev || prev.tagIds.includes(tagId)) return prev;
+      return { ...prev, tagIds: [...prev.tagIds, tagId] };
+    });
+  };
+
+  const removeTagFromContentDraft = (tagId: number) => {
+    setContentDraft(prev => {
+      if (!prev) return prev;
+      return { ...prev, tagIds: prev.tagIds.filter(id => id !== tagId) };
+    });
   };
 
   // Hír törlése
@@ -638,25 +880,18 @@ const Admin: React.FC = () => {
     }
   };
 
-  const getContentTypeBadge = (type: AdminContent['type']) => {
+  const getContentTypeBadge = (type: AdminContent['contentType']) => {
     switch (type) {
-      case 'book': return <span className="admin-badge admin-badge-green">Könyv</span>;
-      case 'movie': return <span className="admin-badge admin-badge-blue">Film</span>;
-      case 'series': return <span className="admin-badge admin-badge-purple">Sorozat</span>;
+      case 'BOOK': return <span className="admin-badge admin-badge-green">Konyv</span>;
+      case 'MOVIE': return <span className="admin-badge admin-badge-blue">Film</span>;
+      case 'SERIES': return <span className="admin-badge admin-badge-purple">Sorozat</span>;
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-      case 'published': return <span className="admin-badge admin-badge-green">{status === 'active' ? 'Aktív' : 'Publikált'}</span>;
-      case 'draft': return <span className="admin-badge admin-badge-yellow">Vázlat</span>;
-      case 'hidden':
-      case 'archived': return <span className="admin-badge admin-badge-dim">{status === 'hidden' ? 'Rejtett' : 'Archivált'}</span>;
-      case 'upcoming': return <span className="admin-badge admin-badge-blue">Közelgő</span>;
-      case 'ended': return <span className="admin-badge admin-badge-dim">Befejezett</span>;
-      default: return null;
-    }
+  const bookTypeLabels: Record<NonNullable<AdminContent['bookType']>, string> = {
+    BOOK: 'Konyv',
+    AUDIOBOOK: 'Hangoskonyv',
+    EBOOK: 'E-konyv',
   };
 
   const getEventTagBadge = (eventTag: AdminNewsItem['eventTag']) => {
@@ -1171,13 +1406,13 @@ const Admin: React.FC = () => {
                   </h3>
                   <div className="admin-header-controls">
                     <div className="admin-filter-pills">
-                      {(['all', 'book', 'movie', 'series'] as const).map(f => (
+                      {(['all', 'BOOK', 'MOVIE', 'SERIES'] as const).map(f => (
                         <button
                           key={f}
                           className={`admin-pill ${contentTypeFilter === f ? 'active' : ''}`}
                           onClick={() => setContentTypeFilter(f)}
                         >
-                          {f === 'all' ? 'Mind' : f === 'book' ? 'Könyv' : f === 'movie' ? 'Film' : 'Sorozat'}
+                          {f === 'all' ? 'Mind' : f === 'BOOK' ? 'Konyv' : f === 'MOVIE' ? 'Film' : 'Sorozat'}
                         </button>
                       ))}
                     </div>
@@ -1185,7 +1420,7 @@ const Admin: React.FC = () => {
                       <i className="bi bi-search"></i>
                       <input
                         type="text"
-                        placeholder="Keresés cím vagy szerző..."
+                        placeholder="Kereses cim, leiras vagy API nev alapjan..."
                         value={contentSearch}
                         onChange={(e) => setContentSearch(e.target.value)}
                       />
@@ -1199,27 +1434,28 @@ const Admin: React.FC = () => {
                       <tr>
                         <th>Tartalom</th>
                         <th>Típus</th>
-                        <th>Szerző</th>
-                        <th>Hozzáadva</th>
-                        <th>Megtekintés</th>
+                        <th>Kiadás</th>
                         <th>Értékelés</th>
-                        <th>Státusz</th>
+                        <th>Jutalom</th>
+                        <th>Elérhetőség</th>
+                        <th>Frissítve</th>
                         <th>Műveletek</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredContent.map(item => (
-                        <tr key={item.id}>
+                        <tr key={item.id} className="admin-content-row" onClick={() => openContentModal(item)}>
                           <td>
                             <div className="admin-content-cell">
-                              <img src={item.cover} alt={item.title} className="admin-content-cover" />
-                              <span>{item.title}</span>
+                              <img src={item.coverOrPosterApiName} alt={item.title} className="admin-content-cover" />
+                              <div>
+                                <div className="admin-news-title">{item.title}</div>
+                                <small className="admin-content-meta">#{item.id} · AgeRatingId: {item.ageRatingId ?? 'NULL'}</small>
+                              </div>
                             </div>
                           </td>
-                          <td>{getContentTypeBadge(item.type)}</td>
-                          <td>{item.author}</td>
-                          <td>{new Date(item.addedDate).toLocaleDateString('hu-HU')}</td>
-                          <td>{item.views.toLocaleString('hu-HU')}</td>
+                          <td>{getContentTypeBadge(item.contentType)}</td>
+                          <td>{item.released}</td>
                           <td>
                             <span className="admin-rating">
                               <i className="bi bi-star-fill"></i>
@@ -1227,19 +1463,40 @@ const Admin: React.FC = () => {
                             </span>
                           </td>
                           <td>
-                            <button className="admin-btn-status" onClick={() => cycleContentStatus(item.id)}>
-                              {getStatusBadge(item.status)}
-                            </button>
+                            <div className="admin-content-reward">
+                              <strong>{item.rewardXP} XP</strong>
+                              <small>{item.rewardPoints} pont</small>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="admin-content-flags">
+                              {item.isOfflineAvailable && <span className="admin-badge admin-badge-gold">Offline</span>}
+                              {item.hasSubtitles && <span className="admin-badge admin-badge-blue">Sub</span>}
+                              {item.isOriginalLanguage && <span className="admin-badge admin-badge-dim">Eredeti</span>}
+                            </div>
+                          </td>
+                          <td>
+                            {item.updatedAt ? new Date(item.updatedAt).toLocaleString('hu-HU') : '-'}
                           </td>
                           <td>
                             <div className="admin-actions">
-                              <button className="admin-btn-icon" title="Szerkesztés">
+                              <button
+                                className="admin-btn-icon"
+                                title="Szerkesztés"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openContentModal(item);
+                                }}
+                              >
                                 <i className="bi bi-pencil-fill"></i>
                               </button>
                               <button
                                 className="admin-btn-icon text-danger"
                                 title="Törlés"
-                                onClick={() => deleteContent(item.id)}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  deleteContent(item.id);
+                                }}
                               >
                                 <i className="bi bi-trash-fill"></i>
                               </button>
@@ -1258,6 +1515,263 @@ const Admin: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              {selectedContent && (
+                <div className="admin-content-modal-backdrop" onClick={closeContentModal}>
+                  <div className="admin-content-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="admin-content-modal-title">
+                    <div className="admin-news-modal-header">
+                      <div>
+                        <h3 id="admin-content-modal-title">Tartalom szerkesztése</h3>
+                        <p>Book/Movie/Series tabla mezok szerint (nincs uj letrehozas, csak edit/torles).</p>
+                      </div>
+                      <button className="admin-user-modal-close" onClick={closeContentModal} aria-label="Bezárás">
+                        <i className="bi bi-x-lg"></i>
+                      </button>
+                    </div>
+
+                    <div className="admin-news-modal-body">
+                      <div className="admin-news-meta-grid">
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Tábla</span>
+                          <strong>{selectedContent.contentType}</strong>
+                        </div>
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Azonosító</span>
+                          <strong>#{selectedContent.id}</strong>
+                        </div>
+                        <div className="admin-user-snapshot">
+                          <span className="admin-user-snapshot-label">Frissítve</span>
+                          <strong>{selectedContent.updatedAt ? new Date(selectedContent.updatedAt).toLocaleString('hu-HU') : 'Nincs adat'}</strong>
+                        </div>
+                      </div>
+
+                      <div className="admin-user-form-section">
+                        <div className="admin-user-form-grid">
+                          <label className="admin-user-field admin-user-field-wide">
+                            <span>Cím</span>
+                            <input value={selectedContent.title} onChange={(event) => updateContentDraft('title', event.target.value)} maxLength={128} />
+                          </label>
+
+                          <label className="admin-user-field admin-user-field-wide">
+                            <span>Leírás</span>
+                            <textarea className="admin-textarea" value={selectedContent.description} onChange={(event) => updateContentDraft('description', event.target.value)} rows={4} />
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>Kiadás éve</span>
+                            <input type="number" min={1800} max={2099} value={selectedContent.released} onChange={(event) => updateContentDraft('released', Number(event.target.value))} />
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>Értékelés</span>
+                            <input type="number" min={0} max={10} step={0.1} value={selectedContent.rating} onChange={(event) => updateContentDraft('rating', Number(event.target.value))} />
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>AgeRatingId</span>
+                            <input type="number" min={1} value={selectedContent.ageRatingId ?? ''} onChange={(event) => updateContentDraft('ageRatingId', event.target.value ? Number(event.target.value) : null)} />
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>Trailer URL</span>
+                            <input value={selectedContent.trailerUrl ?? ''} onChange={(event) => updateContentDraft('trailerUrl', event.target.value || null)} />
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>Reward XP</span>
+                            <input type="number" min={0} value={selectedContent.rewardXP} onChange={(event) => updateContentDraft('rewardXP', Number(event.target.value))} />
+                          </label>
+
+                          <label className="admin-user-field">
+                            <span>Reward Points</span>
+                            <input type="number" min={0} value={selectedContent.rewardPoints} onChange={(event) => updateContentDraft('rewardPoints', Number(event.target.value))} />
+                          </label>
+
+                          <label className="admin-user-field admin-user-field-wide">
+                            <span>Cover/Poster API név vagy URL</span>
+                            <input value={selectedContent.coverOrPosterApiName} onChange={(event) => updateContentDraft('coverOrPosterApiName', event.target.value)} />
+                          </label>
+
+                          <div className="admin-user-field admin-user-field-wide">
+                            <span>Tagek</span>
+                            <div className="admin-content-tags-wrap">
+                              <div className="admin-content-tags-list">
+                                {selectedContent.tagIds.length === 0 && (
+                                  <span className="admin-content-tag-empty">Nincs tag hozzárendelve</span>
+                                )}
+                                {selectedContent.tagIds.map(tagId => {
+                                  const tag = getTagById(tagId);
+                                  if (!tag) return null;
+                                  return (
+                                    <span key={tag.id} className="admin-content-tag-chip">
+                                      {tag.name}
+                                      <button
+                                        type="button"
+                                        aria-label={`Tag eltavolitasa: ${tag.name}`}
+                                        onClick={() => removeTagFromContentDraft(tag.id)}
+                                      >
+                                        <i className="bi bi-x"></i>
+                                      </button>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+
+                              <div className="admin-custom-select">
+                                <button
+                                  type="button"
+                                  className="admin-custom-select-trigger"
+                                  aria-expanded={activeContentDropdown === 'tags'}
+                                  onClick={() => setActiveContentDropdown(prev => prev === 'tags' ? null : 'tags')}
+                                >
+                                  <span>Tag hozzaadása</span>
+                                </button>
+                                <div className={`admin-custom-select-menu ${activeContentDropdown === 'tags' ? 'show' : ''}`}>
+                                  {tags.filter(tag => !selectedContent.tagIds.includes(tag.id)).length === 0 && (
+                                    <button type="button" className="admin-custom-select-option" disabled>
+                                      Minden tag hozzarendelve
+                                    </button>
+                                  )}
+                                  {tags
+                                    .filter(tag => !selectedContent.tagIds.includes(tag.id))
+                                    .map(tag => (
+                                      <button
+                                        key={tag.id}
+                                        type="button"
+                                        className="admin-custom-select-option"
+                                        onClick={() => {
+                                          addTagToContentDraft(tag.id);
+                                          setActiveContentDropdown(null);
+                                        }}
+                                      >
+                                        {tag.name}
+                                      </button>
+                                    ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {selectedContent.contentType === 'BOOK' && (
+                            <>
+                              <label className="admin-user-field">
+                                <span>Oldalszám</span>
+                                <input type="number" min={1} value={selectedContent.pageNum ?? ''} onChange={(event) => updateContentDraft('pageNum', event.target.value ? Number(event.target.value) : null)} />
+                              </label>
+
+                              <label className="admin-user-field">
+                                <span>Könyv típus</span>
+                                <div className="admin-custom-select">
+                                  <button
+                                    type="button"
+                                    className="admin-custom-select-trigger"
+                                    aria-expanded={activeContentDropdown === 'bookType'}
+                                    onClick={() => setActiveContentDropdown(prev => prev === 'bookType' ? null : 'bookType')}
+                                  >
+                                    <span>{selectedContent.bookType ? bookTypeLabels[selectedContent.bookType] : 'Nincs tipus'}</span>
+                                  </button>
+                                  <div className={`admin-custom-select-menu ${activeContentDropdown === 'bookType' ? 'show' : ''}`}>
+                                    <button
+                                      type="button"
+                                      className={`admin-custom-select-option ${selectedContent.bookType === null ? 'active' : ''}`}
+                                      onClick={() => {
+                                        updateContentDraft('bookType', null);
+                                        setActiveContentDropdown(null);
+                                      }}
+                                    >
+                                      Nincs tipus
+                                    </button>
+                                    {(['BOOK', 'AUDIOBOOK', 'EBOOK'] as const).map(option => (
+                                      <button
+                                        key={option}
+                                        type="button"
+                                        className={`admin-custom-select-option ${selectedContent.bookType === option ? 'active' : ''}`}
+                                        onClick={() => {
+                                          updateContentDraft('bookType', option);
+                                          setActiveContentDropdown(null);
+                                        }}
+                                      >
+                                        {bookTypeLabels[option]}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </label>
+
+                              <label className="admin-user-field">
+                                <span>PDF URL</span>
+                                <input value={selectedContent.pdfUrl ?? ''} onChange={(event) => updateContentDraft('pdfUrl', event.target.value || null)} />
+                              </label>
+
+                              <label className="admin-user-field">
+                                <span>Audio URL</span>
+                                <input value={selectedContent.audioUrl ?? ''} onChange={(event) => updateContentDraft('audioUrl', event.target.value || null)} />
+                              </label>
+
+                              <label className="admin-user-field">
+                                <span>EPUB URL</span>
+                                <input value={selectedContent.epubUrl ?? ''} onChange={(event) => updateContentDraft('epubUrl', event.target.value || null)} />
+                              </label>
+
+                              <label className="admin-user-field">
+                                <span>Audio hossz (sec)</span>
+                                <input type="number" min={0} value={selectedContent.audioLength ?? ''} onChange={(event) => updateContentDraft('audioLength', event.target.value ? Number(event.target.value) : null)} />
+                              </label>
+
+                              <label className="admin-user-field">
+                                <span>Narrátor</span>
+                                <input value={selectedContent.narratorName ?? ''} onChange={(event) => updateContentDraft('narratorName', event.target.value || null)} />
+                              </label>
+
+                              <label className="admin-user-field">
+                                <span>Eredeti nyelv</span>
+                                <input value={selectedContent.originalLanguage ?? ''} onChange={(event) => updateContentDraft('originalLanguage', event.target.value || null)} maxLength={64} />
+                              </label>
+                            </>
+                          )}
+
+                          {selectedContent.contentType === 'MOVIE' && (
+                            <>
+                              <label className="admin-user-field">
+                                <span>Hossz (perc)</span>
+                                <input type="number" min={1} value={selectedContent.length ?? ''} onChange={(event) => updateContentDraft('length', event.target.value ? Number(event.target.value) : null)} />
+                              </label>
+
+                              <label className="admin-user-field admin-user-field-wide">
+                                <span>Stream URL</span>
+                                <input value={selectedContent.streamUrl ?? ''} onChange={(event) => updateContentDraft('streamUrl', event.target.value || null)} />
+                              </label>
+                            </>
+                          )}
+
+                          <label className="admin-user-field admin-user-field-inline">
+                            <input type="checkbox" checked={selectedContent.hasSubtitles} onChange={(event) => updateContentDraft('hasSubtitles', event.target.checked)} />
+                            <span>Felirat elérhető</span>
+                          </label>
+
+                          <label className="admin-user-field admin-user-field-inline">
+                            <input type="checkbox" checked={selectedContent.isOriginalLanguage} onChange={(event) => updateContentDraft('isOriginalLanguage', event.target.checked)} />
+                            <span>Eredeti nyelven</span>
+                          </label>
+
+                          <label className="admin-user-field admin-user-field-inline">
+                            <input type="checkbox" checked={selectedContent.isOfflineAvailable} onChange={(event) => updateContentDraft('isOfflineAvailable', event.target.checked)} />
+                            <span>Offline elérhető</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="admin-user-modal-footer">
+                      <button className="admin-user-secondary-btn" onClick={closeContentModal}>Mégse</button>
+                      <button className="admin-send-btn" onClick={saveContentDraft}>
+                        <i className="bi bi-check2-circle me-2"></i>
+                        Tartalom mentése
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
