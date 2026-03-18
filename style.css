@@ -142,6 +142,21 @@
             opacity: 0.95;
         }
 
+        .presenter-names {
+            position: absolute;
+            right: var(--space-32);
+            bottom: var(--space-24);
+            text-align: right;
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-xs);
+            line-height: 1.5;
+            z-index: 2;
+        }
+
+        .presenter-names p {
+            margin: 0;
+        }
+
         .slide-subtitle {
             font-size: var(--font-size-lg);
             color: var(--color-primary);
@@ -502,6 +517,12 @@
 
             .slide-icon {
                 font-size: 80px;
+            }
+
+            .presenter-names {
+                right: var(--space-16);
+                bottom: var(--space-16);
+                font-size: 12px;
             }
         }
 
