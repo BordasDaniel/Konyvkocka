@@ -94,27 +94,18 @@ namespace KonyvkockaAPI.Controllers
                     var books = await bookQuery.Select(ub => new LibraryItemDTO
                     {
                         Id = ub.Book.Id,
-                        ContentType = ub.Book.Type,   // "BOOK" / "AUDIOBOOK" / "EBOOK"
-                        BookType = ub.Book.Type,
+                        ContentType = ub.Book.Type,
                         Title = ub.Book.Title,
                         Cover = ub.Book.CoverApiName,
                         Year = ub.Book.Released,
                         Rating = ub.Book.Rating,
-                        Description = ub.Book.Description,
-                        Pages = ub.Book.PageNum,
-                        AudioLength = ub.Book.AudioLength,
-                        IsOfflineAvailable = ub.Book.IsOfflineAvailable,
                         AgeRating = ub.Book.AgeRating == null ? null : new AgeRatingDTO
                         {
                             Id = ub.Book.AgeRating.Id,
                             Name = ub.Book.AgeRating.Name,
                             MinAge = ub.Book.AgeRating.MinAge
                         },
-                        Tags = ub.Book.Tags.Select(t => new TagItemDTO
-                        {
-                            Id = t.Id,
-                            Name = t.Name
-                        }).ToList(),
+                        Tags = ub.Book.Tags.Select(t => t.Name).ToList(),
                         Status = ub.Status,
                         Favorite = ub.Favorite,
                         UserRating = ub.Rating,
@@ -158,23 +149,13 @@ namespace KonyvkockaAPI.Controllers
                         Cover = um.Movie.PosterApiName,
                         Year = um.Movie.Released,
                         Rating = um.Movie.Rating,
-                        Description = um.Movie.Description,
-                        Length = um.Movie.Length,
-                        TrailerUrl = um.Movie.TrailerUrl,
-                        HasSubtitles = um.Movie.HasSubtitles,
-                        IsOriginalLanguage = um.Movie.IsOriginalLanguage,
-                        IsOfflineAvailable = um.Movie.IsOfflineAvailable,
                         AgeRating = um.Movie.AgeRating == null ? null : new AgeRatingDTO
                         {
                             Id = um.Movie.AgeRating.Id,
                             Name = um.Movie.AgeRating.Name,
                             MinAge = um.Movie.AgeRating.MinAge
                         },
-                        Tags = um.Movie.Tags.Select(t => new TagItemDTO
-                        {
-                            Id = t.Id,
-                            Name = t.Name
-                        }).ToList(),
+                        Tags = um.Movie.Tags.Select(t => t.Name).ToList(),
                         Status = um.Status,
                         Favorite = um.Favorite,
                         UserRating = um.Rating,
@@ -217,22 +198,13 @@ namespace KonyvkockaAPI.Controllers
                         Cover = us.Series.PosterApiName,
                         Year = us.Series.Released,
                         Rating = us.Series.Rating,
-                        Description = us.Series.Description,
-                        TrailerUrl = us.Series.TrailerUrl,
-                        HasSubtitles = us.Series.HasSubtitles,
-                        IsOriginalLanguage = us.Series.IsOriginalLanguage,
-                        IsOfflineAvailable = us.Series.IsOfflineAvailable,
                         AgeRating = us.Series.AgeRating == null ? null : new AgeRatingDTO
                         {
                             Id = us.Series.AgeRating.Id,
                             Name = us.Series.AgeRating.Name,
                             MinAge = us.Series.AgeRating.MinAge
                         },
-                        Tags = us.Series.Tags.Select(t => new TagItemDTO
-                        {
-                            Id = t.Id,
-                            Name = t.Name
-                        }).ToList(),
+                        Tags = us.Series.Tags.Select(t => t.Name).ToList(),
                         Status = us.Status,
                         Favorite = us.Favorite,
                         UserRating = us.Rating,
@@ -252,7 +224,6 @@ namespace KonyvkockaAPI.Controllers
                 {
                     "completedDate" => items.OrderByDescending(i => i.CompletedAt).ToList(),
                     "rating" => items.OrderByDescending(i => i.UserRating ?? i.Rating).ToList(),
-                    "duration" => items.OrderByDescending(i => i.Length ?? i.Pages ?? i.AudioLength ?? 0).ToList(),
                     _ => items.OrderByDescending(i => i.LastSeen ?? i.AddedAt).ToList() // lastAdded
                 };
 

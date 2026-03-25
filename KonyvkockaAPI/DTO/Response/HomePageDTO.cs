@@ -39,6 +39,8 @@ namespace KonyvkockaAPI.DTO.Response
         public int Year { get; set; }
         public decimal Rating { get; set; }
 
+        public AgeRatingDTO? AgeRating { get; set; }
+
         /// <summary>
         /// Maximum 2 tag neve
         /// </summary>
@@ -100,8 +102,13 @@ namespace KonyvkockaAPI.DTO.Response
 
         /// <summary>
         /// Megtekintés/olvasás URL
-        /// Könyv: PdfUrl/EpubUrl/AudioUrl | Film: StreamUrl | Sorozat: első epizód StreamUrl
+        /// Könyv: PdfUrl/EpubUrl/AudioUrl | Film: StreamUrl | Sorozat: null (Episodes-ban vannak)
         /// </summary>
         public string? WatchUrl { get; set; }
+
+        /// <summary>
+        /// Sorozat epizódjai – könyv/film esetén null
+        /// </summary>
+        public List<EpisodeDTO>? Episodes { get; set; }
     }
 }

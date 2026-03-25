@@ -17,32 +17,40 @@ namespace KonyvkockaAPI.Controllers
         }
 
         /// <summary>
-        /// Hírek lekérése
-        /// GET /api/news?filter={type}
+        /// Hírek lekérése paginációval
+        /// GET /api/news?filter={type}&amp;page={page}&amp;pageSize={pageSize}
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetNews([FromQuery] string? filter = "all")
+        public async Task<IActionResult> GetNews(
+            [FromQuery] string? filter   = "all",
+            [FromQuery] int     page     = 1,
+            [FromQuery] int     pageSize = 20)
         {
             try
             {
-                // Érvényes szűrők: all, update, function, announcement, event
                 var validFilters = new[] { "all", "update", "function", "announcement", "event" };
                 if (!validFilters.Contains(filter?.ToLower()))
                 {
                     return BadRequest(new { error = "Bad Request", message = "Érvénytelen szűrő típus" });
                 }
 
+                if (page < 1) page = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 20;
+
                 var query = _context.Articles.AsQueryable();
 
-                // Szűrés EventTag alapján
                 if (filter?.ToLower() != "all")
                 {
                     var eventTagFilter = filter?.ToUpper();
                     query = query.Where(a => a.EventTag == eventTagFilter);
                 }
 
+                var total = await query.CountAsync();
+
                 var articles = await query
                     .OrderByDescending(a => a.CreatedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
                     .Select(a => new NewsArticleDTO
                     {
                         Id = a.Id,
@@ -53,7 +61,13 @@ namespace KonyvkockaAPI.Controllers
                     })
                     .ToListAsync();
 
-                return Ok(articles);
+                return Ok(new
+                {
+                    total,
+                    page,
+                    pageSize,
+                    articles
+                });
             }
             catch (Exception ex)
             {

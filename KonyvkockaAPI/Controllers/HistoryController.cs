@@ -40,28 +40,34 @@ namespace KonyvkockaAPI.Controllers
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
-                var validTypes = new[] { "all", "books", "movies", "series" };
+                var validTypes = new[] { "all", "book", "books", "movie", "movies", "series" };
                 if (!validTypes.Contains(type.ToLower()))
                     return BadRequest(new ErrorResponseDTO
                     {
                         Error   = "InvalidParameter",
-                        Message = "Érvénytelen type. Lehetséges: all, books, movies, series"
+                        Message = "Érvénytelen type. Lehetséges: all, book, movie, series"
                     });
 
                 if (page < 1) page = 1;
                 if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-                var normalized = type.ToLower();
+                // Normalizálás: többes szám → egyes szám
+                var normalized = type.ToLower() switch
+                {
+                    "books"  => "book",
+                    "movies" => "movie",
+                    _        => type.ToLower()
+                };
                 var items      = new List<HistoryItemDTO>();
                 int total      = 0;
 
-                if (normalized == "books" || normalized == "all")
+                if (normalized == "book" || normalized == "all")
                 {
                     var bookQuery = _context.UserBooks
                         .Where(ub => ub.UserId == userId)
                         .Include(ub => ub.Book);
 
-                    if (normalized == "books")
+                    if (normalized == "book")
                     {
                         total = await bookQuery.CountAsync();
                         var bookPage = await bookQuery
@@ -88,13 +94,13 @@ namespace KonyvkockaAPI.Controllers
                     items.AddRange(allBooks.Select(ub => MapBook(ub)));
                 }
 
-                if (normalized == "movies" || normalized == "all")
+                if (normalized == "movie" || normalized == "all")
                 {
                     var movieQuery = _context.UserMovies
                         .Where(um => um.UserId == userId)
                         .Include(um => um.Movie);
 
-                    if (normalized == "movies")
+                    if (normalized == "movie")
                     {
                         total = await movieQuery.CountAsync();
                         var moviePage = await movieQuery

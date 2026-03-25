@@ -10,8 +10,6 @@ namespace KonyvkockaAPI.DTO.Response
         public string Name { get; set; } = null!;
 
         public DateTime? ExpiresAt { get; set; }
-
-        public string? Message { get; set; }
     }
 
     public class PurchaseItemDTO
@@ -19,6 +17,7 @@ namespace KonyvkockaAPI.DTO.Response
         public int Id { get; set; }
         public DateTime? PurchaseDate { get; set; }
         public int? Price { get; set; }
+        public string Tier { get; set; } = null!;
 
         /// <summary>
         /// Vásárlás státusza: "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED"

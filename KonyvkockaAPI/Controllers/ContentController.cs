@@ -26,8 +26,7 @@ namespace KonyvkockaAPI.Controllers
         //   q           – keresési kifejezés (cím)
         //   type        – "all" | "book" | "movie" | "series" (vesszővel több)
         //   ageRatings  – korhatár nevek: "Minden,Gyerek,12+,16+,18+"
-        //   genres      – műfaj nevek: "Akció,Kaland,Krimi,..."
-        //   tags        – tag nevek: "Magyar,Külföldi,Feliratos,..."
+        //   tags        – tag nevek: "Akció,Kaland,Krimi,..."
         //   sort        – "relevancia" | "ertekeles" | "felkapott" | "megjelenes"
         //   limit       – max találat (alapért.: 20, max: 100)
         //   offset      – lapozás eltolása (alapért.: 0)
@@ -39,7 +38,6 @@ namespace KonyvkockaAPI.Controllers
             [FromQuery] string q          = "",
             [FromQuery] string type       = "all",
             [FromQuery] string ageRatings = "",
-            [FromQuery] string genres     = "",
             [FromQuery] string tags       = "",
             [FromQuery] string sort       = "relevancia",
             [FromQuery] int    limit      = 20,
@@ -52,15 +50,11 @@ namespace KonyvkockaAPI.Controllers
 
                 var typeList      = string.IsNullOrWhiteSpace(type)       ? new[] { "all" }       : type.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(t => t.ToLower()).ToArray();
                 var ageRatingList = string.IsNullOrWhiteSpace(ageRatings) ? Array.Empty<string>() : ageRatings.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                var genreList     = string.IsNullOrWhiteSpace(genres)     ? Array.Empty<string>() : genres.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 var tagList       = string.IsNullOrWhiteSpace(tags)       ? Array.Empty<string>() : tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-                // A műfajok (Akció, Horror, stb.) a DB-ben tagként vannak tárolva – összevonjuk
-                var combinedTagList = genreList.Concat(tagList).Distinct().ToArray();
-
                 var includeAll    = typeList.Contains("all");
-                var includeBooks  = includeAll || typeList.Contains("book");
-                var includeMovies = includeAll || typeList.Contains("movie");
+                var includeBooks  = includeAll || typeList.Contains("book") || typeList.Contains("books");
+                var includeMovies = includeAll || typeList.Contains("movie") || typeList.Contains("movies");
                 var includeSeries = includeAll || typeList.Contains("series");
 
                 var results = new List<HomeCardDTO>();
@@ -69,6 +63,7 @@ namespace KonyvkockaAPI.Controllers
                 if (includeBooks)
                 {
                     var bookQuery = _context.Books
+                        .Include(b => b.AgeRating)
                         .Include(b => b.Tags)
                         .AsQueryable();
 
@@ -78,19 +73,23 @@ namespace KonyvkockaAPI.Controllers
                     if (ageRatingList.Length > 0)
                         bookQuery = bookQuery.Where(b => b.AgeRating != null && ageRatingList.Contains(b.AgeRating.Name));
 
-                    if (combinedTagList.Length > 0)
-                        bookQuery = bookQuery.Where(b => b.Tags.Any(t => combinedTagList.Contains(t.Name)));
+                    if (tagList.Length > 0)
+                    {
+                        foreach (var tag in tagList)
+                            bookQuery = bookQuery.Where(b => b.Tags.Any(t => t.Name == tag));
+                    }
 
                     var bookCards = await bookQuery
                         .Select(b => new HomeCardDTO
                         {
-                            Id     = b.Id,
-                            Type   = b.Type.ToLower(),
-                            Title  = b.Title,
-                            Img    = b.CoverApiName,
-                            Year   = b.Released,
-                            Rating = b.Rating,
-                            Tags   = b.Tags.Select(t => t.Name).Take(2).ToList()
+                            Id        = b.Id,
+                            Type      = b.Type.ToLower(),
+                            Title     = b.Title,
+                            Img       = b.CoverApiName,
+                            Year      = b.Released,
+                            Rating    = b.Rating,
+                            AgeRating = b.AgeRating != null ? new AgeRatingDTO { Id = b.AgeRating.Id, Name = b.AgeRating.Name, MinAge = b.AgeRating.MinAge } : null,
+                            Tags      = b.Tags.Select(t => t.Name).Take(2).ToList()
                         }).ToListAsync();
 
                     results.AddRange(bookCards);
@@ -100,6 +99,7 @@ namespace KonyvkockaAPI.Controllers
                 if (includeMovies)
                 {
                     var movieQuery = _context.Movies
+                        .Include(m => m.AgeRating)
                         .Include(m => m.Tags)
                         .AsQueryable();
 
@@ -109,19 +109,23 @@ namespace KonyvkockaAPI.Controllers
                     if (ageRatingList.Length > 0)
                         movieQuery = movieQuery.Where(m => m.AgeRating != null && ageRatingList.Contains(m.AgeRating.Name));
 
-                    if (combinedTagList.Length > 0)
-                        movieQuery = movieQuery.Where(m => m.Tags.Any(t => combinedTagList.Contains(t.Name)));
+                    if (tagList.Length > 0)
+                    {
+                        foreach (var tag in tagList)
+                            movieQuery = movieQuery.Where(m => m.Tags.Any(t => t.Name == tag));
+                    }
 
                     var movieCards = await movieQuery
                         .Select(m => new HomeCardDTO
                         {
-                            Id     = m.Id,
-                            Type   = "movie",
-                            Title  = m.Title,
-                            Img    = m.PosterApiName,
-                            Year   = m.Released,
-                            Rating = m.Rating,
-                            Tags   = m.Tags.Select(t => t.Name).Take(2).ToList()
+                            Id        = m.Id,
+                            Type      = "movie",
+                            Title     = m.Title,
+                            Img       = m.PosterApiName,
+                            Year      = m.Released,
+                            Rating    = m.Rating,
+                            AgeRating = m.AgeRating != null ? new AgeRatingDTO { Id = m.AgeRating.Id, Name = m.AgeRating.Name, MinAge = m.AgeRating.MinAge } : null,
+                            Tags      = m.Tags.Select(t => t.Name).Take(2).ToList()
                         }).ToListAsync();
 
                     results.AddRange(movieCards);
@@ -131,6 +135,7 @@ namespace KonyvkockaAPI.Controllers
                 if (includeSeries)
                 {
                     var seriesQuery = _context.Series
+                        .Include(s => s.AgeRating)
                         .Include(s => s.Tags)
                         .AsQueryable();
 
@@ -140,19 +145,23 @@ namespace KonyvkockaAPI.Controllers
                     if (ageRatingList.Length > 0)
                         seriesQuery = seriesQuery.Where(s => s.AgeRating != null && ageRatingList.Contains(s.AgeRating.Name));
 
-                    if (combinedTagList.Length > 0)
-                        seriesQuery = seriesQuery.Where(s => s.Tags.Any(t => combinedTagList.Contains(t.Name)));
+                    if (tagList.Length > 0)
+                    {
+                        foreach (var tag in tagList)
+                            seriesQuery = seriesQuery.Where(s => s.Tags.Any(t => t.Name == tag));
+                    }
 
                     var seriesCards = await seriesQuery
                         .Select(s => new HomeCardDTO
                         {
-                            Id     = s.Id,
-                            Type   = "series",
-                            Title  = s.Title,
-                            Img    = s.PosterApiName,
-                            Year   = s.Released,
-                            Rating = s.Rating,
-                            Tags   = s.Tags.Select(t => t.Name).Take(2).ToList()
+                            Id        = s.Id,
+                            Type      = "series",
+                            Title     = s.Title,
+                            Img       = s.PosterApiName,
+                            Year      = s.Released,
+                            Rating    = s.Rating,
+                            AgeRating = s.AgeRating != null ? new AgeRatingDTO { Id = s.AgeRating.Id, Name = s.AgeRating.Name, MinAge = s.AgeRating.MinAge } : null,
+                            Tags      = s.Tags.Select(t => t.Name).Take(2).ToList()
                         }).ToListAsync();
 
                     results.AddRange(seriesCards);
@@ -189,13 +198,11 @@ namespace KonyvkockaAPI.Controllers
 
         // ================================================================
         // GET /api/content/{type}/{id}
-        // Tartalom részletei
+        // Tartalom egyszerű nézet (modal) – nem igényel bejelentkezést
         //
         // type: "book" | "movie" | "series"
-        // Ha a user be van jelentkezve, a UserLibrary mező is kitöltött
         // ================================================================
         [HttpGet("{type}/{id}")]
-        [Authorize]
         public async Task<IActionResult> GetContentDetails(string type, int id)
         {
             try
@@ -206,10 +213,8 @@ namespace KonyvkockaAPI.Controllers
                     return BadRequest(new ErrorResponseDTO
                     {
                         Error   = "InvalidType",
-                        Message = "Érvénytelen tartalom típus. Lehetséges: book, movie, series"
+                        Message = "Érvénytelen típus. Lehetséges: book, movie, series"
                     });
-
-                var userId = int.TryParse(User.FindFirst("userId")?.Value, out var uid) ? uid : 0;
 
                 if (normalizedType == "book")
                 {
@@ -221,49 +226,27 @@ namespace KonyvkockaAPI.Controllers
                     if (book == null)
                         return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A könyv nem található" });
 
-                    UserLibrarySnapshotDTO? librarySnapshot = null;
-                    if (userId > 0)
-                    {
-                        var ub = await _context.UserBooks.FirstOrDefaultAsync(x => x.UserId == userId && x.BookId == id);
-                        if (ub != null)
-                            librarySnapshot = new UserLibrarySnapshotDTO
-                            {
-                                Status               = ub.Status ?? "",
-                                Favorite             = ub.Favorite,
-                                Rating               = ub.Rating,
-                                AddedAt              = ub.AddedAt,
-                                CompletedAt          = ub.CompletedAt,
-                                CurrentPage          = ub.CurrentPage,
-                                CurrentAudioPosition = ub.CurrentAudioPosition
-                            };
-                    }
-
-                    // ReadUrl: típustól függ
-                    var readUrl = book.Type switch
+                    var watchUrl = book.Type switch
                     {
                         "AUDIOBOOK" => book.AudioUrl,
                         "EBOOK"     => book.EpubUrl ?? book.PdfUrl,
                         _           => book.PdfUrl
                     };
 
-                    return Ok(new BookDetailDTO
+                    return Ok(new HomeModalDTO
                     {
-                        Id               = book.Id,
-                        Type             = book.Type.ToLower(),
-                        Title            = book.Title,
-                        Year             = book.Released,
-                        Rating           = book.Rating,
-                        Description      = book.Description,
-                        Img              = book.CoverApiName,
-                        PageNum          = book.PageNum,
-                        AudioLength      = book.AudioLength,
-                        NarratorName     = book.NarratorName,
-                        OriginalLanguage = book.OriginalLanguage,
-                        IsOfflineAvailable = book.IsOfflineAvailable,
-                        ReadUrl          = readUrl,
-                        AgeRating        = book.AgeRating != null ? new AgeRatingDTO { Id = book.AgeRating.Id, Name = book.AgeRating.Name, MinAge = book.AgeRating.MinAge } : null,
-                        Tags             = book.Tags.Select(t => t.Name).ToList(),
-                        UserLibrary      = librarySnapshot
+                        Id          = book.Id,
+                        Type        = book.Type.ToLower(),
+                        Title       = book.Title,
+                        Img         = book.CoverApiName,
+                        Description = book.Description,
+                        Rating      = book.Rating,
+                        TrailerUrl  = null,
+                        AgeRating   = book.AgeRating != null
+                            ? new AgeRatingDTO { Id = book.AgeRating.Id, Name = book.AgeRating.Name, MinAge = book.AgeRating.MinAge }
+                            : null,
+                        Tags     = book.Tags.Select(t => t.Name).ToList(),
+                        WatchUrl = watchUrl
                     });
                 }
 
@@ -277,40 +260,20 @@ namespace KonyvkockaAPI.Controllers
                     if (movie == null)
                         return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A film nem található" });
 
-                    UserLibrarySnapshotDTO? librarySnapshot = null;
-                    if (userId > 0)
+                    return Ok(new HomeModalDTO
                     {
-                        var um = await _context.UserMovies.FirstOrDefaultAsync(x => x.UserId == userId && x.MovieId == id);
-                        if (um != null)
-                            librarySnapshot = new UserLibrarySnapshotDTO
-                            {
-                                Status          = um.Status ?? "",
-                                Favorite        = um.Favorite,
-                                Rating          = um.Rating,
-                                AddedAt         = um.AddedAt,
-                                CompletedAt     = um.CompletedAt,
-                                CurrentPosition = um.CurrentPosition
-                            };
-                    }
-
-                    return Ok(new MovieDetailDTO
-                    {
-                        Id                 = movie.Id,
-                        Type               = "movie",
-                        Title              = movie.Title,
-                        Year               = movie.Released,
-                        Rating             = movie.Rating,
-                        Description        = movie.Description,
-                        Img                = movie.PosterApiName,
-                        StreamUrl          = movie.StreamUrl,
-                        TrailerUrl         = movie.TrailerUrl,
-                        Length             = movie.Length,
-                        HasSubtitles       = movie.HasSubtitles,
-                        IsOriginalLanguage = movie.IsOriginalLanguage,
-                        IsOfflineAvailable = movie.IsOfflineAvailable,
-                        AgeRating          = movie.AgeRating != null ? new AgeRatingDTO { Id = movie.AgeRating.Id, Name = movie.AgeRating.Name, MinAge = movie.AgeRating.MinAge } : null,
-                        Tags               = movie.Tags.Select(t => t.Name).ToList(),
-                        UserLibrary        = librarySnapshot
+                        Id          = movie.Id,
+                        Type        = "movie",
+                        Title       = movie.Title,
+                        Img         = movie.PosterApiName,
+                        Description = movie.Description,
+                        Rating      = movie.Rating,
+                        TrailerUrl  = movie.TrailerUrl,
+                        AgeRating   = movie.AgeRating != null
+                            ? new AgeRatingDTO { Id = movie.AgeRating.Id, Name = movie.AgeRating.Name, MinAge = movie.AgeRating.MinAge }
+                            : null,
+                        Tags     = movie.Tags.Select(t => t.Name).ToList(),
+                        WatchUrl = movie.StreamUrl
                     });
                 }
 
@@ -325,45 +288,21 @@ namespace KonyvkockaAPI.Controllers
                     if (s == null)
                         return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A sorozat nem található" });
 
-                    UserLibrarySnapshotDTO? librarySnapshot = null;
-                    if (userId > 0)
+                    return Ok(new HomeModalDTO
                     {
-                        var us = await _context.UserSeries.FirstOrDefaultAsync(x => x.UserId == userId && x.SeriesId == id);
-                        if (us != null)
-                            librarySnapshot = new UserLibrarySnapshotDTO
-                            {
-                                Status          = us.Status ?? "",
-                                Favorite        = us.Favorite,
-                                Rating          = us.Rating,
-                                AddedAt         = us.AddedAt,
-                                CompletedAt     = us.CompletedAt,
-                                CurrentPosition = us.CurrentPosition,
-                                CurrentSeason   = us.CurrentSeason,
-                                CurrentEpisode  = us.CurrentEpisode
-                            };
-                    }
-
-                    var totalSeasons  = s.Episodes.Select(e => e.SeasonNum).Distinct().Count();
-                    var totalEpisodes = s.Episodes.Count;
-
-                    return Ok(new SeriesDetailDTO
-                    {
-                        Id                 = s.Id,
-                        Type               = "series",
-                        Title              = s.Title,
-                        Year               = s.Released,
-                        Rating             = s.Rating,
-                        Description        = s.Description,
-                        Img                = s.PosterApiName,
-                        TrailerUrl         = s.TrailerUrl,
-                        HasSubtitles       = s.HasSubtitles,
-                        IsOriginalLanguage = s.IsOriginalLanguage,
-                        IsOfflineAvailable = s.IsOfflineAvailable,
-                        TotalSeasons       = totalSeasons,
-                        TotalEpisodes      = totalEpisodes,
-                        AgeRating          = s.AgeRating != null ? new AgeRatingDTO { Id = s.AgeRating.Id, Name = s.AgeRating.Name, MinAge = s.AgeRating.MinAge } : null,
-                        Tags               = s.Tags.Select(t => t.Name).ToList(),
-                        Episodes           = s.Episodes
+                        Id          = s.Id,
+                        Type        = "series",
+                        Title       = s.Title,
+                        Img         = s.PosterApiName,
+                        Description = s.Description,
+                        Rating      = s.Rating,
+                        TrailerUrl  = s.TrailerUrl,
+                        AgeRating   = s.AgeRating != null
+                            ? new AgeRatingDTO { Id = s.AgeRating.Id, Name = s.AgeRating.Name, MinAge = s.AgeRating.MinAge }
+                            : null,
+                        Tags     = s.Tags.Select(t => t.Name).ToList(),
+                        WatchUrl = null,
+                        Episodes = s.Episodes
                             .OrderBy(e => e.SeasonNum).ThenBy(e => e.EpisodeNum)
                             .Select(e => new EpisodeDTO
                             {
@@ -373,8 +312,7 @@ namespace KonyvkockaAPI.Controllers
                                 Title      = e.Title,
                                 StreamUrl  = e.StreamUrl,
                                 Length     = e.Length
-                            }).ToList(),
-                        UserLibrary = librarySnapshot
+                            }).ToList()
                     });
                 }
             }
@@ -388,7 +326,7 @@ namespace KonyvkockaAPI.Controllers
         // GET /api/content/genres
         // Összes elérhető műfaj (= tag) listája
         // ================================================================
-        [HttpGet("genres")]
+        [HttpGet("tags")]
         public async Task<IActionResult> GetGenres()
         {
             try
@@ -425,6 +363,196 @@ namespace KonyvkockaAPI.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new ErrorResponseDTO { Error = "AgeRatingError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // GET /api/content/home
+        // Főoldal kártyák lekérdezése:
+        //   - Fresh:    3 legújabb tartalom (vegyes típus, Released DESC)
+        //   - Hot:      3 legújabb "Népszerű" tag-gel rendelkező tartalom
+        //   - Carousel: 6 legújabb "Bestseller" tag-gel rendelkező tartalom
+        // ================================================================
+        [HttpGet("home")]
+        public async Task<IActionResult> GetHomePage()
+        {
+            try
+            {
+                // FRISS tartalmak (3 db, Released DESC)
+                var freshBooks = await _context.Books
+                    .Include(b => b.Tags)
+                    .OrderByDescending(b => b.Released)
+                    .Take(3)
+                    .Select(b => new HomeCardDTO
+                    {
+                        Id     = b.Id,
+                        Type   = b.Type.ToLower(),
+                        Title  = b.Title,
+                        Img    = b.CoverApiName,
+                        Year   = b.Released,
+                        Rating = b.Rating,
+                        Tags   = b.Tags.Select(t => t.Name).Take(2).ToList()
+                    }).ToListAsync();
+
+                var freshMovies = await _context.Movies
+                    .Include(m => m.Tags)
+                    .OrderByDescending(m => m.Released)
+                    .Take(3)
+                    .Select(m => new HomeCardDTO
+                    {
+                        Id     = m.Id,
+                        Type   = "movie",
+                        Title  = m.Title,
+                        Img    = m.PosterApiName,
+                        Year   = m.Released,
+                        Rating = m.Rating,
+                        Tags   = m.Tags.Select(t => t.Name).Take(2).ToList()
+                    }).ToListAsync();
+
+                var freshSeries = await _context.Series
+                    .Include(s => s.Tags)
+                    .OrderByDescending(s => s.Released)
+                    .Take(3)
+                    .Select(s => new HomeCardDTO
+                    {
+                        Id     = s.Id,
+                        Type   = "series",
+                        Title  = s.Title,
+                        Img    = s.PosterApiName,
+                        Year   = s.Released,
+                        Rating = s.Rating,
+                        Tags   = s.Tags.Select(t => t.Name).Take(2).ToList()
+                    }).ToListAsync();
+
+                var fresh = freshBooks
+                    .Concat(freshMovies)
+                    .Concat(freshSeries)
+                    .OrderByDescending(c => c.Year)
+                    .Take(3)
+                    .ToList();
+
+                // FELKAPOTT tartalmak (3 db, "Népszerű" tag, Released DESC)
+                var hotBooks = await _context.Books
+                    .Include(b => b.Tags)
+                    .Where(b => b.Tags.Any(t => t.Name == "Népszerű"))
+                    .OrderByDescending(b => b.Released)
+                    .Take(3)
+                    .Select(b => new HomeCardDTO
+                    {
+                        Id     = b.Id,
+                        Type   = b.Type.ToLower(),
+                        Title  = b.Title,
+                        Img    = b.CoverApiName,
+                        Year   = b.Released,
+                        Rating = b.Rating,
+                        Tags   = b.Tags.Select(t => t.Name).Take(2).ToList()
+                    }).ToListAsync();
+
+                var hotMovies = await _context.Movies
+                    .Include(m => m.Tags)
+                    .Where(m => m.Tags.Any(t => t.Name == "Népszerű"))
+                    .OrderByDescending(m => m.Released)
+                    .Take(3)
+                    .Select(m => new HomeCardDTO
+                    {
+                        Id     = m.Id,
+                        Type   = "movie",
+                        Title  = m.Title,
+                        Img    = m.PosterApiName,
+                        Year   = m.Released,
+                        Rating = m.Rating,
+                        Tags   = m.Tags.Select(t => t.Name).Take(2).ToList()
+                    }).ToListAsync();
+
+                var hotSeries = await _context.Series
+                    .Include(s => s.Tags)
+                    .Where(s => s.Tags.Any(t => t.Name == "Népszerű"))
+                    .OrderByDescending(s => s.Released)
+                    .Take(3)
+                    .Select(s => new HomeCardDTO
+                    {
+                        Id     = s.Id,
+                        Type   = "series",
+                        Title  = s.Title,
+                        Img    = s.PosterApiName,
+                        Year   = s.Released,
+                        Rating = s.Rating,
+                        Tags   = s.Tags.Select(t => t.Name).Take(2).ToList()
+                    }).ToListAsync();
+
+                var hot = hotBooks
+                    .Concat(hotMovies)
+                    .Concat(hotSeries)
+                    .OrderByDescending(c => c.Year)
+                    .Take(3)
+                    .ToList();
+
+                // CAROUSEL tartalmak (6 db, "Bestseller" tag, Released DESC)
+                var carouselBooks = await _context.Books
+                    .Include(b => b.Tags)
+                    .Where(b => b.Tags.Any(t => t.Name == "Bestseller"))
+                    .OrderByDescending(b => b.Released)
+                    .Take(6)
+                    .Select(b => new HomeCarouselDTO
+                    {
+                        Id          = b.Id,
+                        Type        = b.Type.ToLower(),
+                        Title       = b.Title,
+                        Img         = b.CoverApiName,
+                        Year        = b.Released,
+                        Description = b.Description,
+                        Tags        = b.Tags.Select(t => t.Name).Take(2).ToList()
+                    }).ToListAsync();
+
+                var carouselMovies = await _context.Movies
+                    .Include(m => m.Tags)
+                    .Where(m => m.Tags.Any(t => t.Name == "Bestseller"))
+                    .OrderByDescending(m => m.Released)
+                    .Take(6)
+                    .Select(m => new HomeCarouselDTO
+                    {
+                        Id          = m.Id,
+                        Type        = "movie",
+                        Title       = m.Title,
+                        Img         = m.PosterApiName,
+                        Year        = m.Released,
+                        Description = m.Description,
+                        Tags        = m.Tags.Select(t => t.Name).Take(2).ToList()
+                    }).ToListAsync();
+
+                var carouselSeries = await _context.Series
+                    .Include(s => s.Tags)
+                    .Where(s => s.Tags.Any(t => t.Name == "Bestseller"))
+                    .OrderByDescending(s => s.Released)
+                    .Take(6)
+                    .Select(s => new HomeCarouselDTO
+                    {
+                        Id          = s.Id,
+                        Type        = "series",
+                        Title       = s.Title,
+                        Img         = s.PosterApiName,
+                        Year        = s.Released,
+                        Description = s.Description,
+                        Tags        = s.Tags.Select(t => t.Name).Take(2).ToList()
+                    }).ToListAsync();
+
+                var carousel = carouselBooks
+                    .Concat(carouselMovies)
+                    .Concat(carouselSeries)
+                    .OrderByDescending(c => c.Year)
+                    .Take(6)
+                    .ToList();
+
+                return Ok(new HomePageResponseDTO
+                {
+                    Fresh    = fresh,
+                    Hot      = hot,
+                    Carousel = carousel
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "HomePageError", Message = ex.Message });
             }
         }
     }

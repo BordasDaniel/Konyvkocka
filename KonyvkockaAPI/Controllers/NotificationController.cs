@@ -122,6 +122,13 @@ namespace KonyvkockaAPI.Controllers
                         Message = "Az értesítés nem található."
                     });
 
+                if (mail.IsRead == true)
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error   = "AlreadyRead",
+                        Message = "Az értesítés már olvasottnak van jelölve."
+                    });
+
                 mail.IsRead = true;
                 await _context.SaveChangesAsync();
 

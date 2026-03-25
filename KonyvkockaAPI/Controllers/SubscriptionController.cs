@@ -39,8 +39,7 @@ namespace KonyvkockaAPI.Controllers
                     return Ok(new SubscriptionInfoDTO
                     {
                         Type    = "free",
-                        Name    = "Ingyenes",
-                        Message = "Nincs aktív előfizetés"
+                        Name    = "Ingyenes"
                     });
                 }
 
@@ -48,8 +47,7 @@ namespace KonyvkockaAPI.Controllers
                 {
                     Type      = "premium",
                     Name      = "Prémium",
-                    ExpiresAt = user.PremiumExpiresAt,
-                    Message   = null
+                    ExpiresAt = user.PremiumExpiresAt
                 });
             }
             catch (Exception ex)
@@ -90,6 +88,7 @@ namespace KonyvkockaAPI.Controllers
                         Id             = p.Id,
                         PurchaseDate   = p.PurchaseDate,
                         Price          = p.Price,
+                        Tier           = p.Tier,
                         PurchaseStatus = p.PurchaseStatus
                     })
                     .ToListAsync();
@@ -108,44 +107,5 @@ namespace KonyvkockaAPI.Controllers
             }
         }
 
-        // ================================================================
-        // PUT /api/subscription/auto-renew
-        // Automatikus megújítás beállítása
-        // Body: UpdateAutoRenewDTO { AutoRenew: bool }
-        //
-        // Megjegyzés: A Purchase modell és a DB nem tartalmaz AutoRenew mezőt
-        // jelenleg. Ez az endpoint a jövőbeli fizetési rendszer alapja,
-        // egyelőre a kérést elfogadja és visszaadja az új állapotot.
-        // ================================================================
-        [HttpPut("auto-renew")]
-        public async Task<IActionResult> UpdateAutoRenew([FromBody] UpdateAutoRenewDTO dto)
-        {
-            try
-            {
-                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
-                var user   = await _context.Users.FindAsync(userId);
-
-                if (user == null)
-                    return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
-
-                if (!user.Premium)
-                    return BadRequest(new ErrorResponseDTO
-                    {
-                        Error   = "NoSubscription",
-                        Message = "Automatikus megújítás csak aktív prémium előfizetéssel állítható be."
-                    });
-
-                // TODO: AutoRenew mező hozzáadása a Purchase/User táblához a fizetési rendszer bevezetésekor
-                return Ok(new
-                {
-                    message   = "Automatikus megújítás sikeresen módosítva.",
-                    autoRenew = dto.AutoRenew
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
-            }
-        }
     }
 }

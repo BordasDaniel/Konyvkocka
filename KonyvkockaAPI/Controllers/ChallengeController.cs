@@ -183,19 +183,28 @@ namespace KonyvkockaAPI.Controllers
                 var userChallenge = await _context.UserChallenges
                     .FirstOrDefaultAsync(uc => uc.UserId == userId && uc.ChallengeId == id);
 
-                // Null-check ELŐSZÖR, majd státusz ellenőrzés
-                if (userChallenge == null || userChallenge.Status != "COMPLETED")
+                // Null-check ELŐSZÖR
+                if (userChallenge == null)
                     return BadRequest(new ErrorResponseDTO
                     {
                         Error   = "NotCompleted",
                         Message = "A kihívást először teljesíteni kell az igénylés előtt."
                     });
 
-                if (userChallenge.ClaimedAt != null)
+                // Már igényelt kihívás ellenőrzése (ClaimedAt vagy CLAIMED státusz)
+                if (userChallenge.ClaimedAt != null || userChallenge.Status == "CLAIMED")
                     return BadRequest(new ErrorResponseDTO
                     {
                         Error   = "AlreadyClaimed",
                         Message = "A kihívás jutalma már igényelve lett."
+                    });
+
+                // Csak COMPLETED státuszú kihívás igényelhető
+                if (userChallenge.Status != "COMPLETED")
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error   = "NotCompleted",
+                        Message = "A kihívást először teljesíteni kell az igénylés előtt."
                     });
 
                 // ClaimedAt beállítása – a DB trigger elvégzi a jutalom kiosztást

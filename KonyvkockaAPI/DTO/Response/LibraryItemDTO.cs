@@ -10,35 +10,15 @@
         /// </summary>
         public string ContentType { get; set; } = null!;
 
-        /// <summary>
-        /// Book esetén a book.Type értéke: "BOOK", "AUDIOBOOK", "EBOOK"
-        /// Movie/Series esetén null
-        /// </summary>
-        public string? BookType { get; set; }
-
         // --- Tartalom adatok ---
         public string Title { get; set; } = null!;
         public string Cover { get; set; } = null!;
         public int? Year { get; set; }
         public decimal? Rating { get; set; }
-        public string? Description { get; set; }
-
-        // --- Könyv-specifikus ---
-        public int? Pages { get; set; }
-        public int? AudioLength { get; set; }
-
-        // --- Film/Sorozat-specifikus ---
-        public int? Length { get; set; }
-        public string? TrailerUrl { get; set; }
-        public bool? HasSubtitles { get; set; }
-        public bool? IsOriginalLanguage { get; set; }
-
-        // --- Közös jelölők ---
-        public bool IsOfflineAvailable { get; set; }
 
         public AgeRatingDTO? AgeRating { get; set; }
 
-        public List<TagItemDTO> Tags { get; set; } = new();
+        public List<string> Tags { get; set; } = new();
 
         // --- User könyvtár adatok ---
 
