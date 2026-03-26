@@ -17,7 +17,7 @@ public partial class User
 
     public string CountryCode { get; set; } = null!;
 
-    public string ProfilePic { get; set; } = null!;
+    public byte[]? ProfilePic { get; set; }
 
     public bool Premium { get; set; }
 
@@ -51,8 +51,6 @@ public partial class User
     /// Jogosultsági szint: "USER" | "MODERATOR" | "ADMIN"
     /// </summary>
     public string PermissionLevel { get; set; } = "USER";
-
-    public virtual ICollection<Achievement> Achievements { get; set; } = new List<Achievement>();
 
     public virtual ICollection<Mail> MailReceivers { get; set; } = new List<Mail>();
 

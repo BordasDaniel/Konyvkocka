@@ -33,8 +33,6 @@ public partial class Series
 
     public virtual AgeRating? AgeRating { get; set; }
 
-    public virtual ICollection<ContentCategory> Categories { get; set; } = new List<ContentCategory>();
-
     public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 
     public virtual ICollection<Episode> Episodes { get; set; } = new List<Episode>();

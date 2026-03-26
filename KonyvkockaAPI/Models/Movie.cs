@@ -40,8 +40,6 @@ public partial class Movie
 
     public virtual AgeRating? AgeRating { get; set; }
 
-    public virtual ICollection<ContentCategory> Categories { get; set; } = new List<ContentCategory>();
-
     public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 
     public virtual ICollection<UserMovie> UserMovies { get; set; } = new List<UserMovie>();

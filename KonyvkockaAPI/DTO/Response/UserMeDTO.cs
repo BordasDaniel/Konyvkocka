@@ -5,7 +5,7 @@ namespace KonyvkockaAPI.DTO.Response
         public int Id { get; set; }
         public string Username { get; set; } = null!;
         public string Email { get; set; } = null!;
-        public string Avatar { get; set; } = null!;
+        public string? Avatar { get; set; }
         public bool IsSubscriber { get; set; }
 
         /// <summary>

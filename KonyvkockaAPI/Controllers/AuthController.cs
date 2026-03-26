@@ -105,12 +105,12 @@ namespace KonyvkockaAPI.Controllers
                     Token = GenerateJwtToken(user)
                 });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return Unauthorized(new ErrorResponseDTO
+                return StatusCode(500, new ErrorResponseDTO
                 {
-                    Error = "InvalidCredentials",
-                    Message = "Hibás email vagy jelszó"
+                    Error = "InternalError",
+                    Message = ex.InnerException?.Message ?? ex.Message
                 });
             }
         }
@@ -148,7 +148,7 @@ namespace KonyvkockaAPI.Controllers
                     PasswordHash     = doubleHash,
                     PasswordSalt     = registerDto.PasswordSalt,
                     CountryCode      = "ZZ",
-                    ProfilePic       = "default_avatar.png",
+                    ProfilePic       = null,
                     Premium          = false,
                     PremiumExpiresAt = null,
                     CreationDate     = DateTime.Now,
@@ -229,7 +229,7 @@ namespace KonyvkockaAPI.Controllers
             Id              = user.Id,
             Username        = user.Username,
             Email           = user.Email,
-            Avatar          = user.ProfilePic,
+            Avatar          = user.ProfilePic != null ? Convert.ToBase64String(user.ProfilePic) : null,
             IsSubscriber    = user.Premium,
             PermissionLevel = user.PermissionLevel ?? "USER"
         };

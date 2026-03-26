@@ -19,88 +19,86 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
-        // GET /api/user/profile
-        // Bejelentkezett felhasználó teljes profilja:
-        // alap adatok + statisztikák + jelvények + rangcímek
+        // GET /api/user/{userId}/profile
+        // Publikus profil – nem kell auth
+        // Alap adatok + 3 aktív jelvény + All/Media/Books statisztikák
         // ================================================================
-        [HttpGet("profile")]
-        public async Task<IActionResult> GetProfile()
+        [HttpGet("{userId}/profile")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetProfile(int userId)
         {
             try
             {
-                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
-
                 var user = await _context.Users.FindAsync(userId);
                 if (user == null)
                     return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
 
                 var booksCompleted  = await _context.UserBooks.CountAsync(ub => ub.UserId == userId && ub.Status == "COMPLETED");
+                var booksTotal      = await _context.UserBooks.CountAsync(ub => ub.UserId == userId);
                 var moviesCompleted = await _context.UserMovies.CountAsync(um => um.UserId == userId && um.Status == "COMPLETED");
+                var moviesTotal     = await _context.UserMovies.CountAsync(um => um.UserId == userId);
                 var seriesCompleted = await _context.UserSeries.CountAsync(us => us.UserId == userId && us.Status == "COMPLETED");
+                var seriesTotal     = await _context.UserSeries.CountAsync(us => us.UserId == userId);
 
-                var badges = await _context.UserBadges
-                    .Where(ub => ub.UserId == userId)
-                    .Include(ub => ub.Badge)
-                    .OrderByDescending(ub => ub.EarnedAt)
-                    .Select(ub => new UserBadgeDTO
-                    {
-                        Id          = ub.Badge.Id,
-                        Name        = ub.Badge.Name,
-                        Description = ub.Badge.Description,
-                        IconUrl     = ub.Badge.IconUrl,
-                        Category    = ub.Badge.Category,
-                        Rarity      = ub.Badge.Rarity,
-                        EarnedAt    = ub.EarnedAt
-                    })
-                    .ToListAsync();
+                var mediaCompleted = moviesCompleted + seriesCompleted;
+                var mediaTotal     = moviesTotal + seriesTotal;
+                var allCompleted   = booksCompleted + mediaCompleted;
+                var allTotal       = booksTotal + mediaTotal;
 
-                var titles = await _context.UserTitles
-                    .Where(ut => ut.UserId == userId)
+                var rankCache = await _context.UserRankCaches
+                    .FirstOrDefaultAsync(r => r.UserId == userId);
+
+                var activeTitles = await _context.UserTitles
+                    .Where(ut => ut.UserId == userId && ut.IsActive)
                     .Include(ut => ut.Title)
-                    .OrderByDescending(ut => ut.EarnedAt)
-                    .Select(ut => new UserTitleDTO
-                    {
-                        Id          = ut.Title.Id,
-                        Name        = ut.Title.Name,
-                        Description = ut.Title.Description,
-                        Rarity      = ut.Title.Rarity,
-                        EarnedAt    = ut.EarnedAt,
-                        IsActive    = ut.IsActive
-                    })
+                    .Select(ut => ut.Title.Name)
                     .ToListAsync();
 
-                var activeTitle = titles.FirstOrDefault(t => t.IsActive)?.Name;
-
-                return Ok(new UserProfileDTO
+                return Ok(new ProfileResponseDTO
                 {
-                    Id               = user.Id,
-                    Username         = user.Username,
-                    Avatar           = user.ProfilePic,
-                    CountryCode      = user.CountryCode,
-                    Level            = user.Level,
-                    Xp               = user.Xp,
-                    IsSubscriber     = user.Premium,
-                    PremiumExpiresAt = user.PremiumExpiresAt,
-                    PermissionLevel  = user.PermissionLevel ?? "USER",
-                    Email            = user.Email,
-                    CreationDate     = user.CreationDate,
-                    LastLoginDate    = user.LastLoginDate,
-                    ActiveTitle      = activeTitle,
-                    Stats = new UserStatsDTO
+                    Id           = user.Id,
+                    Username     = user.Username,
+                    Avatar       = user.ProfilePic != null ? Convert.ToBase64String(user.ProfilePic) : null,
+                    CountryCode  = user.CountryCode,
+                    IsSubscriber = user.Premium,
+                    Xp           = user.Xp,
+                    Level        = user.Level,
+                    DayStreak    = user.DayStreak,
+                    ActiveTitles = activeTitles,
+
+                    All = new ProfileTabAllDTO
                     {
-                        ReadTimeMin     = user.ReadTimeMin,
-                        WatchTimeMin    = user.WatchTimeMin,
-                        BooksCompleted  = booksCompleted,
-                        MoviesCompleted = moviesCompleted,
-                        SeriesCompleted = seriesCompleted,
-                        DayStreak       = user.DayStreak,
-                        BookPoints      = user.BookPoints,
-                        SeriesPoints    = user.SeriesPoints,
-                        MoviePoints     = user.MoviePoints,
-                        TotalPoints     = user.BookPoints + user.SeriesPoints + user.MoviePoints
+                        GlobalRank     = rankCache?.GlobalRankTotal,
+                        CountryRank    = rankCache?.CountryRankTotal,
+                        Points         = user.BookPoints + user.SeriesPoints + user.MoviePoints,
+                        TimeMin        = user.ReadTimeMin + user.WatchTimeMin,
+                        CompletionRate = allTotal > 0 ? Math.Round((double)allCompleted / allTotal, 2) : 0,
+                        BooksCompleted = booksCompleted,
+                        MediaCompleted = mediaCompleted,
+                        DayStreak      = user.DayStreak
                     },
-                    Badges = badges,
-                    Titles = titles
+
+                    Media = new ProfileTabMediaDTO
+                    {
+                        GlobalRank     = rankCache?.GlobalRankMedia,
+                        CountryRank    = rankCache?.CountryRankMedia,
+                        Points         = user.SeriesPoints + user.MoviePoints,
+                        WatchTimeMin   = user.WatchTimeMin,
+                        CompletionRate = mediaTotal > 0 ? Math.Round((double)mediaCompleted / mediaTotal, 2) : 0,
+                        Completed      = mediaCompleted,
+                        Total          = mediaTotal
+                    },
+
+                    Books = new ProfileTabBooksDTO
+                    {
+                        GlobalRank     = rankCache?.GlobalRankBook,
+                        CountryRank    = rankCache?.CountryRankBook,
+                        Points         = user.BookPoints,
+                        ReadTimeMin    = user.ReadTimeMin,
+                        CompletionRate = booksTotal > 0 ? Math.Round((double)booksCompleted / booksTotal, 2) : 0,
+                        Completed      = booksCompleted,
+                        Total          = booksTotal
+                    }
                 });
             }
             catch (Exception ex)
@@ -110,74 +108,282 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
-        // GET /api/user/stats
-        // Részletes statisztikák + rangsor adatok a user_rank_cache alapján
-        // A user_rank_cache nincs a DbContext-ben, raw SQL-lel kérjük le
+        // GET /api/user/{userId}/recent/{type}
+        // Legutóbb megtekintett 3 tartalom
+        // type: "all" | "media" | "books"
         // ================================================================
-        [HttpGet("stats")]
-        public async Task<IActionResult> GetStats()
+        [HttpGet("{userId}/recent/{type}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetRecent(int userId, string type)
         {
             try
             {
-                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var normalizedType = type.ToLower();
+                if (normalizedType is not ("all" or "media" or "books"))
+                    return BadRequest(new ErrorResponseDTO { Error = "InvalidType", Message = "type: all | media | books" });
 
-                var user = await _context.Users.FindAsync(userId);
-                if (user == null)
+                var limit = 3;
+                var items = new List<RecentFavoriteItemDTO>();
+
+                if (normalizedType is "all" or "books")
+                {
+                    var books = await _context.UserBooks
+                        .Where(ub => ub.UserId == userId)
+                        .OrderByDescending(ub => ub.LastSeen)
+                        .Take(limit)
+                        .Select(ub => new RecentFavoriteItemDTO
+                        {
+                            Id     = ub.BookId,
+                            Type   = ub.Book.Type.ToLower(),
+                            Title  = ub.Book.Title,
+                            Img    = ub.Book.CoverApiName,
+                            Points = ub.Book.RewardPoints,
+                            Status = ub.Status
+                        }).ToListAsync();
+                    items.AddRange(books);
+                }
+
+                if (normalizedType is "all" or "media")
+                {
+                    var movies = await _context.UserMovies
+                        .Where(um => um.UserId == userId)
+                        .OrderByDescending(um => um.LastSeen)
+                        .Take(limit)
+                        .Select(um => new RecentFavoriteItemDTO
+                        {
+                            Id     = um.MovieId,
+                            Type   = "movie",
+                            Title  = um.Movie.Title,
+                            Img    = um.Movie.PosterApiName,
+                            Points = um.Movie.RewardPoints,
+                            Status = um.Status
+                        }).ToListAsync();
+                    items.AddRange(movies);
+
+                    var series = await _context.UserSeries
+                        .Where(us => us.UserId == userId)
+                        .OrderByDescending(us => us.LastSeen)
+                        .Take(limit)
+                        .Select(us => new RecentFavoriteItemDTO
+                        {
+                            Id     = us.SeriesId,
+                            Type   = "series",
+                            Title  = us.Series.Title,
+                            Img    = us.Series.PosterApiName,
+                            Points = us.Series.RewardPoints,
+                            Status = us.Status
+                        }).ToListAsync();
+                    items.AddRange(series);
+                }
+
+                if (normalizedType == "all")
+                {
+                    var allWithDates = new List<(RecentFavoriteItemDTO Item, DateTime? LastSeen)>();
+
+                    foreach (var item in items)
+                    {
+                        DateTime? lastSeen = item.Type switch
+                        {
+                            "movie" => await _context.UserMovies
+                                .Where(um => um.UserId == userId && um.MovieId == item.Id)
+                                .Select(um => um.LastSeen).FirstOrDefaultAsync(),
+                            "series" => await _context.UserSeries
+                                .Where(us => us.UserId == userId && us.SeriesId == item.Id)
+                                .Select(us => us.LastSeen).FirstOrDefaultAsync(),
+                            _ => await _context.UserBooks
+                                .Where(ub => ub.UserId == userId && ub.BookId == item.Id)
+                                .Select(ub => ub.LastSeen).FirstOrDefaultAsync()
+                        };
+                        allWithDates.Add((item, lastSeen));
+                    }
+
+                    return Ok(allWithDates.OrderByDescending(x => x.LastSeen).Take(limit).Select(x => x.Item));
+                }
+
+                return Ok(items.Take(limit));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // GET /api/user/{userId}/favorites/{type}
+        // Kedvenc 3 tartalom
+        // type: "all" | "media" | "books"
+        // ================================================================
+        [HttpGet("{userId}/favorites/{type}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetFavorites(int userId, string type)
+        {
+            try
+            {
+                var normalizedType = type.ToLower();
+                if (normalizedType is not ("all" or "media" or "books"))
+                    return BadRequest(new ErrorResponseDTO { Error = "InvalidType", Message = "type: all | media | books" });
+
+                var limit = 3;
+                var items = new List<RecentFavoriteItemDTO>();
+
+                if (normalizedType is "all" or "books")
+                {
+                    var books = await _context.UserBooks
+                        .Where(ub => ub.UserId == userId && ub.Favorite)
+                        .OrderByDescending(ub => ub.AddedAt)
+                        .Take(limit)
+                        .Select(ub => new RecentFavoriteItemDTO
+                        {
+                            Id     = ub.BookId,
+                            Type   = ub.Book.Type.ToLower(),
+                            Title  = ub.Book.Title,
+                            Img    = ub.Book.CoverApiName,
+                            Points = ub.Book.RewardPoints,
+                            Status = ub.Status
+                        }).ToListAsync();
+                    items.AddRange(books);
+                }
+
+                if (normalizedType is "all" or "media")
+                {
+                    var movies = await _context.UserMovies
+                        .Where(um => um.UserId == userId && um.Favorite)
+                        .OrderByDescending(um => um.AddedAt)
+                        .Take(limit)
+                        .Select(um => new RecentFavoriteItemDTO
+                        {
+                            Id     = um.MovieId,
+                            Type   = "movie",
+                            Title  = um.Movie.Title,
+                            Img    = um.Movie.PosterApiName,
+                            Points = um.Movie.RewardPoints,
+                            Status = um.Status
+                        }).ToListAsync();
+                    items.AddRange(movies);
+
+                    var series = await _context.UserSeries
+                        .Where(us => us.UserId == userId && us.Favorite)
+                        .OrderByDescending(us => us.AddedAt)
+                        .Take(limit)
+                        .Select(us => new RecentFavoriteItemDTO
+                        {
+                            Id     = us.SeriesId,
+                            Type   = "series",
+                            Title  = us.Series.Title,
+                            Img    = us.Series.PosterApiName,
+                            Points = us.Series.RewardPoints,
+                            Status = us.Status
+                        }).ToListAsync();
+                    items.AddRange(series);
+                }
+
+                if (normalizedType == "all")
+                {
+                    var allWithDates = new List<(RecentFavoriteItemDTO Item, DateTime? AddedAt)>();
+
+                    foreach (var item in items)
+                    {
+                        DateTime? addedAt = item.Type switch
+                        {
+                            "movie" => await _context.UserMovies
+                                .Where(um => um.UserId == userId && um.MovieId == item.Id)
+                                .Select(um => um.AddedAt).FirstOrDefaultAsync(),
+                            "series" => await _context.UserSeries
+                                .Where(us => us.UserId == userId && us.SeriesId == item.Id)
+                                .Select(us => us.AddedAt).FirstOrDefaultAsync(),
+                            _ => await _context.UserBooks
+                                .Where(ub => ub.UserId == userId && ub.BookId == item.Id)
+                                .Select(ub => ub.AddedAt).FirstOrDefaultAsync()
+                        };
+                        allWithDates.Add((item, addedAt));
+                    }
+
+                    return Ok(allWithDates.OrderByDescending(x => x.AddedAt).Take(limit).Select(x => x.Item));
+                }
+
+                return Ok(items.Take(limit));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // GET /api/user/{userId}/badges
+        // Összes megszerzett kitűző, kategóriánként csoportosítva
+        // ================================================================
+        [HttpGet("{userId}/badges")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetBadges(int userId)
+        {
+            try
+            {
+                var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+                if (!userExists)
                     return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
 
-                var booksCompleted  = await _context.UserBooks.CountAsync(ub => ub.UserId == userId && ub.Status == "COMPLETED");
-                var moviesCompleted = await _context.UserMovies.CountAsync(um => um.UserId == userId && um.Status == "COMPLETED");
-                var seriesCompleted = await _context.UserSeries.CountAsync(us => us.UserId == userId && us.Status == "COMPLETED");
-
-                // user_rank_cache: nincs DbSet, raw SQL-lel kérjük
-                // Oszlopnevek: GlobalRank_Total, CountryRank_Total, GlobalRank_Book, GlobalRank_Media
-                int? globalRank = null, countryRank = null, globalBookRank = null, globalMediaRank = null;
-
-                try
-                {
-                    var rankRow = await _context.Database
-                        .SqlQueryRaw<RankCacheRow>(
-                            @"SELECT 
-                                `GlobalRank_Total`  AS GlobalRankTotal,
-                                `CountryRank_Total` AS CountryRankTotal,
-                                `GlobalRank_Book`   AS GlobalRankBook,
-                                `GlobalRank_Media`  AS GlobalRankMedia
-                              FROM user_rank_cache
-                              WHERE UserId = {0}
-                              LIMIT 1", userId)
-                        .FirstOrDefaultAsync();
-
-                    if (rankRow != null)
+                var earnedBadges = await _context.UserBadges
+                    .Where(ub => ub.UserId == userId)
+                    .Include(ub => ub.Badge)
+                    .OrderByDescending(ub => ub.EarnedAt)
+                    .Select(ub => new
                     {
-                        globalRank      = rankRow.GlobalRankTotal;
-                        countryRank     = rankRow.CountryRankTotal;
-                        globalBookRank  = rankRow.GlobalRankBook;
-                        globalMediaRank = rankRow.GlobalRankMedia;
-                    }
-                }
-                catch
-                {
-                    // Ha a cache tábla még nem frissült vagy nem létezik a sor, null marad
-                }
+                        ub.Badge.Category,
+                        Badge = new BadgeCardDTO
+                        {
+                            Id       = ub.Badge.Id,
+                            Name     = ub.Badge.Name,
+                            IconUrl  = ub.Badge.IconUrl,
+                            EarnedAt = ub.EarnedAt
+                        }
+                    })
+                    .ToListAsync();
 
-                return Ok(new UserStatisticsDTO
+                var grouped = earnedBadges
+                    .GroupBy(x => x.Category)
+                    .Select(g => new BadgeCategoryGroupDTO
+                    {
+                        Category = g.Key,
+                        Badges   = g.Select(x => x.Badge).ToList()
+                    })
+                    .ToList();
+
+                return Ok(grouped);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // GET /api/user/{userId}/badges/{badgeId}
+        // Egy kitűző részletei – modal nézet
+        // ================================================================
+        [HttpGet("{userId}/badges/{badgeId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetBadgeDetail(int userId, int badgeId)
+        {
+            try
+            {
+                var badge = await _context.Badges.FindAsync(badgeId);
+                if (badge == null)
+                    return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Kitűző nem található" });
+
+                var userBadge = await _context.UserBadges
+                    .FirstOrDefaultAsync(ub => ub.UserId == userId && ub.BadgeId == badgeId);
+
+                return Ok(new BadgeDetailDTO
                 {
-                    BookPoints      = user.BookPoints,
-                    SeriesPoints    = user.SeriesPoints,
-                    MoviePoints     = user.MoviePoints,
-                    TotalPoints     = user.BookPoints + user.SeriesPoints + user.MoviePoints,
-                    Level           = user.Level,
-                    Xp              = user.Xp,
-                    DayStreak       = user.DayStreak,
-                    ReadTimeMin     = user.ReadTimeMin,
-                    WatchTimeMin    = user.WatchTimeMin,
-                    BooksCompleted  = booksCompleted,
-                    MoviesCompleted = moviesCompleted,
-                    SeriesCompleted = seriesCompleted,
-                    GlobalRank      = globalRank,
-                    CountryRank     = countryRank,
-                    GlobalBookRank  = globalBookRank,
-                    GlobalMediaRank = globalMediaRank
+                    Id          = badge.Id,
+                    Name        = badge.Name,
+                    IconUrl     = badge.IconUrl,
+                    Category    = badge.Category,
+                    Description = badge.Description,
+                    Rarity      = badge.Rarity,
+                    IsEarned    = userBadge != null,
+                    EarnedAt    = userBadge?.EarnedAt
                 });
             }
             catch (Exception ex)
@@ -207,7 +413,6 @@ namespace KonyvkockaAPI.Controllers
                         Message = "Ez a rangcím nem szerepel a gyűjteményedben."
                     });
 
-                // Összes korábbi active title kikapcsolása
                 var allUserTitles = await _context.UserTitles
                     .Where(ut => ut.UserId == userId && ut.IsActive)
                     .ToListAsync();
@@ -225,212 +430,6 @@ namespace KonyvkockaAPI.Controllers
             {
                 return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
             }
-        }
-
-        // ================================================================
-        // GET /api/user/{userId}/public
-        // Más felhasználó publikus profilja (email és érzékeny adatok nélkül)
-        // ================================================================
-        [HttpGet("{userId}/public")]
-        public async Task<IActionResult> GetPublicProfile(int userId)
-        {
-            try
-            {
-                var user = await _context.Users.FindAsync(userId);
-                if (user == null)
-                    return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
-
-                var booksCompleted  = await _context.UserBooks.CountAsync(ub => ub.UserId == userId && ub.Status == "COMPLETED");
-                var moviesCompleted = await _context.UserMovies.CountAsync(um => um.UserId == userId && um.Status == "COMPLETED");
-                var seriesCompleted = await _context.UserSeries.CountAsync(us => us.UserId == userId && us.Status == "COMPLETED");
-
-                var activeTitle = await _context.UserTitles
-                    .Where(ut => ut.UserId == userId && ut.IsActive)
-                    .Include(ut => ut.Title)
-                    .Select(ut => ut.Title.Name)
-                    .FirstOrDefaultAsync();
-
-                // Publikus profilnál csak a nem rejtett jelvények látszanak
-                var badges = await _context.UserBadges
-                    .Where(ub => ub.UserId == userId && !ub.Badge.IsHidden)
-                    .Include(ub => ub.Badge)
-                    .OrderByDescending(ub => ub.EarnedAt)
-                    .Select(ub => new UserBadgeDTO
-                    {
-                        Id          = ub.Badge.Id,
-                        Name        = ub.Badge.Name,
-                        Description = ub.Badge.Description,
-                        IconUrl     = ub.Badge.IconUrl,
-                        Category    = ub.Badge.Category,
-                        Rarity      = ub.Badge.Rarity,
-                        EarnedAt    = ub.EarnedAt
-                    })
-                    .ToListAsync();
-
-                return Ok(new
-                {
-                    id           = user.Id,
-                    username     = user.Username,
-                    avatar       = user.ProfilePic,
-                    countryCode  = user.CountryCode,
-                    level        = user.Level,
-                    isPremium    = user.Premium,
-                    activeTitle,
-                    creationDate = user.CreationDate,
-                    stats = new
-                    {
-                        booksCompleted,
-                        moviesCompleted,
-                        seriesCompleted,
-                        dayStreak   = user.DayStreak,
-                        totalPoints = user.BookPoints + user.SeriesPoints + user.MoviePoints
-                    },
-                    badges
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
-            }
-        }
-
-        // ================================================================
-        // GET /api/user/{id}/recent/{type}
-        // ================================================================
-        [HttpGet("{id}/recent/{type}")]
-        public async Task<IActionResult> GetRecent(int id, string type)
-        {
-            try
-            {
-                var limit = 3;
-                var items = new List<ContentSearchItemDTO>();
-
-                if (type.ToLower() is "all" or "book" or "audiobook" or "ebook")
-                {
-                    var books = await _context.UserBooks
-                        .Where(ub => ub.UserId == id)
-                        .OrderByDescending(ub => ub.LastSeen)
-                        .Take(limit)
-                        .Select(ub => new ContentSearchItemDTO
-                        {
-                            Id = ub.BookId, Type = ub.Book.Type.ToLower(), Title = ub.Book.Title,
-                            Img = ub.Book.CoverApiName, Year = ub.Book.Released, Rating = ub.Book.Rating,
-                            Length = ub.Book.Type == "AUDIOBOOK" ? ub.Book.AudioLength : ub.Book.PageNum
-                        }).ToListAsync();
-                    items.AddRange(books);
-                }
-
-                if (type.ToLower() is "all" or "movie")
-                {
-                    var movies = await _context.UserMovies
-                        .Where(um => um.UserId == id)
-                        .OrderByDescending(um => um.LastSeen)
-                        .Take(limit)
-                        .Select(um => new ContentSearchItemDTO
-                        {
-                            Id = um.MovieId, Type = "movie", Title = um.Movie.Title,
-                            Img = um.Movie.PosterApiName, Year = um.Movie.Released, Rating = um.Movie.Rating,
-                            Length = um.Movie.Length
-                        }).ToListAsync();
-                    items.AddRange(movies);
-                }
-
-                if (type.ToLower() is "all" or "series")
-                {
-                    var series = await _context.UserSeries
-                        .Where(us => us.UserId == id)
-                        .OrderByDescending(us => us.LastSeen)
-                        .Take(limit)
-                        .Select(us => new ContentSearchItemDTO
-                        {
-                            Id = us.SeriesId, Type = "series", Title = us.Series.Title,
-                            Img = us.Series.PosterApiName, Year = us.Series.Released, Rating = us.Series.Rating,
-                            Length = us.Series.Episodes.Count
-                        }).ToListAsync();
-                    items.AddRange(series);
-                }
-
-                return Ok(items.OrderByDescending(x => x.Id).Take(limit)); // Simplified sort for all
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
-            }
-        }
-
-        // ================================================================
-        // GET /api/user/{id}/favorites/{type}
-        // ================================================================
-        [HttpGet("{id}/favorites/{type}")]
-        public async Task<IActionResult> GetFavorites(int id, string type)
-        {
-            try
-            {
-                var limit = 3;
-                var items = new List<ContentSearchItemDTO>();
-
-                if (type.ToLower() is "all" or "book" or "audiobook" or "ebook")
-                {
-                    var books = await _context.UserBooks
-                        .Where(ub => ub.UserId == id && ub.Favorite)
-                        .OrderByDescending(ub => ub.AddedAt)
-                        .Take(limit)
-                        .Select(ub => new ContentSearchItemDTO
-                        {
-                            Id = ub.BookId, Type = ub.Book.Type.ToLower(), Title = ub.Book.Title,
-                            Img = ub.Book.CoverApiName, Year = ub.Book.Released, Rating = ub.Book.Rating,
-                            Length = ub.Book.Type == "AUDIOBOOK" ? ub.Book.AudioLength : ub.Book.PageNum
-                        }).ToListAsync();
-                    items.AddRange(books);
-                }
-
-                if (type.ToLower() is "all" or "movie")
-                {
-                    var movies = await _context.UserMovies
-                        .Where(um => um.UserId == id && um.Favorite)
-                        .OrderByDescending(um => um.AddedAt)
-                        .Take(limit)
-                        .Select(um => new ContentSearchItemDTO
-                        {
-                            Id = um.MovieId, Type = "movie", Title = um.Movie.Title,
-                            Img = um.Movie.PosterApiName, Year = um.Movie.Released, Rating = um.Movie.Rating,
-                            Length = um.Movie.Length
-                        }).ToListAsync();
-                    items.AddRange(movies);
-                }
-
-                if (type.ToLower() is "all" or "series")
-                {
-                    var series = await _context.UserSeries
-                        .Where(us => us.UserId == id && us.Favorite)
-                        .OrderByDescending(us => us.AddedAt)
-                        .Take(limit)
-                        .Select(us => new ContentSearchItemDTO
-                        {
-                            Id = us.SeriesId, Type = "series", Title = us.Series.Title,
-                            Img = us.Series.PosterApiName, Year = us.Series.Released, Rating = us.Series.Rating,
-                            Length = us.Series.Episodes.Count
-                        }).ToListAsync();
-                    items.AddRange(series);
-                }
-
-                return Ok(items.OrderByDescending(x => x.Id).Take(limit)); // Simplified sort for all
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
-            }
-        }
-
-        // ================================================================
-        // Belső segédosztály a raw SQL user_rank_cache projekcióhoz
-        // ================================================================
-        private class RankCacheRow
-        {
-            public int? GlobalRankTotal { get; set; }
-            public int? CountryRankTotal { get; set; }
-            public int? GlobalRankBook { get; set; }
-            public int? GlobalRankMedia { get; set; }
         }
     }
 }

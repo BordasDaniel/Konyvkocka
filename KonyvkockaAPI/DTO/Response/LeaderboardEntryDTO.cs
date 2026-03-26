@@ -5,7 +5,7 @@
         public int Rank { get; set; }
         public int UserId { get; set; }
         public string Username { get; set; } = null!;
-        public string Avatar { get; set; } = null!;
+        public string? Avatar { get; set; }
         public string CountryCode { get; set; } = null!;
         public bool IsPremium { get; set; }
         public int Points { get; set; }

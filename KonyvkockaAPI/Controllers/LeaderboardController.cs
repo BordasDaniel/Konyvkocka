@@ -188,7 +188,7 @@ namespace KonyvkockaAPI.Controllers
                 Rank = rank,
                 UserId = u.Id,
                 Username = u.Username,
-                Avatar = u.ProfilePic,
+                Avatar = u.ProfilePic != null ? Convert.ToBase64String(u.ProfilePic) : null,
                 CountryCode = u.CountryCode,
                 IsPremium = u.Premium,
                 Points = points,

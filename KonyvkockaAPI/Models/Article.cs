@@ -9,5 +9,5 @@ public partial class Article
     public string EventTag { get; set; } = null!;
     public string Content { get; set; } = null!;
     public DateTime CreatedAt { get; set; }
-    public string? ImageUrl { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }

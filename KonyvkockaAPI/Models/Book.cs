@@ -46,8 +46,6 @@ public partial class Book
 
     public virtual AgeRating? AgeRating { get; set; }
 
-    public virtual ICollection<ContentCategory> Categories { get; set; } = new List<ContentCategory>();
-
     public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 
     public virtual ICollection<UserBook> UserBooks { get; set; } = new List<UserBook>();

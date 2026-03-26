@@ -17,7 +17,7 @@ public partial class DeletedUser
 
     public string CountryCode { get; set; } = null!;
 
-    public string ProfilePic { get; set; } = null!;
+    public byte[] ProfilePic { get; set; } = null!;
 
     public bool Premium { get; set; }
 
