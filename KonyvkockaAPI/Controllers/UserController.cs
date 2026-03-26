@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+using KonyvkockaAPI.DTO.Request;
 using KonyvkockaAPI.DTO.Response;
 using KonyvkockaAPI.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -393,6 +396,110 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
+        // GET /api/user/settings/titles
+        // Saját megszerzett title-k listája – dropdown feltöltéséhez
+        // ================================================================
+        [HttpGet("settings/titles")]
+        public async Task<IActionResult> GetOwnedTitles()
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+
+                var titles = await _context.UserTitles
+                    .Where(ut => ut.UserId == userId)
+                    .Include(ut => ut.Title)
+                    .OrderBy(ut => ut.Title.Name)
+                    .Select(ut => new
+                    {
+                        id       = ut.TitleId,
+                        name     = ut.Title.Name,
+                        rarity   = ut.Title.Rarity,
+                        isActive = ut.IsActive,
+                        earnedAt = ut.EarnedAt
+                    })
+                    .ToListAsync();
+
+                return Ok(titles);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // PATCH /api/user/settings
+        // Saját profil beállítások: pfp, országkód, jelszó, aktív title-k
+        // ================================================================
+        [HttpPatch("settings")]
+        public async Task<IActionResult> UpdateSettings([FromBody] UpdateProfileSettingsDTO dto)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                    return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
+
+                // --- Profilkép ---
+                if (dto.Avatar != null)
+                {
+                    try { user.ProfilePic = Convert.FromBase64String(dto.Avatar); }
+                    catch { return BadRequest(new ErrorResponseDTO { Error = "InvalidAvatar", Message = "Érvénytelen base64 formátum." }); }
+                }
+
+                // --- Országkód ---
+                if (dto.CountryCode != null)
+                    user.CountryCode = dto.CountryCode;
+
+                // --- Jelszó ---
+                if (dto.NewPasswordHash != null)
+                {
+                    if (string.IsNullOrWhiteSpace(dto.NewPasswordSalt))
+                        return BadRequest(new ErrorResponseDTO { Error = "MissingSalt", Message = "NewPasswordSalt kötelező ha jelszót változtatsz." });
+
+                    user.PasswordHash = CreateSHA256(dto.NewPasswordHash + dto.NewPasswordSalt);
+                    user.PasswordSalt = dto.NewPasswordSalt;
+                }
+
+                // --- Aktív title-k (max 3, csak saját megszerzett) ---
+                if (dto.ActiveTitleIds.Count > 3)
+                    return BadRequest(new ErrorResponseDTO { Error = "TooManyTitles", Message = "Maximum 3 aktív rangcím állítható be." });
+
+                if (dto.ActiveTitleIds.Count > 0)
+                {
+                    // Ellenőrzés: csak a saját megszerzett title-k közül lehet választani
+                    var ownedTitleIds = await _context.UserTitles
+                        .Where(ut => ut.UserId == userId)
+                        .Select(ut => ut.TitleId)
+                        .ToListAsync();
+
+                    var invalid = dto.ActiveTitleIds.Except(ownedTitleIds).ToList();
+                    if (invalid.Count > 0)
+                        return BadRequest(new ErrorResponseDTO { Error = "TitleNotOwned", Message = "Egy vagy több rangcím nem szerepel a gyűjteményedben." });
+
+                    // Összes aktív title kikapcsolása, majd a küldöttek bekapcsolása
+                    var allUserTitles = await _context.UserTitles
+                        .Where(ut => ut.UserId == userId)
+                        .ToListAsync();
+
+                    foreach (var t in allUserTitles)
+                        t.IsActive = dto.ActiveTitleIds.Contains(t.TitleId);
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new MessageResponseDTO { Message = "Beállítások sikeresen mentve." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
         // PATCH /api/user/title/{titleId}/activate
         // Aktív rangcím beállítása – egyszerre csak egy lehet aktív
         // ================================================================
@@ -430,6 +537,14 @@ namespace KonyvkockaAPI.Controllers
             {
                 return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
             }
+        }
+        private static string CreateSHA256(string input)
+        {
+            using SHA256 sha256 = SHA256.Create();
+            byte[] data = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
+            var sb = new StringBuilder();
+            foreach (byte b in data) sb.Append(b.ToString("x2"));
+            return sb.ToString();
         }
     }
 }
