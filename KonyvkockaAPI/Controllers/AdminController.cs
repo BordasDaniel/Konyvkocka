@@ -75,7 +75,7 @@ namespace KonyvkockaAPI.Controllers
                     var readUrl = book.Type switch
                     {
                         "AUDIOBOOK" => book.AudioUrl,
-                        "EBOOK"     => book.EpubUrl ?? book.PdfUrl,
+                        "EBOOK"     => book.PdfUrl,
                         _           => book.PdfUrl
                     };
 

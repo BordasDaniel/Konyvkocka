@@ -229,7 +229,7 @@ namespace KonyvkockaAPI.Controllers
                     var watchUrl = book.Type switch
                     {
                         "AUDIOBOOK" => book.AudioUrl,
-                        "EBOOK"     => book.EpubUrl ?? book.PdfUrl,
+                        "EBOOK"     => book.PdfUrl,
                         _           => book.PdfUrl
                     };
 

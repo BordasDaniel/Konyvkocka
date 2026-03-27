@@ -10,6 +10,7 @@
 *.userosscache
 *.sln.docstates
 appsettings.json
+temp_build_output/
 
 
 # User-specific files (MonoDevelop/Xamarin Studio)
