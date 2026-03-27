@@ -1,0 +1,42 @@
+@import './styles/general.css';
+@import './styles/navbar.css';
+@import './styles/carousel.css';
+@import './styles/modal.css';
+@import './styles/about.css';
+@import './styles/aszf.css';
+@import './styles/pay.css';
+@import './styles/search.css';
+@import './styles/library.css';
+@import './styles/notifications.css';
+@import './styles/challenges.css';
+@import './styles/news.css';
+@import './styles/support.css';
+@import './styles/user.css';
+@import './styles/reader.css';
+@import './styles/watch.css';
+@import './styles/login.css';
+
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-content {
+  flex: 1 0 auto;
+  width: 100%;
+}
+
+/* HR styling for prominent separator */
+hr {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, .6);
+  margin: 2rem auto 0 auto;
+  opacity: 1;
+  background-color: transparent;
+  max-width: 95%;
+}

@@ -1,0 +1,189 @@
+/* Modal custom styles */
+    .custom-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2,2,2,0.75);
+      z-index: 1040; /* below Bootstrap modal (1050) */
+      display: none;
+      animation: kkBackdropIn 350ms ease-out;
+    }
+
+    /* Prevent body scroll when modal is open */
+    body.modal-open {
+      overflow: hidden !important;
+      touch-action: none;
+    }
+
+    /* Hide carousel dots when modal is open */
+    body:has(.modal.show) .carousel-dots {
+      display: none !important;
+    }
+
+    .modal-custom { --bs-modal-zindex: 1060; }
+
+    .modal-custom.show .modal-dialog {
+      animation: kkModalIn 460ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      transform-origin: center 20%;
+    }
+
+    .modal-custom.show .modal-content {
+      animation: kkModalSurfaceIn 540ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      will-change: transform, opacity, filter;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .modal-dialog {
+      max-width: 95%;
+      width: 95%;
+      margin: 1.75rem auto;
+    }
+
+    .modal-content { background: linear-gradient(180deg, rgba(10,10,10,0.9), rgba(6,6,6,0.95)); border: 1px solid rgba(255,255,255,0.04); }
+
+    .modal-header { border-bottom: 1px solid rgba(255,255,255,0.03); }
+
+    .modal-title { color: var(--h1Text); font-weight: 800; }
+
+    .modal-content img.cover {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.03);
+      display: block;
+    }
+
+    .modal-body .row {
+      margin-left: 0;
+      margin-right: 0;
+    }
+
+    .modal-body .row > [class*='col-'] {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
+    .tags-inline { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+
+    .tags-inline span {
+      background: linear-gradient(180deg, rgba(194,157,89,0.12), rgba(230,192,124,0.06));
+      color: var(--primary);
+      padding: 0.28rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      border: 1px solid rgba(194,157,89,0.08);
+    }
+
+    .modal-body p { color: rgba(255,255,255,0.85); }
+
+    .video-wrapper { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 0.5rem; border-radius: 6px; overflow: hidden; }
+
+    .video-wrapper iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+    /* Responsive: stack cover above content on small screens */
+    @media (max-width: 767.98px){
+      .modal-dialog { max-width: 95%; }
+      .modal-body .row { align-items: start; }
+      .modal-body .col-md-4 { margin-bottom: 1rem; }
+    }
+
+    /* Rating / episodes / comments */
+    .viewer-rating { display:flex; align-items:center; gap:0.6rem; margin-top:0.8rem; }
+    .stars { display:flex; gap:4px; }
+    .stars i { color: rgba(255,255,255,0.18); }
+    .stars i.filled { color: var(--primary); filter: drop-shadow(0 4px 12px rgba(194,157,89,0.24)); }
+    .rating-num { color: var(--secondary); font-weight:700; }
+
+    .episode-list { margin-top: 0.8rem; }
+    .episode-list ul { list-style: none; padding: 0; margin: 0; display:flex; gap:0.5rem; flex-wrap:wrap; }
+    .episode-list li { background: var(--overlay); padding: 0.4rem 0.6rem; border-radius:6px; cursor:pointer; border: 1px solid rgba(255,255,255,0.03); }
+
+    .comments-section { margin-top:1rem; border-top:1px solid rgba(255,255,255,0.04); padding-top:0.75rem; }
+    .comments-list { max-height:220px; overflow:auto; margin-top:0.5rem; padding:0; list-style:none; }
+    .comments-list li { padding:0.5rem; border-bottom:1px solid rgba(255,255,255,0.03); }
+    .comment-meta { font-size:0.85rem; color: rgba(255,255,255,0.6); margin-bottom:0.25rem; }
+    .comment-text { color: rgba(255,255,255,0.9); }
+    .comment-form textarea { width:100%; resize:vertical; min-height:72px; background:transparent; color:var(--text); border:1px solid rgba(255,255,255,0.04); padding:0.5rem; border-radius:6px; }
+    .comment-form .btn { width:auto; padding:0.45rem 0.9rem; background-color: var(--primary); color: var(--bg); font-weight: bold; }
+    .comment-form .btn:hover,
+    .comment-form .btn:focus {
+      background-color: var(--secondary);
+      color: var(--bg);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(194, 157, 89, 0.4);
+      text-decoration-line: underline !important;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 2px;
+    }
+
+    /* ── Closing (fade-out) ── */
+    .custom-modal-backdrop.closing {
+      animation: kkBackdropOut 250ms ease-in forwards;
+    }
+
+    .modal-custom.closing .modal-dialog {
+      animation: kkModalOut 270ms cubic-bezier(0.4, 0, 0.8, 0) forwards;
+    }
+
+    .modal-custom.closing .modal-content {
+      animation: kkModalSurfaceOut 270ms ease-in forwards;
+    }
+
+    @keyframes kkBackdropIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes kkModalIn {
+      from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes kkModalSurfaceIn {
+      from {
+        opacity: 0;
+        filter: blur(6px) saturate(0.85);
+      }
+      to {
+        opacity: 1;
+        filter: blur(0) saturate(1);
+      }
+    }
+
+    @keyframes kkBackdropOut {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    @keyframes kkModalOut {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to   { opacity: 0; transform: translateY(14px) scale(0.98); }
+    }
+
+    @keyframes kkModalSurfaceOut {
+      from { opacity: 1; filter: blur(0); }
+      to   { opacity: 0; filter: blur(4px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .custom-modal-backdrop,
+      .custom-modal-backdrop.closing,
+      .modal-custom.show .modal-dialog,
+      .modal-custom.show .modal-content,
+      .modal-custom.closing .modal-dialog,
+      .modal-custom.closing .modal-content {
+        animation: none !important;
+      }
+    }
