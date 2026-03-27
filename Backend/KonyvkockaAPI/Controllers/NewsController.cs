@@ -1,6 +1,7 @@
 ﻿using KonyvkockaAPI.DTO.Response;
 using KonyvkockaAPI.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace KonyvkockaAPI.Controllers
 {
@@ -16,54 +17,57 @@ namespace KonyvkockaAPI.Controllers
         }
 
         /// <summary>
-        /// Hírek lekérése
-        /// GET /api/news/articles
+        /// Hírek lekérése paginációval
+        /// GET /api/news?filter={type}&amp;page={page}&amp;pageSize={pageSize}
         /// </summary>
-        [HttpGet("articles")]
-        public async Task<IActionResult> GetArticles(
-            [FromQuery] string? type = null,
-            [FromQuery] int limit = 20,
-            [FromQuery] int offset = 0)
+        [HttpGet]
+        public async Task<IActionResult> GetNews(
+            [FromQuery] string? filter   = "all",
+            [FromQuery] int     page     = 1,
+            [FromQuery] int     pageSize = 20)
         {
             try
             {
-                // Mock data - TODO: Create News table if needed
-                var articles = new List<NewsArticleDTO>
+                var validFilters = new[] { "all", "update", "function", "announcement", "event" };
+                if (!validFilters.Contains(filter?.ToLower()))
                 {
-                    new NewsArticleDTO
-                    {
-                        Id = 1,
-                        Type = "event",
-                        Title = "KönyvKocka 1.0 Launch Esemény",
-                        Date = "2025.11.05.",
-                        Tags = "Esemény",
-                        Excerpt = "Ünnepeld velünk a KönyvKocka 1.0 megjelenését...",
-                        Link = "/events",
-                        LinkText = "További információ"
-                    },
-                    new NewsArticleDTO
-                    {
-                        Id = 2,
-                        Type = "feature",
-                        Title = "Új Megtekintés oldal",
-                        Date = "2025.10.30.",
-                        Tags = "Új funkció",
-                        Excerpt = "Elkészült a watch oldal...",
-                        Link = "/nezes",
-                        LinkText = "Megnyitás"
-                    }
-                };
-
-                if (!string.IsNullOrEmpty(type))
-                {
-                    articles = articles.Where(a => a.Type == type).ToList();
+                    return BadRequest(new { error = "Bad Request", message = "Érvénytelen szűrő típus" });
                 }
 
-                var total = articles.Count;
-                var hasMore = offset + limit < total;
-                var filtered = articles.Skip(offset).Take(limit).ToList();
+                if (page < 1) page = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-                return Ok(new { articles = filtered, total, hasMore });
+                var query = _context.Articles.AsQueryable();
+
+                if (filter?.ToLower() != "all")
+                {
+                    var eventTagFilter = filter?.ToUpper();
+                    query = query.Where(a => a.EventTag == eventTagFilter);
+                }
+
+                var total = await query.CountAsync();
+
+                var articles = await query
+                    .OrderByDescending(a => a.CreatedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(a => new NewsArticleDTO
+                    {
+                        Id = a.Id,
+                        Title = a.Title,
+                        Date = a.CreatedAt.ToString("yyyy.MM.dd"),
+                        Category = a.EventTag,
+                        Description = a.Content
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    total,
+                    page,
+                    pageSize,
+                    articles
+                });
             }
             catch (Exception ex)
             {

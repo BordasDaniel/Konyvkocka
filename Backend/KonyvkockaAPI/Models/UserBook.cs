@@ -13,13 +13,13 @@ public partial class UserBook
 
     public bool Favorite { get; set; }
 
-    public bool IsRead { get; set; }
-
     public decimal? Rating { get; set; }
 
     public DateTime? AddedAt { get; set; }
 
     public DateTime? CompletedAt { get; set; }
+
+    public int RemainingCompletions { get; set; }
 
     public DateTime? LastSeen { get; set; }
 

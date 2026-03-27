@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace KonyvkockaAPI.Models;
@@ -21,6 +21,10 @@ public partial class Series
 
     public string? TrailerUrl { get; set; }
 
+    public int RewardXp { get; set; }
+
+    public int RewardPoints { get; set; }
+
     public bool HasSubtitles { get; set; }
 
     public bool IsOriginalLanguage { get; set; }
@@ -29,13 +33,9 @@ public partial class Series
 
     public virtual AgeRating? AgeRating { get; set; }
 
+    public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
+
     public virtual ICollection<Episode> Episodes { get; set; } = new List<Episode>();
 
     public virtual ICollection<UserSeries> UserSeries { get; set; } = new List<UserSeries>();
-
-    public virtual ICollection<Author> Authors { get; set; } = new List<Author>();
-
-    public virtual ICollection<ContentCategory> Categories { get; set; } = new List<ContentCategory>();
-
-    public virtual ICollection<Genre> Genres { get; set; } = new List<Genre>();
 }

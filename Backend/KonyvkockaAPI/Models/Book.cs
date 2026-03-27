@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace KonyvkockaAPI.Models;
@@ -21,6 +21,9 @@ public partial class Book
 
     public int? AgeRatingId { get; set; }
 
+    /// <summary>
+    /// Könyv típusa: "BOOK" | "AUDIOBOOK" | "EBOOK"
+    /// </summary>
     public string Type { get; set; } = null!;
 
     public string? PdfUrl { get; set; }
@@ -31,6 +34,10 @@ public partial class Book
 
     public int? AudioLength { get; set; }
 
+    public int RewardXp { get; set; }
+
+    public int RewardPoints { get; set; }
+
     public string? NarratorName { get; set; }
 
     public bool IsOfflineAvailable { get; set; }
@@ -39,11 +46,7 @@ public partial class Book
 
     public virtual AgeRating? AgeRating { get; set; }
 
+    public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
+
     public virtual ICollection<UserBook> UserBooks { get; set; } = new List<UserBook>();
-
-    public virtual ICollection<Author> Authors { get; set; } = new List<Author>();
-
-    public virtual ICollection<ContentCategory> Categories { get; set; } = new List<ContentCategory>();
-
-    public virtual ICollection<Genre> Genres { get; set; } = new List<Genre>();
 }

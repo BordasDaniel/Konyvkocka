@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace KonyvkockaAPI.Models;
@@ -17,15 +17,23 @@ public partial class User
 
     public string CountryCode { get; set; } = null!;
 
-    public string ProfilePic { get; set; } = null!;
+    public byte[]? ProfilePic { get; set; }
 
     public bool Premium { get; set; }
+
+    public DateTime? PremiumExpiresAt { get; set; }
 
     public DateTime CreationDate { get; set; }
 
     public DateTime LastLoginDate { get; set; }
 
     public int Level { get; set; }
+
+    /// <summary>
+    /// XP a jelenlegi szinten belül (0–999).
+    /// 1000 XP felett a DB trigger automatikusan szintet lép és nulla-ra állítja.
+    /// </summary>
+    public int Xp { get; set; }
 
     public int BookPoints { get; set; }
 
@@ -39,13 +47,20 @@ public partial class User
 
     public int WatchTimeMin { get; set; }
 
-    public virtual ICollection<Achievement> Achievements { get; set; } = new List<Achievement>();
+    /// <summary>
+    /// Jogosultsági szint: "USER" | "MODERATOR" | "ADMIN"
+    /// </summary>
+    public string PermissionLevel { get; set; } = "USER";
 
     public virtual ICollection<Mail> MailReceivers { get; set; } = new List<Mail>();
 
     public virtual ICollection<Mail> MailSenders { get; set; } = new List<Mail>();
 
     public virtual ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();
+
+    public virtual ICollection<UserBadge> UserBadges { get; set; } = new List<UserBadge>();
+
+    public virtual ICollection<UserTitle> UserTitles { get; set; } = new List<UserTitle>();
 
     public virtual ICollection<UserBook> UserBooks { get; set; } = new List<UserBook>();
 

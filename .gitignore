@@ -10,6 +10,7 @@
 *.userosscache
 *.sln.docstates
 appsettings.json
+temp_build_output/
 
 
 # User-specific files (MonoDevelop/Xamarin Studio)
@@ -363,3 +364,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/KonyvkockaAPI/fajlstrukt_v0.2.txt

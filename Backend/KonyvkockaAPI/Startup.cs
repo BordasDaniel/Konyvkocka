@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json.Serialization;
 using KonyvkockaAPI.Models;
+using KonyvkockaAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,10 @@ namespace KonyvkockaAPI
             // Add services to the container.
             builder.Services.AddDbContext<KonyvkockaContext>(options => 
                 options.UseMySQL(builder.Configuration.GetConnectionString("KonyvkockaConnection")));
+
+            // Register custom services
+            builder.Services.AddSingleton<ICountryService, CountryService>();
+            builder.Services.AddHttpClient();
 
             builder.Services.AddControllers().AddJsonOptions(x => 
                 x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);

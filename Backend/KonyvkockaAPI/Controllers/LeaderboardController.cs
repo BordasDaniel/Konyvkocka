@@ -1,5 +1,4 @@
-﻿using KonyvkockaAPI.DTO;
-using KonyvkockaAPI.DTO.Response;
+﻿using KonyvkockaAPI.DTO.Response;
 using KonyvkockaAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,87 +19,122 @@ namespace KonyvkockaAPI.Controllers
         }
 
         /// <summary>
-        /// Ranglista lekérése különböző kategóriák szerint
-        /// GET /api/leaderboard?category=all&limit=50&offset=0
-        /// Kategóriák: all, books, series, movies, reading-time, watch-time, day-streak
+        /// Ranglista lekérése tartalom- és régió-szűrő szerint.
+        /// GET /api/leaderboard?content=all&amp;region=world&amp;page=1&amp;pageSize=50
+        ///
+        /// content: all | books | media
+        ///   - all:   BookPoints + SeriesPoints + MoviePoints
+        ///   - books: BookPoints
+        ///   - media: SeriesPoints + MoviePoints
+        ///
+        /// region: world | country
+        ///   - world:   minden felhasználó
+        ///   - country: csak a bejelentkezett user CountryCode-jával megegyező userek
+        ///
+        /// A válasz tetején mindig szerepel a "me" objektum a bejelentkezett user
+        /// aktuális szűrés szerinti adataival, függetlenül attól, hogy melyik oldalon van.
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetLeaderboard(
-            [FromQuery] string category = "all",
-            [FromQuery] int limit = 50,
-            [FromQuery] int offset = 0)
+            [FromQuery] string content = "all",
+            [FromQuery] string region = "world",
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
         {
+            // --- paraméter validáció ---
+            var validContent = new[] { "all", "books", "media" };
+            var validRegion = new[] { "world", "country" };
+
+            if (!validContent.Contains(content.ToLower()))
+                return BadRequest(new ErrorResponseDTO
+                {
+                    Error = "InvalidParameter",
+                    Message = "A content paraméter értéke csak 'all', 'books' vagy 'media' lehet."
+                });
+
+            if (!validRegion.Contains(region.ToLower()))
+                return BadRequest(new ErrorResponseDTO
+                {
+                    Error = "InvalidParameter",
+                    Message = "A region paraméter értéke csak 'world' vagy 'country' lehet."
+                });
+
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 50;
+
             try
             {
+                var currentUserId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var currentUser = await _context.Users.FindAsync(currentUserId);
+
+                if (currentUser == null)
+                    return Unauthorized(new ErrorResponseDTO
+                    {
+                        Error = "Unauthorized",
+                        Message = "Érvénytelen vagy lejárt token."
+                    });
+
+                // --- alap lekérdezés, régió szűrés ---
                 IQueryable<User> query = _context.Users;
 
-                // Rendezés kategória alapján
-                switch (category.ToLower())
-                {
-                    case "books":
-                        query = query.OrderByDescending(u => u.BookPoints).ThenByDescending(u => u.Level);
-                        break;
-                    case "series":
-                        query = query.OrderByDescending(u => u.SeriesPoints).ThenByDescending(u => u.Level);
-                        break;
-                    case "movies":
-                        query = query.OrderByDescending(u => u.MoviePoints).ThenByDescending(u => u.Level);
-                        break;
-                    case "reading-time":
-                        query = query.OrderByDescending(u => u.ReadTimeMin).ThenByDescending(u => u.Level);
-                        break;
-                    case "watch-time":
-                        query = query.OrderByDescending(u => u.WatchTimeMin).ThenByDescending(u => u.Level);
-                        break;
-                    case "day-streak":
-                        query = query.OrderByDescending(u => u.DayStreak).ThenByDescending(u => u.Level);
-                        break;
-                    default: // all - combined score
-                        query = query.OrderByDescending(u => u.BookPoints + u.SeriesPoints + u.MoviePoints)
-                                    .ThenByDescending(u => u.Level);
-                        break;
-                }
+                if (region.ToLower() == "country")
+                    query = query.Where(u => u.CountryCode == currentUser.CountryCode);
 
+                // --- rendezés content szerint ---
+                query = content.ToLower() switch
+                {
+                    "books" => query.OrderByDescending(u => u.BookPoints).ThenBy(u => u.Id),
+                    "media" => query.OrderByDescending(u => u.SeriesPoints + u.MoviePoints).ThenBy(u => u.Id),
+                    _ => query.OrderByDescending(u => u.BookPoints + u.SeriesPoints + u.MoviePoints).ThenBy(u => u.Id)
+                };
+
+                // --- összes találat a lapozáshoz ---
                 var total = await query.CountAsync();
 
-                var leaderboard = await query
-                    .Skip(offset)
-                    .Take(limit)
-                    .Select((u, index) => new
-                    {
-                        rank = offset + index + 1,
-                        userId = u.Id,
-                        username = u.Username,
-                        avatar = u.ProfilePic,
-                        level = u.Level,
-                        bookPoints = u.BookPoints,
-                        seriesPoints = u.SeriesPoints,
-                        moviePoints = u.MoviePoints,
-                        readTimeMin = u.ReadTimeMin,
-                        watchTimeMin = u.WatchTimeMin,
-                        dayStreak = u.DayStreak,
-                        totalScore = u.BookPoints + u.SeriesPoints + u.MoviePoints,
-                        isPremium = u.Premium
-                    })
+                // --- rangsor: SQL nem tud közvetlen sorszámot adni,
+                //     ezért az összes Id-t lekérjük rendezve, és az index adja a rangot ---
+                var orderedIds = await query.Select(u => u.Id).ToListAsync();
+
+                // --- aktuális oldal userei ---
+                var skip = (page - 1) * pageSize;
+                var pageUserIds = orderedIds.Skip(skip).Take(pageSize).ToList();
+
+                var pageUsers = await _context.Users
+                    .Where(u => pageUserIds.Contains(u.Id))
+                    .Include(u => u.UserBooks)
+                    .Include(u => u.UserMovies)
+                    .Include(u => u.UserSeries)
                     .ToListAsync();
 
-                // Aktuális felhasználó rang keresése
-                var currentUserId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
-                var userRank = await query
+                // --- entries összeállítása a helyes rang-sorrendben ---
+                var entries = pageUserIds
+                    .Select((userId, idx) =>
+                    {
+                        var u = pageUsers.First(x => x.Id == userId);
+                        return BuildEntry(u, skip + idx + 1, content);
+                    })
+                    .ToList();
+
+                // --- "me" objektum: bejelentkezett user rangja az aktuális szűrésben ---
+                var meIndex = orderedIds.IndexOf(currentUserId);
+                var meRank = meIndex >= 0 ? meIndex + 1 : 0;
+
+                var meUser = await _context.Users
                     .Where(u => u.Id == currentUserId)
-                    .Select((u, index) => new { Rank = index + 1, User = u })
-                    .FirstOrDefaultAsync();
+                    .Include(u => u.UserBooks)
+                    .Include(u => u.UserMovies)
+                    .Include(u => u.UserSeries)
+                    .FirstAsync();
 
-                var userRankPosition = userRank?.Rank ?? 0;
+                var me = BuildEntry(meUser, meRank, content);
 
-                return Ok(new
+                return Ok(new LeaderboardResponseDTO
                 {
-                    category,
-                    leaderboard,
-                    total,
-                    yourRank = userRankPosition,
-                    limit,
-                    offset
+                    Me = me,
+                    Entries = entries,
+                    Total = total,
+                    Page = page,
+                    PageSize = pageSize
                 });
             }
             catch (Exception ex)
@@ -113,226 +147,63 @@ namespace KonyvkockaAPI.Controllers
             }
         }
 
-        /// <summary>
-        /// Felhasználó részletezettebb ranglista adatai
-        /// GET /api/leaderboard/user/{userId}
-        /// </summary>
-        [HttpGet("user/{userId}")]
-        public async Task<IActionResult> GetUserLeaderboardStats(int userId)
+        // -------------------------------------------------------
+        // Segédfüggvény: egy User-ből LeaderboardEntryDTO építése
+        // -------------------------------------------------------
+        private static LeaderboardEntryDTO BuildEntry(User u, int rank, string content)
         {
-            try
+            // --- pontszám a content szűrő szerint ---
+            var points = content.ToLower() switch
             {
-                var user = await _context.Users.FindAsync(userId);
+                "books" => u.BookPoints,
+                "media" => u.SeriesPoints + u.MoviePoints,
+                _ => u.BookPoints + u.SeriesPoints + u.MoviePoints
+            };
 
-                if (user == null)
-                {
-                    return NotFound(new ErrorResponseDTO
-                    {
-                        Error = "Not found",
-                        Message = "A felhasználó nem található"
-                    });
-                }
+            // --- bookCount / mediaCount: minden státuszú elem ---
+            var bookCount = u.UserBooks.Count;
+            var mediaCount = u.UserMovies.Count + u.UserSeries.Count;
 
-                // Összesen elolvasott könyvek száma
-                var booksCount = await _context.UserBooks
-                    .Where(ub => ub.UserId == userId && ub.Status == "finished")
-                    .CountAsync();
-
-                // Összesen megtekintett sorozatok száma
-                var seriesCount = await _context.UserSeries
-                    .Where(us => us.UserId == userId && us.Status == "finished")
-                    .CountAsync();
-
-                // Összesen megtekintett filmek száma
-                var moviesCount = await _context.UserMovies
-                    .Where(um => um.UserId == userId && um.Status == "finished")
-                    .CountAsync();
-
-                return Ok(new
-                {
-                    userId,
-                    username = user.Username,
-                    avatar = user.ProfilePic,
-                    level = user.Level,
-                    bookPoints = user.BookPoints,
-                    seriesPoints = user.SeriesPoints,
-                    moviePoints = user.MoviePoints,
-                    readTimeMin = user.ReadTimeMin,
-                    watchTimeMin = user.WatchTimeMin,
-                    dayStreak = user.DayStreak,
-                    booksFinished = booksCount,
-                    seriesFinished = seriesCount,
-                    moviesFinished = moviesCount,
-                    totalScore = user.BookPoints + user.SeriesPoints + user.MoviePoints,
-                    isPremium = user.Premium,
-                    creationDate = user.CreationDate,
-                    lastLoginDate = user.LastLoginDate
-                });
-            }
-            catch (Exception ex)
+            // --- completionPct: COMPLETED elemek / összes hozzáadott elem (content szerint) ---
+            double completionPct = content.ToLower() switch
             {
-                return StatusCode(500, new ErrorResponseDTO
-                {
-                    Error = "InternalError",
-                    Message = ex.Message
-                });
-            }
+                "books" => CalcPct(
+                    u.UserBooks.Count(b => b.Status == "COMPLETED"),
+                    bookCount),
+
+                "media" => CalcPct(
+                    u.UserMovies.Count(m => m.Status == "COMPLETED") +
+                    u.UserSeries.Count(s => s.Status == "COMPLETED"),
+                    mediaCount),
+
+                _ => CalcPct(
+                    u.UserBooks.Count(b => b.Status == "COMPLETED") +
+                    u.UserMovies.Count(m => m.Status == "COMPLETED") +
+                    u.UserSeries.Count(s => s.Status == "COMPLETED"),
+                    bookCount + mediaCount)
+            };
+
+            return new LeaderboardEntryDTO
+            {
+                Rank = rank,
+                UserId = u.Id,
+                Username = u.Username,
+                Avatar = u.ProfilePic != null ? Convert.ToBase64String(u.ProfilePic) : null,
+                CountryCode = u.CountryCode,
+                IsPremium = u.Premium,
+                Points = points,
+                BookCount = bookCount,
+                MediaCount = mediaCount,
+                CompletionPct = completionPct,
+                Level = u.Level,
+                DayStreak = u.DayStreak
+            };
         }
 
-        /// <summary>
-        /// Heti ranglista
-        /// GET /api/leaderboard/weekly?limit=50
-        /// </summary>
-        [HttpGet("weekly")]
-        public async Task<IActionResult> GetWeeklyLeaderboard(
-            [FromQuery] int limit = 50,
-            [FromQuery] int offset = 0)
+        private static double CalcPct(int completed, int total)
         {
-            try
-            {
-                var weekAgo = DateTime.Now.AddDays(-7);
-
-                var weeklyLeaderboard = await _context.Users
-                    .Where(u => u.LastLoginDate >= weekAgo)
-                    .OrderByDescending(u => u.BookPoints + u.SeriesPoints + u.MoviePoints)
-                    .Skip(offset)
-                    .Take(limit)
-                    .Select((u, index) => new
-                    {
-                        rank = offset + index + 1,
-                        userId = u.Id,
-                        username = u.Username,
-                        avatar = u.ProfilePic,
-                        level = u.Level,
-                        weeklyScore = u.BookPoints + u.SeriesPoints + u.MoviePoints,
-                        isPremium = u.Premium
-                    })
-                    .ToListAsync();
-
-                var total = await _context.Users
-                    .Where(u => u.LastLoginDate >= weekAgo)
-                    .CountAsync();
-
-                return Ok(new
-                {
-                    timeframe = "weekly",
-                    leaderboard = weeklyLeaderboard,
-                    total,
-                    limit,
-                    offset
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponseDTO
-                {
-                    Error = "InternalError",
-                    Message = ex.Message
-                });
-            }
-        }
-
-        /// <summary>
-        /// Havi ranglista
-        /// GET /api/leaderboard/monthly?limit=50
-        /// </summary>
-        [HttpGet("monthly")]
-        public async Task<IActionResult> GetMonthlyLeaderboard(
-            [FromQuery] int limit = 50,
-            [FromQuery] int offset = 0)
-        {
-            try
-            {
-                var monthAgo = DateTime.Now.AddMonths(-1);
-
-                var monthlyLeaderboard = await _context.Users
-                    .Where(u => u.LastLoginDate >= monthAgo)
-                    .OrderByDescending(u => u.BookPoints + u.SeriesPoints + u.MoviePoints)
-                    .Skip(offset)
-                    .Take(limit)
-                    .Select((u, index) => new
-                    {
-                        rank = offset + index + 1,
-                        userId = u.Id,
-                        username = u.Username,
-                        avatar = u.ProfilePic,
-                        level = u.Level,
-                        monthlyScore = u.BookPoints + u.SeriesPoints + u.MoviePoints,
-                        isPremium = u.Premium
-                    })
-                    .ToListAsync();
-
-                var total = await _context.Users
-                    .Where(u => u.LastLoginDate >= monthAgo)
-                    .CountAsync();
-
-                return Ok(new
-                {
-                    timeframe = "monthly",
-                    leaderboard = monthlyLeaderboard,
-                    total,
-                    limit,
-                    offset
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponseDTO
-                {
-                    Error = "InternalError",
-                    Message = ex.Message
-                });
-            }
-        }
-
-        /// <summary>
-        /// Felhasználó friends ranglista (premium feature)
-        /// GET /api/leaderboard/friends
-        /// </summary>
-        [HttpGet("friends")]
-        public async Task<IActionResult> GetFriendsLeaderboard(
-            [FromQuery] int limit = 50,
-            [FromQuery] int offset = 0)
-        {
-            try
-            {
-                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
-
-                // TODO: Implement friends system
-                // For now, return top 10 random users as placeholder
-
-                var friendsLeaderboard = await _context.Users
-                    .OrderByDescending(u => u.BookPoints + u.SeriesPoints + u.MoviePoints)
-                    .Skip(offset)
-                    .Take(limit)
-                    .Select((u, index) => new
-                    {
-                        rank = offset + index + 1,
-                        userId = u.Id,
-                        username = u.Username,
-                        avatar = u.ProfilePic,
-                        level = u.Level,
-                        score = u.BookPoints + u.SeriesPoints + u.MoviePoints,
-                        isPremium = u.Premium
-                    })
-                    .ToListAsync();
-
-                return Ok(new
-                {
-                    type = "friends",
-                    leaderboard = friendsLeaderboard,
-                    limit,
-                    offset
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new ErrorResponseDTO
-                {
-                    Error = "InternalError",
-                    Message = ex.Message
-                });
-            }
+            if (total == 0) return 0.0;
+            return Math.Round((double)completed / total * 100, 1);
         }
     }
 }
