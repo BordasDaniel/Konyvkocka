@@ -1,0 +1,713 @@
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5269').replace(/\/$/, '');
+
+export const SESSION_STORAGE_KEY = 'kk_session';
+
+const FALLBACK_IMAGE = '/assets/img/carousel.jpg';
+
+type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+
+interface RequestOptions {
+	method?: HttpMethod;
+	body?: unknown;
+	auth?: boolean;
+}
+
+export class ApiHttpError extends Error {
+	public readonly status: number;
+	public readonly payload: unknown;
+
+	constructor(status: number, message: string, payload: unknown) {
+		super(message);
+		this.name = 'ApiHttpError';
+		this.status = status;
+		this.payload = payload;
+	}
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === 'object' && value !== null;
+
+const extractErrorMessage = (payload: unknown, fallback: string): string => {
+	if (isRecord(payload)) {
+		const message = payload.message;
+		const error = payload.error;
+		if (typeof message === 'string' && message.trim().length > 0) return message;
+		if (typeof error === 'string' && error.trim().length > 0) return error;
+	}
+
+	return fallback;
+};
+
+const getToken = (): string | null => localStorage.getItem(SESSION_STORAGE_KEY);
+
+const request = async <T,>(path: string, options: RequestOptions = {}): Promise<T> => {
+	const { method = 'GET', body, auth = false } = options;
+
+	const headers: Record<string, string> = {
+		'Content-Type': 'application/json',
+	};
+
+	if (auth) {
+		const token = getToken();
+		if (token) {
+			headers.Authorization = `Bearer ${token}`;
+		}
+	}
+
+	const response = await fetch(`${API_BASE_URL}${path}`, {
+		method,
+		headers,
+		body: body === undefined ? undefined : JSON.stringify(body),
+	});
+
+	const text = await response.text();
+	let payload: unknown = null;
+
+	if (text) {
+		try {
+			payload = JSON.parse(text) as unknown;
+		} catch {
+			payload = text;
+		}
+	}
+
+	if (!response.ok) {
+		throw new ApiHttpError(
+			response.status,
+			extractErrorMessage(payload, `HTTP ${response.status}`),
+			payload,
+		);
+	}
+
+	return payload as T;
+};
+
+const sha256Hex = async (value: string): Promise<string> => {
+	const bytes = new TextEncoder().encode(value);
+	const hash = await crypto.subtle.digest('SHA-256', bytes);
+	return Array.from(new Uint8Array(hash))
+		.map((byte) => byte.toString(16).padStart(2, '0'))
+		.join('');
+};
+
+const createRandomSalt = (length = 64): string => {
+	const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	const random = crypto.getRandomValues(new Uint8Array(length));
+
+	let result = '';
+	for (const value of random) {
+		result += chars[value % chars.length];
+	}
+
+	return result;
+};
+
+export interface ApiUserMe {
+	id: number;
+	username: string;
+	email: string;
+	avatar: string | null;
+	isSubscriber: boolean;
+	permissionLevel: string;
+}
+
+interface AuthResponse {
+	user: ApiUserMe;
+	token: string;
+}
+
+export interface UiAuthUser {
+	id: number;
+	username: string;
+	email: string;
+	avatar: string;
+	isSubscriber: boolean;
+	isAdmin: boolean;
+}
+
+export const toAvatarSrc = (avatar: string | null | undefined): string => {
+	if (!avatar) return FALLBACK_IMAGE;
+	if (/^https?:\/\//i.test(avatar) || avatar.startsWith('data:')) return avatar;
+	return `data:image/png;base64,${avatar}`;
+};
+
+export const toContentImageSrc = (img: string | null | undefined): string => {
+	if (!img) return FALLBACK_IMAGE;
+	return img;
+};
+
+export type NormalizedContentType = 'book' | 'movie' | 'series';
+
+export const normalizeContentType = (type: string): NormalizedContentType => {
+	const lowered = type.toLowerCase();
+	if (lowered === 'movie') return 'movie';
+	if (lowered === 'series') return 'series';
+	return 'book';
+};
+
+export const buildContentKey = (type: string, id: number): string => `${normalizeContentType(type)}:${id}`;
+
+export const parseContentKey = (key: string): { type: NormalizedContentType; id: number } | null => {
+	const [typePart, idPart] = key.split(':');
+	const id = Number(idPart);
+	if (!typePart || Number.isNaN(id)) return null;
+	return { type: normalizeContentType(typePart), id };
+};
+
+export const mapUserMeToUiUser = (user: ApiUserMe): UiAuthUser => ({
+	id: user.id,
+	username: user.username,
+	email: user.email,
+	avatar: toAvatarSrc(user.avatar),
+	isSubscriber: user.isSubscriber,
+	isAdmin: user.permissionLevel?.toUpperCase() === 'ADMIN',
+});
+
+export const authLogin = async (email: string, plainPassword: string): Promise<AuthResponse> => {
+	const passwordHash = await sha256Hex(plainPassword);
+
+	return request<AuthResponse>('/api/auth/login', {
+		method: 'POST',
+		body: { email, passwordHash },
+	});
+};
+
+export const authRegister = async (
+	username: string,
+	email: string,
+	plainPassword: string,
+): Promise<AuthResponse> => {
+	const passwordHash = await sha256Hex(plainPassword);
+	const passwordSalt = createRandomSalt();
+
+	return request<AuthResponse>('/api/auth/register', {
+		method: 'POST',
+		body: { username, email, passwordHash, passwordSalt },
+	});
+};
+
+export const authMe = async (): Promise<ApiUserMe> => request<ApiUserMe>('/api/auth/me', { auth: true });
+
+export const authLogout = async (): Promise<void> => {
+	await request<{ message: string }>('/api/auth/logout', {
+		method: 'POST',
+		auth: true,
+	});
+};
+
+export interface HomeCardResponse {
+	id: number;
+	type: string;
+	title: string;
+	img: string;
+	year: number;
+	rating: number;
+	tags: string[];
+}
+
+export interface HomeCarouselResponse {
+	id: number;
+	type: string;
+	title: string;
+	img: string;
+	year: number;
+	description: string;
+	tags: string[];
+}
+
+export interface EpisodeResponse {
+	id: number;
+	seasonNum: number;
+	episodeNum: number;
+	title: string;
+	streamUrl: string;
+	length: number;
+}
+
+export interface ContentDetailResponse {
+	id: number;
+	type: string;
+	title: string;
+	img: string;
+	description: string;
+	rating: number;
+	trailerUrl: string | null;
+	tags: string[];
+	watchUrl: string | null;
+	episodes: EpisodeResponse[] | null;
+}
+
+export interface HomePageResponse {
+	fresh: HomeCardResponse[];
+	hot: HomeCardResponse[];
+	carousel: HomeCarouselResponse[];
+}
+
+export const getHomePage = async (): Promise<HomePageResponse> =>
+	request<HomePageResponse>('/api/content/home');
+
+export const getContentDetail = async (
+	type: string,
+	id: number,
+): Promise<ContentDetailResponse> => request<ContentDetailResponse>(`/api/content/${type}/${id}`);
+
+export interface SearchContentParams {
+	q?: string;
+	type?: string;
+	ageRatings?: string;
+	tags?: string;
+	sort?: string;
+	limit?: number;
+	offset?: number;
+}
+
+export interface SearchResponse {
+	total: number;
+	limit: number;
+	offset: number;
+	items: HomeCardResponse[];
+}
+
+export const searchContent = async (params: SearchContentParams): Promise<SearchResponse> => {
+	const searchParams = new URLSearchParams();
+	if (params.q) searchParams.set('q', params.q);
+	if (params.type) searchParams.set('type', params.type);
+	if (params.ageRatings) searchParams.set('ageRatings', params.ageRatings);
+	if (params.tags) searchParams.set('tags', params.tags);
+	if (params.sort) searchParams.set('sort', params.sort);
+	if (typeof params.limit === 'number') searchParams.set('limit', String(params.limit));
+	if (typeof params.offset === 'number') searchParams.set('offset', String(params.offset));
+
+	return request<SearchResponse>(`/api/content/search?${searchParams.toString()}`);
+};
+
+export interface LibraryItemResponse {
+	id: number;
+	contentType: string;
+	title: string;
+	cover: string;
+	year: number | null;
+	rating: number | null;
+	tags: string[];
+	status: string | null;
+	favorite: boolean;
+	userRating: number | null;
+	addedAt: string | null;
+	completedAt: string | null;
+	lastSeen: string | null;
+}
+
+export interface LibraryResponse {
+	query: string | null;
+	totalResults: number;
+	results: LibraryItemResponse[];
+}
+
+export const getLibrary = async (params: { q?: string } = {}): Promise<LibraryResponse> => {
+	const searchParams = new URLSearchParams();
+	if (params.q) searchParams.set('q', params.q);
+	const query = searchParams.toString();
+	const path = query.length > 0 ? `/api/library?${query}` : '/api/library';
+	return request<LibraryResponse>(path, { auth: true });
+};
+
+export interface HistoryItemResponse {
+	contentType: string;
+	contentId: number;
+	title: string;
+	cover: string | null;
+	poster: string | null;
+	status: string | null;
+	progress: number | null;
+	rating: number | null;
+	lastSeen: string | null;
+	addedAt: string | null;
+}
+
+export interface HistoryResponse {
+	type: string;
+	total: number;
+	page: number;
+	pageSize: number;
+	history: HistoryItemResponse[];
+}
+
+export const getHistory = async (params: {
+	type?: 'all' | 'book' | 'movie' | 'series';
+	page?: number;
+	pageSize?: number;
+} = {}): Promise<HistoryResponse> => {
+	const searchParams = new URLSearchParams();
+	searchParams.set('type', params.type ?? 'all');
+	searchParams.set('page', String(params.page ?? 1));
+	searchParams.set('pageSize', String(params.pageSize ?? 100));
+
+	return request<HistoryResponse>(`/api/history?${searchParams.toString()}`, { auth: true });
+};
+
+export interface NewsArticleResponse {
+	id: number;
+	title: string;
+	date: string;
+	category: string;
+	description: string;
+}
+
+export interface NewsResponse {
+	total: number;
+	page: number;
+	pageSize: number;
+	articles: NewsArticleResponse[];
+}
+
+export const getNews = async (params: {
+	filter?: 'all' | 'update' | 'function' | 'announcement' | 'event';
+	page?: number;
+	pageSize?: number;
+} = {}): Promise<NewsResponse> => {
+	const searchParams = new URLSearchParams();
+	searchParams.set('filter', params.filter ?? 'all');
+	searchParams.set('page', String(params.page ?? 1));
+	searchParams.set('pageSize', String(params.pageSize ?? 20));
+
+	return request<NewsResponse>(`/api/news?${searchParams.toString()}`);
+};
+
+export interface UserProfileTabAllResponse {
+	globalRank: number | null;
+	countryRank: number | null;
+	points: number;
+	timeMin: number;
+	completionRate: number;
+	booksCompleted: number;
+	mediaCompleted: number;
+	dayStreak: number;
+}
+
+export interface UserProfileTabMediaResponse {
+	globalRank: number | null;
+	countryRank: number | null;
+	points: number;
+	watchTimeMin: number;
+	completionRate: number;
+	completed: number;
+	total: number;
+}
+
+export interface UserProfileTabBooksResponse {
+	globalRank: number | null;
+	countryRank: number | null;
+	points: number;
+	readTimeMin: number;
+	completionRate: number;
+	completed: number;
+	total: number;
+}
+
+export interface UserProfileResponse {
+	id: number;
+	username: string;
+	avatar: string | null;
+	countryCode: string;
+	isSubscriber: boolean;
+	xp: number;
+	level: number;
+	dayStreak: number;
+	activeTitles: string[];
+	all: UserProfileTabAllResponse;
+	media: UserProfileTabMediaResponse;
+	books: UserProfileTabBooksResponse;
+}
+
+export interface UserRecentFavoriteItemResponse {
+	id: number;
+	type: string;
+	title: string;
+	img: string;
+	points: number;
+	status: string | null;
+}
+
+export interface UserBadgeCardResponse {
+	id: number;
+	name: string;
+	iconUrl: string | null;
+	earnedAt: string;
+}
+
+export interface UserBadgeCategoryResponse {
+	category: string;
+	badges: UserBadgeCardResponse[];
+}
+
+export interface UpdateUserSettingsParams {
+	avatarDataUrl?: string | null;
+	countryCode?: string | null;
+	newPlainPassword?: string;
+	activeTitleIds?: number[];
+}
+
+const dataUrlToRawBase64 = (value: string): string => {
+	if (!value.startsWith('data:')) return value;
+	const [, raw] = value.split(',', 2);
+	return raw ?? value;
+};
+
+export const getUserProfile = async (userId: number): Promise<UserProfileResponse> =>
+	request<UserProfileResponse>(`/api/user/${userId}/profile`);
+
+export const getUserRecent = async (
+	userId: number,
+	type: 'all' | 'media' | 'books',
+): Promise<UserRecentFavoriteItemResponse[]> =>
+	request<UserRecentFavoriteItemResponse[]>(`/api/user/${userId}/recent/${type}`);
+
+export const getUserFavorites = async (
+	userId: number,
+	type: 'all' | 'media' | 'books',
+): Promise<UserRecentFavoriteItemResponse[]> =>
+	request<UserRecentFavoriteItemResponse[]>(`/api/user/${userId}/favorites/${type}`);
+
+export const getUserBadges = async (userId: number): Promise<UserBadgeCategoryResponse[]> =>
+	request<UserBadgeCategoryResponse[]>(`/api/user/${userId}/badges`);
+
+export const updateUserSettings = async (params: UpdateUserSettingsParams): Promise<void> => {
+	const body: {
+		avatar: string | null;
+		countryCode: string | null;
+		newPasswordHash?: string;
+		newPasswordSalt?: string;
+		activeTitleIds: number[];
+	} = {
+		avatar: params.avatarDataUrl === undefined || params.avatarDataUrl === null
+			? null
+			: dataUrlToRawBase64(params.avatarDataUrl),
+		countryCode: params.countryCode ?? null,
+		activeTitleIds: params.activeTitleIds ?? [],
+	};
+
+	if (params.newPlainPassword && params.newPlainPassword.trim().length > 0) {
+		const salt = createRandomSalt();
+		body.newPasswordHash = await sha256Hex(params.newPlainPassword);
+		body.newPasswordSalt = salt;
+	}
+
+	await request<{ message: string }>('/api/user/settings', {
+		method: 'PATCH',
+		auth: true,
+		body,
+	});
+};
+
+export interface ChallengeTitleRewardResponse {
+	id: number;
+	name: string;
+	rarity: string;
+}
+
+export interface ChallengeBadgeRewardResponse {
+	id: number;
+	name: string;
+	iconURL: string | null;
+	rarity: string;
+}
+
+export interface ChallengeRewardsResponse {
+	xp: number;
+	title: ChallengeTitleRewardResponse | null;
+	badge: ChallengeBadgeRewardResponse | null;
+}
+
+export interface ChallengeItemResponse {
+	id: number;
+	title: string;
+	description: string;
+	difficulty: string;
+	type: string;
+	targetValue: number;
+	currentValue: number;
+	status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CLAIMED';
+	completedAt: string | null;
+	claimedAt: string | null;
+	rewards: ChallengeRewardsResponse;
+}
+
+export interface ChallengesResponse {
+	counts: {
+		all: number;
+		active: number;
+		completed: number;
+		events: number;
+	};
+	challenges: ChallengeItemResponse[];
+}
+
+export interface ClaimChallengeResponse {
+	message: string;
+	challengeId: number;
+	rewards: {
+		xp: number;
+		badge: {
+			id: number;
+			name: string;
+			iconUrl: string | null;
+			rarity: string;
+		} | null;
+		title: {
+			id: number;
+			name: string;
+			rarity: string;
+		} | null;
+	};
+	claimedAt: string;
+}
+
+export const getChallenges = async (params: {
+	status?: 'all' | 'active' | 'completed' | 'events';
+	type?: string;
+} = {}): Promise<ChallengesResponse> => {
+	const searchParams = new URLSearchParams();
+	if (params.status) searchParams.set('status', params.status);
+	if (params.type) searchParams.set('type', params.type);
+	const query = searchParams.toString();
+	const path = query.length > 0 ? `/api/challenge?${query}` : '/api/challenge';
+
+	return request<ChallengesResponse>(path, { auth: true });
+};
+
+export const claimChallenge = async (challengeId: number): Promise<ClaimChallengeResponse> =>
+	request<ClaimChallengeResponse>(`/api/challenge/${challengeId}/claim`, {
+		method: 'POST',
+		auth: true,
+	});
+
+export interface LeaderboardEntryResponse {
+	rank: number;
+	userId: number;
+	username: string;
+	avatar: string | null;
+	countryCode: string;
+	isPremium: boolean;
+	points: number;
+	bookCount: number;
+	mediaCount: number;
+	completionPct: number;
+	level: number;
+	dayStreak: number;
+}
+
+export interface LeaderboardResponse {
+	me: LeaderboardEntryResponse;
+	entries: LeaderboardEntryResponse[];
+	total: number;
+	page: number;
+	pageSize: number;
+}
+
+export const getLeaderboard = async (params: {
+	content?: 'all' | 'books' | 'media';
+	region?: 'world' | 'country';
+	page?: number;
+	pageSize?: number;
+} = {}): Promise<LeaderboardResponse> => {
+	const searchParams = new URLSearchParams();
+	searchParams.set('content', params.content ?? 'all');
+	searchParams.set('region', params.region ?? 'world');
+	searchParams.set('page', String(params.page ?? 1));
+	searchParams.set('pageSize', String(params.pageSize ?? 10));
+
+	return request<LeaderboardResponse>(`/api/leaderboard?${searchParams.toString()}`, { auth: true });
+};
+
+export type NotificationType = 'ALL' | 'SYSTEM' | 'FRIEND' | 'CHALLENGE' | 'PURCHASE';
+
+export interface NotificationItemResponse {
+	id: number;
+	type: NotificationType;
+	subject: string;
+	message: string;
+	isRead: boolean;
+	createdAt: string | null;
+	senderUsername: string | null;
+}
+
+export interface NotificationsResponse {
+	total: number;
+	unreadCount: number;
+	page: number;
+	pageSize: number;
+	notifications: NotificationItemResponse[];
+}
+
+export const getNotifications = async (params: {
+	type?: NotificationType;
+	unread?: boolean;
+	page?: number;
+	pageSize?: number;
+} = {}): Promise<NotificationsResponse> => {
+	const searchParams = new URLSearchParams();
+	if (params.type) searchParams.set('type', params.type);
+	if (typeof params.unread === 'boolean') searchParams.set('unread', String(params.unread));
+	searchParams.set('page', String(params.page ?? 1));
+	searchParams.set('pageSize', String(params.pageSize ?? 100));
+
+	return request<NotificationsResponse>(`/api/notification?${searchParams.toString()}`, { auth: true });
+};
+
+export const markNotificationAsRead = async (notificationId: number): Promise<void> => {
+	await request<{ message: string }>(`/api/notification/${notificationId}/read`, {
+		method: 'PATCH',
+		auth: true,
+	});
+};
+
+export const markAllNotificationsAsRead = async (): Promise<void> => {
+	await request<{ message: string }>('/api/notification/read-all', {
+		method: 'PATCH',
+		auth: true,
+	});
+};
+
+export const deleteNotification = async (notificationId: number): Promise<void> => {
+	await request<{ message: string }>(`/api/notification/${notificationId}`, {
+		method: 'DELETE',
+		auth: true,
+	});
+};
+
+export interface SubscriptionInfoResponse {
+	type: 'free' | 'premium';
+	name: string;
+	expiresAt: string | null;
+}
+
+export interface PurchaseItemResponse {
+	id: number;
+	purchaseDate: string | null;
+	price: number | null;
+	tier: string;
+	purchaseStatus: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED' | null;
+}
+
+export interface SubscriptionPurchasesResponse {
+	total: number;
+	page: number;
+	pageSize: number;
+	purchases: PurchaseItemResponse[];
+}
+
+export const getSubscriptionInfo = async (): Promise<SubscriptionInfoResponse> =>
+	request<SubscriptionInfoResponse>('/api/subscription/info', { auth: true });
+
+export const getSubscriptionPurchases = async (params: {
+	page?: number;
+	pageSize?: number;
+} = {}): Promise<SubscriptionPurchasesResponse> => {
+	const searchParams = new URLSearchParams();
+	searchParams.set('page', String(params.page ?? 1));
+	searchParams.set('pageSize', String(params.pageSize ?? 200));
+
+	return request<SubscriptionPurchasesResponse>(`/api/subscription/purchases?${searchParams.toString()}`, {
+		auth: true,
+	});
+};
