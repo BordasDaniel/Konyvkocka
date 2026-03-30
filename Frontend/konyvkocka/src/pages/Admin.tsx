@@ -1,13 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import {
+  getAdminPurchases,
+  type AdminPurchaseItemResponse,
+} from '../services/api';
 import '../styles/admin.css';
 
 // ========================
 // TÍPUSOK
 // ========================
 
-type AdminTab = 'overview' | 'users' | 'content' | 'news' | 'challenges' | 'announcements';
+type AdminTab = 'overview' | 'users' | 'content' | 'news' | 'challenges' | 'purchases' | 'announcements';
 
 interface StatCard {
   label: string;
@@ -520,6 +524,12 @@ const Admin: React.FC = () => {
   const [contentPage, setContentPage] = useState(1);
   const [newsPage, setNewsPage] = useState(1);
   const [challengesPage, setChallengesPage] = useState(1);
+  const [purchasesData, setPurchasesData] = useState<AdminPurchaseItemResponse[]>([]);
+  const [purchasesTotalFromApi, setPurchasesTotalFromApi] = useState(0);
+  const [purchasesPage, setPurchasesPage] = useState(1);
+  const [purchasesLoading, setPurchasesLoading] = useState(false);
+  const [purchasesStatusFilter, setPurchasesStatusFilter] = useState<'all' | 'SUCCESS' | 'PENDING' | 'FAILED' | 'REFUNDED'>('all');
+  const [purchasesSearch, setPurchasesSearch] = useState('');
   const pageSize = 4;
 
   const selectedUser = userDraft;
@@ -696,6 +706,48 @@ const Admin: React.FC = () => {
   useEffect(() => {
     if (challengesPage > totalChallengePages) setChallengesPage(totalChallengePages);
   }, [challengesPage, totalChallengePages]);
+
+  // Vásárlások betöltése API-ból
+  const loadPurchases = useCallback(async () => {
+    setPurchasesLoading(true);
+    try {
+      const statusParam = purchasesStatusFilter === 'all' ? undefined : purchasesStatusFilter;
+      const data = await getAdminPurchases({
+        page: purchasesPage,
+        pageSize,
+        status: statusParam,
+      });
+      setPurchasesData(data.purchases);
+      setPurchasesTotalFromApi(data.total);
+    } catch {
+      setPurchasesData([]);
+      setPurchasesTotalFromApi(0);
+    } finally {
+      setPurchasesLoading(false);
+    }
+  }, [purchasesPage, purchasesStatusFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'purchases') {
+      void loadPurchases();
+    }
+  }, [activeTab, loadPurchases]);
+
+  useEffect(() => {
+    setPurchasesPage(1);
+  }, [purchasesStatusFilter]);
+
+  const totalPurchasePages = Math.max(1, Math.ceil(purchasesTotalFromApi / pageSize));
+
+  const filteredPurchasesForDisplay = useMemo(() => {
+    if (!purchasesSearch.trim()) return purchasesData;
+    const q = purchasesSearch.toLowerCase();
+    return purchasesData.filter(p =>
+      p.username.toLowerCase().includes(q) ||
+      p.email.toLowerCase().includes(q) ||
+      String(p.id).includes(q)
+    );
+  }, [purchasesData, purchasesSearch]);
 
   // Mentés handler (mock)
   const handleSave = (section: string) => {
@@ -1110,6 +1162,7 @@ const Admin: React.FC = () => {
     { key: 'content', label: 'Tartalmak', icon: 'bi-collection-fill' },
     { key: 'news', label: 'Hírek', icon: 'bi-newspaper' },
     { key: 'challenges', label: 'Kihívások', icon: 'bi-trophy-fill' },
+    { key: 'purchases', label: 'Vásárlások', icon: 'bi-bag-check-fill' },
     { key: 'announcements', label: 'Bejelentés', icon: 'bi-megaphone-fill' },
   ];
 
@@ -2579,6 +2632,138 @@ const Admin: React.FC = () => {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ======================== BEJELENTÉS ======================== */}
+          {activeTab === 'purchases' && (
+            <div className="admin-section">
+              <div className="admin-users-overview">
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Összes vásárlás</span>
+                  <strong>{purchasesTotalFromApi}</strong>
+                </div>
+              </div>
+
+              <div className="admin-card">
+                <div className="admin-card-header">
+                  <h3 className="admin-card-title">
+                    <i className="bi bi-bag-check-fill me-2"></i>
+                    Vásárlások kezelése
+                    <span className="admin-count">{purchasesTotalFromApi}</span>
+                  </h3>
+                  <div className="admin-header-controls">
+                    <div className="admin-filter-pills">
+                      {([
+                        { key: 'all', label: 'Mind' },
+                        { key: 'SUCCESS', label: 'Sikeres' },
+                        { key: 'PENDING', label: 'Függőben' },
+                        { key: 'FAILED', label: 'Sikertelen' },
+                        { key: 'REFUNDED', label: 'Visszatérítve' },
+                      ] as const).map(filter => (
+                        <button
+                          key={filter.key}
+                          className={`admin-pill ${purchasesStatusFilter === filter.key ? 'active' : ''}`}
+                          onClick={() => setPurchasesStatusFilter(filter.key)}
+                        >
+                          {filter.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="admin-search">
+                      <i className="bi bi-search"></i>
+                      <input
+                        type="text"
+                        placeholder="Keresés felhasználónév vagy e-mail alapján..."
+                        value={purchasesSearch}
+                        onChange={(e) => setPurchasesSearch(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="admin-table-wrapper">
+                  {purchasesLoading ? (
+                    <div className="text-center py-4">
+                      <div className="spinner-border text-light" role="status">
+                        <span className="visually-hidden">Betöltés...</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>#ID</th>
+                          <th>Felhasználó</th>
+                          <th>Csomag</th>
+                          <th>Ár</th>
+                          <th>Státusz</th>
+                          <th>Dátum</th>
+                          <th>Frissítve</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPurchasesForDisplay.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="text-center py-4">
+                              <i className="bi bi-inbox" style={{ fontSize: '2rem', opacity: 0.5 }}></i>
+                              <p className="mt-2 mb-0">Nincs megjeleníthető vásárlás</p>
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredPurchasesForDisplay.map(purchase => (
+                            <tr key={purchase.id}>
+                              <td><code>#{purchase.id}</code></td>
+                              <td>
+                                <div>
+                                  <div style={{ fontWeight: 600 }}>{purchase.username}</div>
+                                  <small style={{ opacity: 0.6 }}>{purchase.email}</small>
+                                </div>
+                              </td>
+                              <td>
+                                {purchase.tier === 'ONE_M' && <span className="admin-badge admin-badge-blue">1 hónap</span>}
+                                {purchase.tier === 'QUARTER_Y' && <span className="admin-badge admin-badge-purple">3 hónap</span>}
+                                {purchase.tier === 'FULL_Y' && <span className="admin-badge admin-badge-gold">12 hónap</span>}
+                              </td>
+                              <td>{purchase.price != null ? `${purchase.price.toLocaleString('hu-HU')} Ft` : '—'}</td>
+                              <td>
+                                {purchase.purchaseStatus === 'SUCCESS' && <span className="admin-badge admin-badge-green">Sikeres</span>}
+                                {purchase.purchaseStatus === 'PENDING' && <span className="admin-badge admin-badge-yellow">Függőben</span>}
+                                {purchase.purchaseStatus === 'FAILED' && <span className="admin-badge admin-badge-red">Sikertelen</span>}
+                                {purchase.purchaseStatus === 'REFUNDED' && <span className="admin-badge admin-badge-dim">Visszatérítve</span>}
+                                {!purchase.purchaseStatus && <span className="admin-badge admin-badge-dim">Ismeretlen</span>}
+                              </td>
+                              <td>{purchase.purchaseDate ? new Date(purchase.purchaseDate).toLocaleDateString('hu-HU') : '—'}</td>
+                              <td>{purchase.updatedAt ? new Date(purchase.updatedAt).toLocaleString('hu-HU') : '—'}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+                {!purchasesLoading && purchasesTotalFromApi > 0 && totalPurchasePages > 1 && (
+                  <nav className="admin-pagination-wrap" aria-label="Vásárlások lapozása">
+                    <ul className="pagination kk-pagination justify-content-center mb-0">
+                      <li className={`page-item ${purchasesPage === 1 ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setPurchasesPage(Math.max(1, purchasesPage - 1))}>Előző</button>
+                      </li>
+
+                      {getPaginationRange(purchasesPage, totalPurchasePages).map((page) => (
+                        <li key={page} className={`page-item ${purchasesPage === page ? 'active' : ''}`}>
+                          <button className="page-link" onClick={() => setPurchasesPage(page)}>{page}</button>
+                        </li>
+                      ))}
+
+                      <li className={`page-item ${purchasesPage === totalPurchasePages ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setPurchasesPage(Math.min(totalPurchasePages, purchasesPage + 1))}>Következő</button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
+              </div>
             </div>
           )}
 

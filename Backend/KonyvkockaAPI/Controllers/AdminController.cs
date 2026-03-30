@@ -216,5 +216,135 @@ namespace KonyvkockaAPI.Controllers
                 return StatusCode(500, new ErrorResponseDTO { Error = "DetailError", Message = ex.Message });
             }
         }
+
+        // ================================================================
+        // GET /api/admin/users
+        // Összes felhasználó listázása – admin/moderátor jogosultság szükséges
+        //
+        // Query paraméterek:
+        //   page     – oldalszám (alapértelmezett: 1)
+        //   pageSize – oldal mérete (alapértelmezett: 20, max: 100)
+        //   q        – keresés felhasználónév vagy e-mail alapján
+        // ================================================================
+        [HttpGet("users")]
+        public async Task<IActionResult> GetUsers(
+            [FromQuery] int page     = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? q    = null)
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                if (page < 1) page = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 20;
+
+                IQueryable<User> query = _context.Users;
+
+                if (!string.IsNullOrWhiteSpace(q))
+                {
+                    var search = q.Trim().ToLower();
+                    query = query.Where(u =>
+                        u.Username.ToLower().Contains(search) ||
+                        u.Email.ToLower().Contains(search));
+                }
+
+                var total = await query.CountAsync();
+
+                var users = await query
+                    .OrderByDescending(u => u.Id)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(u => new AdminUserItemDTO
+                    {
+                        Id              = u.Id,
+                        Username        = u.Username,
+                        Email           = u.Email,
+                        Avatar          = u.ProfilePic != null ? Convert.ToBase64String(u.ProfilePic) : null,
+                        PermissionLevel = u.PermissionLevel,
+                        Premium         = u.Premium,
+                        PremiumExpiresAt = u.PremiumExpiresAt,
+                        Level           = u.Level,
+                        Xp              = u.Xp,
+                        CountryCode     = u.CountryCode,
+                        CreationDate    = u.CreationDate,
+                        LastLoginDate   = u.LastLoginDate,
+                        DayStreak       = u.DayStreak,
+                        ReadTimeMin     = u.ReadTimeMin,
+                        WatchTimeMin    = u.WatchTimeMin,
+                        BookPoints      = u.BookPoints,
+                        SeriesPoints    = u.SeriesPoints,
+                        MoviePoints     = u.MoviePoints
+                    })
+                    .ToListAsync();
+
+                return Ok(new { total, page, pageSize, users });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // GET /api/admin/purchases
+        // Összes vásárlás listázása – admin/moderátor jogosultság szükséges
+        //
+        // Query paraméterek:
+        //   page     – oldalszám (alapértelmezett: 1)
+        //   pageSize – oldal mérete (alapértelmezett: 20, max: 100)
+        //   status   – szűrés státusz alapján (opcionális)
+        // ================================================================
+        [HttpGet("purchases")]
+        public async Task<IActionResult> GetPurchases(
+            [FromQuery] int page     = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? status = null)
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                if (page < 1) page = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 20;
+
+                IQueryable<Purchase> query = _context.Purchases.Include(p => p.User);
+
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    query = query.Where(p => p.PurchaseStatus == status.ToUpper());
+                }
+
+                var total = await query.CountAsync();
+
+                var purchases = await query
+                    .OrderByDescending(p => p.PurchaseDate)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(p => new AdminPurchaseItemDTO
+                    {
+                        Id             = p.Id,
+                        UserId         = p.UserId,
+                        Username       = p.User.Username,
+                        Email          = p.User.Email,
+                        PurchaseDate   = p.PurchaseDate,
+                        Price          = p.Price,
+                        Tier           = p.Tier,
+                        PurchaseStatus = p.PurchaseStatus,
+                        UpdatedAt      = p.UpdatedAt
+                    })
+                    .ToListAsync();
+
+                return Ok(new { total, page, pageSize, purchases });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
     }
 }

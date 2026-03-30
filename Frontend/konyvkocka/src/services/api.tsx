@@ -711,3 +711,99 @@ export const getSubscriptionPurchases = async (params: {
 		auth: true,
 	});
 };
+
+// ========================
+// VÁSÁRLÁS (PURCHASE)
+// ========================
+
+export interface CreatePurchaseResponse {
+	message: string;
+	purchaseId: number;
+	tier: string;
+	price: number;
+	expiresAt: string;
+}
+
+export const createPurchase = async (tier: string): Promise<CreatePurchaseResponse> =>
+	request<CreatePurchaseResponse>('/api/subscription/purchase', {
+		method: 'POST',
+		auth: true,
+		body: { tier },
+	});
+
+// ========================
+// ADMIN VÉGPONTOK
+// ========================
+
+export interface AdminUserItemResponse {
+	id: number;
+	username: string;
+	email: string;
+	avatar: string | null;
+	permissionLevel: string;
+	premium: boolean;
+	premiumExpiresAt: string | null;
+	level: number;
+	xp: number;
+	countryCode: string;
+	creationDate: string;
+	lastLoginDate: string;
+	dayStreak: number;
+	readTimeMin: number;
+	watchTimeMin: number;
+	bookPoints: number;
+	seriesPoints: number;
+	moviePoints: number;
+}
+
+export interface AdminUsersResponse {
+	total: number;
+	page: number;
+	pageSize: number;
+	users: AdminUserItemResponse[];
+}
+
+export const getAdminUsers = async (params: {
+	page?: number;
+	pageSize?: number;
+	q?: string;
+} = {}): Promise<AdminUsersResponse> => {
+	const searchParams = new URLSearchParams();
+	searchParams.set('page', String(params.page ?? 1));
+	searchParams.set('pageSize', String(params.pageSize ?? 20));
+	if (params.q) searchParams.set('q', params.q);
+
+	return request<AdminUsersResponse>(`/api/admin/users?${searchParams.toString()}`, { auth: true });
+};
+
+export interface AdminPurchaseItemResponse {
+	id: number;
+	userId: number;
+	username: string;
+	email: string;
+	purchaseDate: string | null;
+	price: number | null;
+	tier: string;
+	purchaseStatus: string | null;
+	updatedAt: string | null;
+}
+
+export interface AdminPurchasesResponse {
+	total: number;
+	page: number;
+	pageSize: number;
+	purchases: AdminPurchaseItemResponse[];
+}
+
+export const getAdminPurchases = async (params: {
+	page?: number;
+	pageSize?: number;
+	status?: string;
+} = {}): Promise<AdminPurchasesResponse> => {
+	const searchParams = new URLSearchParams();
+	searchParams.set('page', String(params.page ?? 1));
+	searchParams.set('pageSize', String(params.pageSize ?? 20));
+	if (params.status) searchParams.set('status', params.status);
+
+	return request<AdminPurchasesResponse>(`/api/admin/purchases?${searchParams.toString()}`, { auth: true });
+};
