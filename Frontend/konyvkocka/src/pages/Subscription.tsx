@@ -328,16 +328,10 @@ const Subscription: React.FC = () => {
                   Váltás Premiumra
                 </button>
               ) : (
-                <>
-                  <button className="btn-upgrade" onClick={() => navigate('/fizetes')}>
-                    <i className="bi bi-arrow-up-circle"></i>
-                    Csomag váltás
-                  </button>
-                  <button className="btn-cancel" onClick={() => navigate('/tamogatas')}>
-                    <i className="bi bi-life-preserver"></i>
-                    Lemondas ugyfelszolgalaton
-                  </button>
-                </>
+                <button className="btn-cancel" onClick={() => navigate('/tamogatas')}>
+                  <i className="bi bi-life-preserver"></i>
+                  Lemondas ugyfelszolgalaton
+                </button>
               )}
             </div>
           </div>
