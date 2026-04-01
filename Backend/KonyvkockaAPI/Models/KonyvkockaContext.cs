@@ -307,7 +307,7 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.MoviePoints).HasColumnType("int(11)");
             entity.Property(e => e.PasswordHash).HasColumnType("text");
             entity.Property(e => e.PasswordSalt).HasColumnType("text");
-            entity.Property(e => e.ProfilePic).HasColumnType("blob");
+            entity.Property(e => e.ProfilePic).HasColumnType("mediumblob");
             entity.Property(e => e.ReadTimeMin).HasColumnType("int(11)");
             entity.Property(e => e.SeriesPoints).HasColumnType("int(11)");
             entity.Property(e => e.Username).HasMaxLength(128);
@@ -483,7 +483,7 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.PasswordHash).HasColumnType("text");
             entity.Property(e => e.PasswordSalt).HasColumnType("text");
             entity.Property(e => e.CountryCode).HasMaxLength(2).IsFixedLength();
-            entity.Property(e => e.ProfilePic).HasColumnType("blob");
+            entity.Property(e => e.ProfilePic).HasColumnType("mediumblob");
             entity.Property(e => e.PremiumExpiresAt).HasDefaultValueSql("'NULL'").HasColumnType("datetime");
             entity.Property(e => e.PermissionLevel)
                 .HasColumnType("enum('USER','MODERATOR','ADMIN')");

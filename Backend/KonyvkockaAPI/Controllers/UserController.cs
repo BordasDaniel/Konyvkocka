@@ -57,16 +57,34 @@ namespace KonyvkockaAPI.Controllers
                     .Select(ut => ut.Title.Name)
                     .ToListAsync();
 
+                string? email = null;
+                if (User?.Identity?.IsAuthenticated == true)
+                {
+                    var requesterIdClaim = User.FindFirst("userId")?.Value;
+                    var requesterPermission = User.FindFirst("permissionLevel")?.Value;
+                    if (int.TryParse(requesterIdClaim, out var requesterId) && (requesterId == userId || requesterPermission == "ADMIN"))
+                    {
+                        email = user.Email;
+                    }
+                }
+
                 return Ok(new ProfileResponseDTO
                 {
                     Id           = user.Id,
                     Username     = user.Username,
                     Avatar       = user.ProfilePic != null ? Convert.ToBase64String(user.ProfilePic) : null,
                     CountryCode  = user.CountryCode,
+                    Email        = email,
                     IsSubscriber = user.Premium,
+                    PremiumExpiresAt = user.PremiumExpiresAt,
+                    CreationDate = user.CreationDate,
+                    LastLoginDate = user.LastLoginDate,
                     Xp           = user.Xp,
                     Level        = user.Level,
                     DayStreak    = user.DayStreak,
+                    BookPoints   = user.BookPoints,
+                    SeriesPoints = user.SeriesPoints,
+                    MoviePoints  = user.MoviePoints,
                     ActiveTitles = activeTitles,
 
                     All = new ProfileTabAllDTO
@@ -437,7 +455,11 @@ namespace KonyvkockaAPI.Controllers
         {
             try
             {
-                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var userIdClaim = User.FindFirst("userId")?.Value;
+                if (!int.TryParse(userIdClaim, out var userId) || userId <= 0)
+                    return Unauthorized(new ErrorResponseDTO { Error = "Unauthorized", Message = "Érvénytelen vagy lejárt token" });
+
+                dto.ActiveTitleIds ??= new List<int>();
 
                 var user = await _context.Users.FindAsync(userId);
                 if (user == null)
@@ -446,8 +468,41 @@ namespace KonyvkockaAPI.Controllers
                 // --- Profilkép ---
                 if (dto.Avatar != null)
                 {
-                    try { user.ProfilePic = Convert.FromBase64String(dto.Avatar); }
-                    catch { return BadRequest(new ErrorResponseDTO { Error = "InvalidAvatar", Message = "Érvénytelen base64 formátum." }); }
+                    var avatarInput = dto.Avatar.Trim();
+
+                    if (avatarInput.Length == 0)
+                    {
+                        user.ProfilePic = null;
+                    }
+                    else
+                    {
+                        if (avatarInput.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var commaIndex = avatarInput.IndexOf(',');
+                            if (commaIndex >= 0 && commaIndex < avatarInput.Length - 1)
+                                avatarInput = avatarInput[(commaIndex + 1)..];
+                        }
+
+                        byte[] avatarBytes;
+                        try
+                        {
+                            avatarBytes = Convert.FromBase64String(avatarInput);
+                        }
+                        catch
+                        {
+                            return BadRequest(new ErrorResponseDTO { Error = "InvalidAvatar", Message = "Érvénytelen base64 formátum." });
+                        }
+
+                        const int maxAvatarBytes = 512 * 1024;
+                        if (avatarBytes.Length > maxAvatarBytes)
+                            return BadRequest(new ErrorResponseDTO
+                            {
+                                Error = "AvatarTooLarge",
+                                Message = "A profilkép túl nagy. Maximum 512KB méretű képet tölthetsz fel."
+                            });
+
+                        user.ProfilePic = avatarBytes;
+                    }
                 }
 
                 // --- Országkód ---
@@ -455,7 +510,7 @@ namespace KonyvkockaAPI.Controllers
                     user.CountryCode = dto.CountryCode;
 
                 // --- Jelszó ---
-                if (dto.NewPasswordHash != null)
+                if (!string.IsNullOrWhiteSpace(dto.NewPasswordHash))
                 {
                     if (string.IsNullOrWhiteSpace(dto.NewPasswordSalt))
                         return BadRequest(new ErrorResponseDTO { Error = "MissingSalt", Message = "NewPasswordSalt kötelező ha jelszót változtatsz." });

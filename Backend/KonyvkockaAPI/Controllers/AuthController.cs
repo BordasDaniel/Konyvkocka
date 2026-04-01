@@ -58,10 +58,10 @@ namespace KonyvkockaAPI.Controllers
             }
             catch (Exception)
             {
-                return Unauthorized(new ErrorResponseDTO
+                return StatusCode(500, new ErrorResponseDTO
                 {
-                    Error = "Unauthorized",
-                    Message = "Érvénytelen vagy lejárt token"
+                    Error = "InternalError",
+                    Message = "A munkamenet ellenőrzése sikertelen"
                 });
             }
         }

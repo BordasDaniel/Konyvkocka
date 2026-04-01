@@ -2,6 +2,8 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:526
 
 export const SESSION_STORAGE_KEY = 'kk_session';
 
+const DEFAULT_AVATAR =
+	"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%232f3b52'/%3E%3Cstop offset='100%25' stop-color='%23192234'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='64' cy='64' r='64' fill='url(%23g)'/%3E%3Ccircle cx='64' cy='49' r='23' fill='%23d6deeb'/%3E%3Cpath d='M24 113c5-22 21-34 40-34s35 12 40 34' fill='%23d6deeb'/%3E%3C/svg%3E";
 const FALLBACK_IMAGE = '/assets/img/carousel.jpg';
 
 type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -125,10 +127,54 @@ export interface UiAuthUser {
 	isAdmin: boolean;
 }
 
+const decodeBase64Prefix = (rawBase64: string, bytesToRead = 16): Uint8Array | null => {
+	try {
+		const cleaned = rawBase64.replace(/\s+/g, '');
+		if (!cleaned) return null;
+
+		const charsNeeded = Math.ceil((bytesToRead * 4) / 3);
+		const prefix = cleaned.slice(0, charsNeeded);
+		const padded = prefix + '='.repeat((4 - (prefix.length % 4)) % 4);
+		const decoded = atob(padded);
+		const bytes = new Uint8Array(decoded.length);
+		for (let i = 0; i < decoded.length; i += 1) {
+			bytes[i] = decoded.charCodeAt(i);
+		}
+		return bytes;
+	} catch {
+		return null;
+	}
+};
+
+const detectAvatarMimeType = (rawBase64: string): string => {
+	const bytes = decodeBase64Prefix(rawBase64, 16);
+	if (!bytes || bytes.length < 4) return 'image/png';
+
+	if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'image/png';
+	if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+	if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) return 'image/gif';
+	if (
+		bytes.length >= 12 &&
+		bytes[0] === 0x52 &&
+		bytes[1] === 0x49 &&
+		bytes[2] === 0x46 &&
+		bytes[3] === 0x46 &&
+		bytes[8] === 0x57 &&
+		bytes[9] === 0x45 &&
+		bytes[10] === 0x42 &&
+		bytes[11] === 0x50
+	) {
+		return 'image/webp';
+	}
+	if (bytes[0] === 0x42 && bytes[1] === 0x4d) return 'image/bmp';
+
+	return 'image/png';
+};
+
 export const toAvatarSrc = (avatar: string | null | undefined): string => {
-	if (!avatar) return FALLBACK_IMAGE;
+	if (!avatar) return DEFAULT_AVATAR;
 	if (/^https?:\/\//i.test(avatar) || avatar.startsWith('data:')) return avatar;
-	return `data:image/png;base64,${avatar}`;
+	return `data:${detectAvatarMimeType(avatar)};base64,${avatar}`;
 };
 
 export const toContentImageSrc = (img: string | null | undefined): string => {
@@ -409,10 +455,17 @@ export interface UserProfileResponse {
 	username: string;
 	avatar: string | null;
 	countryCode: string;
+	email: string | null;
 	isSubscriber: boolean;
+	premiumExpiresAt: string | null;
+	creationDate: string;
+	lastLoginDate: string;
 	xp: number;
 	level: number;
 	dayStreak: number;
+	bookPoints: number;
+	seriesPoints: number;
+	moviePoints: number;
 	activeTitles: string[];
 	all: UserProfileTabAllResponse;
 	media: UserProfileTabMediaResponse;

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import '../styles/user.css';
 import {
+	ApiHttpError,
+	SESSION_STORAGE_KEY,
 	authMe,
 	getUserBadges,
 	getUserFavorites,
@@ -174,6 +176,20 @@ const formatRank = (rank: number | null): string => (rank ? `#${rank.toLocaleStr
 
 const formatPercent = (value: number): string => `${(value * 100).toFixed(2)}%`;
 
+const formatDateLabel = (value: string | null | undefined): string => {
+	if (!value) return 'Nincs adat';
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return 'Nincs adat';
+	return date.toLocaleDateString('hu-HU');
+};
+
+const formatDateTimeLabel = (value: string | null | undefined): string | null => {
+	if (!value) return null;
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return null;
+	return `${date.toLocaleDateString('hu-HU')} ${date.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
 const mapPermissionLevel = (permissionLevel: string | undefined): UserProfile['permissionLevel'] => {
 	const normalized = permissionLevel?.toUpperCase();
 	if (normalized === 'ADMIN') return 'ADMIN';
@@ -325,14 +341,146 @@ const mapApiBadgesToMedalGroups = (groups: UserBadgeCategoryResponse[]): MedalGr
 		})),
 	}));
 
+const MAX_AVATAR_BYTES = 512 * 1024;
+const MAX_SOURCE_AVATAR_BYTES = 20 * 1024 * 1024;
+const MAX_AVATAR_DIMENSION = 1024;
+
+const decodeBase64Url = (value: string): string => {
+	const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+	const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+	return atob(padded);
+};
+
+const getUserIdFromToken = (): number | null => {
+	try {
+		const token = localStorage.getItem(SESSION_STORAGE_KEY);
+		if (!token) return null;
+
+		const tokenParts = token.split('.');
+		if (tokenParts.length < 2 || !tokenParts[1]) return null;
+
+		const payload = JSON.parse(decodeBase64Url(tokenParts[1])) as { userId?: unknown };
+		if (typeof payload.userId === 'number') return payload.userId;
+		if (typeof payload.userId === 'string') {
+			const parsedId = Number(payload.userId);
+			return Number.isInteger(parsedId) ? parsedId : null;
+		}
+
+		return null;
+	} catch {
+		return null;
+	}
+};
+
+const base64ByteLength = (rawBase64: string): number => {
+	const normalized = rawBase64.trim();
+	if (!normalized) return 0;
+	const padding = normalized.endsWith('==') ? 2 : normalized.endsWith('=') ? 1 : 0;
+	return Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);
+};
+
+const dataUrlByteLength = (dataUrl: string): number => {
+	const commaIndex = dataUrl.indexOf(',');
+	if (commaIndex < 0 || commaIndex >= dataUrl.length - 1) return 0;
+	return base64ByteLength(dataUrl.slice(commaIndex + 1));
+};
+
+const readFileAsDataUrl = (file: File): Promise<string> =>
+	new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => {
+			if (typeof reader.result !== 'string') {
+				reject(new Error('Nem sikerült beolvasni a képet.'));
+				return;
+			}
+			resolve(reader.result);
+		};
+		reader.onerror = () => reject(new Error('Nem sikerült beolvasni a képet.'));
+		reader.readAsDataURL(file);
+	});
+
+const loadImageFromDataUrl = (dataUrl: string): Promise<HTMLImageElement> =>
+	new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => resolve(img);
+		img.onerror = () => reject(new Error('A kép feldolgozása sikertelen.'));
+		img.src = dataUrl;
+	});
+
+const canvasToDataUrl = (canvas: HTMLCanvasElement, mimeType: string, quality?: number): Promise<string> =>
+	new Promise((resolve, reject) => {
+		try {
+			resolve(canvas.toDataURL(mimeType, quality));
+		} catch {
+			reject(new Error('A kép tömörítése sikertelen.'));
+		}
+	});
+
+const normalizeAvatarDataUrl = async (file: File): Promise<string> => {
+	if (file.size > MAX_SOURCE_AVATAR_BYTES) {
+		throw new Error('A kiválasztott kép túl nagy. Maximum 20MB-os forrásfájl tölthető fel.');
+	}
+
+	const initialDataUrl = await readFileAsDataUrl(file);
+	if (dataUrlByteLength(initialDataUrl) <= MAX_AVATAR_BYTES) {
+		return initialDataUrl;
+	}
+
+	const image = await loadImageFromDataUrl(initialDataUrl);
+	const scale = Math.min(1, MAX_AVATAR_DIMENSION / Math.max(image.width, image.height));
+	const width = Math.max(1, Math.round(image.width * scale));
+	const height = Math.max(1, Math.round(image.height * scale));
+
+	const canvas = document.createElement('canvas');
+	canvas.width = width;
+	canvas.height = height;
+	const context = canvas.getContext('2d');
+	if (!context) {
+		throw new Error('A böngésző nem tudta feldolgozni a képet.');
+	}
+
+	context.drawImage(image, 0, 0, width, height);
+
+	let smallestCandidate = initialDataUrl;
+	const mimeTypes = file.type === 'image/png'
+		? ['image/webp', 'image/jpeg', 'image/png']
+		: ['image/webp', 'image/jpeg', file.type];
+
+	for (const mimeType of mimeTypes) {
+		const qualityOptions = mimeType === 'image/png'
+			? [undefined]
+			: [0.9, 0.82, 0.74, 0.66, 0.58, 0.5];
+
+		for (const quality of qualityOptions) {
+			const candidate = await canvasToDataUrl(canvas, mimeType, quality);
+			if (dataUrlByteLength(candidate) < dataUrlByteLength(smallestCandidate)) {
+				smallestCandidate = candidate;
+			}
+
+			if (dataUrlByteLength(candidate) <= MAX_AVATAR_BYTES) {
+				return candidate;
+			}
+		}
+	}
+
+	if (dataUrlByteLength(smallestCandidate) <= MAX_AVATAR_BYTES) {
+		return smallestCandidate;
+	}
+
+	throw new Error('A kép méretét nem sikerült eléggé csökkenteni. Válassz kisebb felbontású képet.');
+};
+
 const getStoredUserId = (): number | null => {
 	try {
 		const raw = localStorage.getItem('kk_user');
-		if (!raw) return null;
-		const parsed = JSON.parse(raw) as { id?: unknown };
-		return typeof parsed.id === 'number' ? parsed.id : null;
+		if (raw) {
+			const parsed = JSON.parse(raw) as { id?: unknown };
+			if (typeof parsed.id === 'number') return parsed.id;
+		}
+
+		return getUserIdFromToken();
 	} catch {
-		return null;
+		return getUserIdFromToken();
 	}
 };
 
@@ -343,7 +491,7 @@ const getStoredUserId = (): number | null => {
 type ViewType = 'all' | 'book' | 'media' | 'settings';
 
 type OpenSelectId = 'profileVisibility' | 'language' | 'badge-0' | 'badge-1' | 'badge-2' | 'notificationFrequency' | 'timezone' | null;
-type SaveModalState = { title: string; message: string } | null;
+type SaveModalState = { type: 'success' | 'error'; title: string; message: string } | null;
 type MedalModalState = { medal: Medal; groupTitle: string; details: MedalDetails } | null;
 type MedalRarityKey = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 
@@ -431,7 +579,6 @@ const User: React.FC = () => {
 		return 'all';
 	});
 	const [profile, setProfile] = useState<UserProfile | null>(null);
-	const [defaultAvatar, setDefaultAvatar] = useState<string>('');
 	const [allStats, setAllStats] = useState<Record<string, ViewStats>>({});
 	const [books, setBooks] = useState<Book[]>([]);
 	const [medalGroups, setMedalGroups] = useState<MedalGroup[]>([]);
@@ -479,6 +626,12 @@ const User: React.FC = () => {
 		timezone: 'Europe/Budapest',
 	});
 
+	const pendingAvatarPreview = (() => {
+		if (settings.avatarDataUrl === '') return toAvatarSrc(null);
+		if (typeof settings.avatarDataUrl === 'string' && settings.avatarDataUrl.length > 0) return settings.avatarDataUrl;
+		return profile?.avatar ?? toAvatarSrc(null);
+	})();
+
 	const updateSetting = <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
 		setSettings(prev => ({
 			...prev,
@@ -501,7 +654,7 @@ const User: React.FC = () => {
 		});
 	};
 
-	const handleAvatarFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+	const handleAvatarFileChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
 
@@ -512,45 +665,25 @@ const User: React.FC = () => {
 			return;
 		}
 
-		const maxBytes = 2 * 1024 * 1024; // 2MB
-		if (file.size > maxBytes) {
-			alert('A kép túl nagy. Maximum 2MB lehet.');
-			e.target.value = '';
-			return;
-		}
-
-		const reader = new FileReader();
-		reader.onload = () => {
-			const dataUrl = typeof reader.result === 'string' ? reader.result : null;
-			if (!dataUrl) {
-				alert('Nem sikerült beolvasni a képet.');
-				return;
-			}
+		try {
+			const dataUrl = await normalizeAvatarDataUrl(file);
 			updateSetting('avatarDataUrl', dataUrl);
-			setProfile(prev => (prev ? { ...prev, avatar: dataUrl } : prev));
-		};
-		reader.readAsDataURL(file);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Nem sikerült feldolgozni a képet.';
+			alert(message);
+		} finally {
+			e.target.value = '';
+		}
 	};
 
 	const handleResetAvatar = () => {
-		updateSetting('avatarDataUrl', null);
-		setProfile(prev => (prev ? { ...prev, avatar: defaultAvatar || prev.avatar } : prev));
-		if (defaultAvatar) {
-			syncAuthAvatar(defaultAvatar);
-		}
+		// Empty string marks explicit avatar deletion on next save.
+		updateSetting('avatarDataUrl', '');
 	};
 
 	const syncAuthAvatar = (avatarUrl: string | null) => {
-		try {
-			const savedUser = localStorage.getItem('kk_user');
-			if (!savedUser) return;
-			const parsed = JSON.parse(savedUser) as { avatar?: string } & Record<string, unknown>;
-			const next = { ...parsed, avatar: avatarUrl ?? parsed.avatar };
-			localStorage.setItem('kk_user', JSON.stringify(next));
-			window.dispatchEvent(new Event('kk_user_updated'));
-		} catch (error) {
-			console.error('Failed to sync navbar avatar:', error);
-		}
+		const normalizedAvatar = avatarUrl && avatarUrl.trim().length > 0 ? avatarUrl : toAvatarSrc(null);
+		window.dispatchEvent(new CustomEvent('kk_user_avatar_updated', { detail: { avatar: normalizedAvatar } }));
 	};
 
 	useEffect(() => {
@@ -693,6 +826,7 @@ const User: React.FC = () => {
 		const loadData = async () => {
 			setIsLoading(true);
 			setAuthRequired(false);
+			let serverEmail = '';
 			try {
 				const storedUserId = getStoredUserId();
 				setProfileUserId(storedUserId);
@@ -717,19 +851,20 @@ const User: React.FC = () => {
 						levelProgress: Math.max(0, Math.min(100, profileResponse.xp % 100)),
 						isSubscriber: profileResponse.isSubscriber,
 						premium: profileResponse.isSubscriber,
-						premiumExpiresAt: null,
+						premiumExpiresAt: formatDateTimeLabel(profileResponse.premiumExpiresAt),
 						permissionLevel: mapPermissionLevel(meResponse?.permissionLevel),
-						email: meResponse?.email ?? '',
-						creationDate: 'Nincs adat',
-						lastLoginDate: 'Nincs adat',
+						email: meResponse?.email ?? profileResponse.email ?? '',
+						creationDate: formatDateLabel(profileResponse.creationDate),
+						lastLoginDate: formatDateLabel(profileResponse.lastLoginDate),
 						xp: profileResponse.xp,
-						bookPoints: profileResponse.books.points,
-						seriesPoints: profileResponse.media.points,
-						moviePoints: 0,
+						bookPoints: profileResponse.bookPoints,
+						seriesPoints: profileResponse.seriesPoints,
+						moviePoints: profileResponse.moviePoints,
 						dayStreak: profileResponse.dayStreak,
 						readTimeMin: profileResponse.books.readTimeMin,
 						watchTimeMin: profileResponse.media.watchTimeMin,
 					};
+					serverEmail = mappedProfile.email;
 
 					const combinedRecent = [...recentItems, ...favoriteItems];
 					const uniqueContent = Array.from(
@@ -737,7 +872,6 @@ const User: React.FC = () => {
 					).slice(0, 12);
 
 					setProfile(mappedProfile);
-					setDefaultAvatar(mappedProfile.avatar);
 					setAllStats(mapApiStatsToViewStats(profileResponse, selectedBadges));
 					setBooks(mapRecentItemsToBooks(uniqueContent));
 
@@ -762,6 +896,7 @@ const User: React.FC = () => {
 				const savedSettings = localStorage.getItem('kk_profile_settings');
 				if (savedSettings) {
 					const parsed = JSON.parse(savedSettings) as Partial<UserSettings>;
+					const { email: _ignoredEmail, username: _ignoredUsername, ...safeParsed } = parsed;
 					const legacySelectedTitles = (parsed as { selectedTitles?: string[] }).selectedTitles;
 					const normalizedSelectedBadges = Array.isArray(parsed.selectedBadges)
 						? parsed.selectedBadges.slice(0, 3)
@@ -770,14 +905,12 @@ const User: React.FC = () => {
 							: undefined;
 					setSettings(prev => ({
 						...prev,
-						...parsed,
+						...safeParsed,
+						avatarDataUrl: null,
 						selectedBadges: normalizedSelectedBadges ?? prev.selectedBadges,
 						username: prev.username,
+						email: serverEmail || prev.email,
 					}));
-					if (parsed.avatarDataUrl && typeof parsed.avatarDataUrl === 'string') {
-						setProfile(prev => (prev ? { ...prev, avatar: parsed.avatarDataUrl as string } : prev));
-						syncAuthAvatar(parsed.avatarDataUrl as string);
-					}
 				}
 			} catch (error) {
 				console.error('Hiba az adatok betöltésekor:', error);
@@ -835,9 +968,7 @@ const User: React.FC = () => {
 
 		const payload = {
 			username: settings.username,
-			email: settings.email,
 			countryCode: settings.countryCode,
-			avatarDataUrl: settings.avatarDataUrl,
 			selectedBadges: settings.selectedBadges,
 			profileVisibility: settings.profileVisibility,
 			showCountryOnProfile: settings.showCountryOnProfile,
@@ -856,31 +987,65 @@ const User: React.FC = () => {
 			notificationFrequency: settings.notificationFrequency,
 		};
 
+		if (!profileUserId) {
+			setSaveModal({
+				type: 'error',
+				title: 'Mentési hiba',
+				message: 'A beállítások mentéséhez be kell jelentkezned.',
+			});
+			return;
+		}
+
 		try {
-			if (profileUserId) {
-				await updateUserSettings({
-					avatarDataUrl: settings.avatarDataUrl,
-					countryCode: settings.countryCode,
-					newPlainPassword: settings.newPassword,
-					activeTitleIds: [],
-				});
+			await updateUserSettings({
+				avatarDataUrl: settings.avatarDataUrl,
+				countryCode: settings.countryCode,
+				newPlainPassword: settings.newPassword,
+				activeTitleIds: [],
+			});
+
+			let nextAvatar = settings.avatarDataUrl;
+			try {
+				const me = await authMe();
+				nextAvatar = toAvatarSrc(me.avatar);
+			} catch (refreshError) {
+				console.warn('A mentés utáni avatar frissítés sikertelen:', refreshError);
 			}
 
-			localStorage.setItem('kk_profile_settings', JSON.stringify(payload));
-			syncAuthAvatar(settings.avatarDataUrl);
+			try {
+				localStorage.setItem('kk_profile_settings', JSON.stringify(payload));
+			} catch (storageError) {
+				console.error('A helyi beállítások mentése sikertelen:', storageError);
+			}
+
+			syncAuthAvatar(nextAvatar);
+			if (nextAvatar) {
+				setProfile(prev => (prev ? { ...prev, avatar: nextAvatar } : prev));
+			}
 			setSaveModal({
+				type: 'success',
 				title: 'Mentés kész',
 				message: 'A beállítások sikeresen elmentésre kerültek.',
 			});
 			setSettings(prev => ({
 				...prev,
+				avatarDataUrl: null,
 				currentPassword: '',
 				newPassword: '',
 				confirmPassword: '',
 			}));
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'A beállítások mentése sikertelen volt.';
+			let message = 'A beállítások mentése sikertelen volt.';
+			if (error instanceof ApiHttpError) {
+				message = error.status === 401
+					? 'A munkamenet lejárt. Jelentkezz be újra, majd próbáld meg ismét.'
+					: error.message;
+			} else if (error instanceof Error) {
+				message = error.message;
+			}
+
 			setSaveModal({
+				type: 'error',
 				title: 'Mentési hiba',
 				message,
 			});
@@ -910,6 +1075,7 @@ const User: React.FC = () => {
 	const handleDeleteAccount = () => {
 		if (window.confirm('Biztosan végleg törlöd a fiókodat? Ez nem visszavonható.')) {
 			setSaveModal({
+				type: 'error',
 				title: 'Muvelet nem erheto el',
 				message: 'Fiktores endpoint jelenleg nincs publikusan elerheto. Fordulj az ugyfelszolgalathoz.',
 			});
@@ -1058,7 +1224,7 @@ const User: React.FC = () => {
 							<div className="col-12 col-md-4 mb-3 mb-md-0">
 								<div className="d-flex align-items-center gap-3 settings-upload-row">
 									<div className="avatar" style={{ width: '96px', height: '96px' }}>
-										<img src={profile.avatar} alt="profilkép" />
+										<img src={pendingAvatarPreview} alt="profilkép" />
 									</div>
 									<div>
 										<label className="form-label">Profilkép feltöltése</label>
@@ -1070,10 +1236,10 @@ const User: React.FC = () => {
 										/>
 										<div className="d-flex gap-2 mt-2 settings-upload-actions">
 											<button type="button" className="btn btn-outline-light btn-sm" onClick={handleResetAvatar}>
-												Visszaállítás
+												Profilkép törlése
 											</button>
 											<small className="settings-hint d-block" style={{ lineHeight: 1.2 }}>
-												PNG/JPG/WEBP • max. 2MB
+												A törlés csak a Mentés gomb után lép életbe.
 											</small>
 										</div>
 									</div>
@@ -1256,7 +1422,7 @@ const User: React.FC = () => {
 										type="email"
 										className="form-control"
 										value={settings.email}
-										onChange={(e) => updateSetting('email', e.target.value)}
+										disabled
 									/>
 								</div>
 								<div className="col-md-6 mb-3">
@@ -1635,7 +1801,7 @@ const User: React.FC = () => {
 						aria-labelledby="user-save-modal-title"
 					>
 						<div className="user-save-modal-icon">
-							<i className="bi bi-check2-circle"></i>
+							<i className={`bi ${saveModal.type === 'success' ? 'bi-check2-circle' : 'bi-exclamation-circle'}`}></i>
 						</div>
 						<h4 id="user-save-modal-title">{saveModal.title}</h4>
 						<p>{saveModal.message}</p>
