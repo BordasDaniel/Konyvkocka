@@ -135,6 +135,8 @@ interface UserSettings {
 }
 
 const BADGE_OPTIONS = ['Kiemelt olvasó', 'Top 100', 'Fürge Nyúl Kihívás', 'Könyvmoly', 'Filmkritikus', 'Kihívásvadász'];
+const BADGE_FALLBACK_IMAGE = 'https://assets.ppy.sh/medals/web/fruits-hits-20000000.png';
+const RECENT_AND_FAVORITE_LIMIT = 3;
 const PERMISSION_LEVEL_LABELS: Record<UserProfile['permissionLevel'], string> = {
 	USER: 'Felhasználó',
 	MODERATOR: 'Moderátor',
@@ -334,7 +336,7 @@ const mapApiBadgesToMedalGroups = (groups: UserBadgeCategoryResponse[]): MedalGr
 		title: mapBadgeCategoryName(group.category),
 		medals: group.badges.map((badge) => ({
 			id: badge.id,
-			image: badge.iconUrl || 'https://assets.ppy.sh/medals/web/all-secret-hourbeforethedawn@2x.png',
+			image: badge.iconUrl || BADGE_FALLBACK_IMAGE,
 			label: badge.name,
 			date: badge.earnedAt ? new Date(badge.earnedAt).toISOString().slice(0, 10) : null,
 			isLocked: false,
@@ -826,6 +828,8 @@ const User: React.FC = () => {
 		const loadData = async () => {
 			setIsLoading(true);
 			setAuthRequired(false);
+			setBadgesLoaded(false);
+			setMedalGroups([]);
 			let serverEmail = '';
 			try {
 				const storedUserId = getStoredUserId();
@@ -869,7 +873,7 @@ const User: React.FC = () => {
 					const combinedRecent = [...recentItems, ...favoriteItems];
 					const uniqueContent = Array.from(
 						new Map(combinedRecent.map((item) => [`${item.type}:${item.id}`, item])).values(),
-					).slice(0, 12);
+					).slice(0, RECENT_AND_FAVORITE_LIMIT);
 
 					setProfile(mappedProfile);
 					setAllStats(mapApiStatsToViewStats(profileResponse, selectedBadges));
@@ -923,25 +927,23 @@ const User: React.FC = () => {
 	}, []);
 
 	useEffect(() => {
-		if (!badgesExpanded || badgesLoaded || isLoadingBadges) return;
+		if (!badgesExpanded || badgesLoaded || !profileUserId) return;
 
 		let cancelled = false;
 
 		const loadBadgeGroups = async () => {
 			setIsLoadingBadges(true);
 			try {
-				if (!profileUserId) {
-					setMedalGroups([]);
-					setBadgesLoaded(true);
-					return;
-				}
-
 				const medalsData = mapApiBadgesToMedalGroups(await getUserBadges(profileUserId));
 				if (cancelled) return;
 				setMedalGroups(medalsData);
 				setBadgesLoaded(true);
 			} catch (error) {
 				console.error('Hiba a kitűzők betöltésekor:', error);
+				if (!cancelled) {
+					setMedalGroups([]);
+					setBadgesLoaded(true);
+				}
 			} finally {
 				if (!cancelled) {
 					setIsLoadingBadges(false);
@@ -954,7 +956,7 @@ const User: React.FC = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [badgesExpanded, badgesLoaded, isLoadingBadges, profileUserId]);
+	}, [badgesExpanded, badgesLoaded, profileUserId]);
 
 	// Jelenlegi nézet statisztikái
 	const currentStats = allStats[activeView] || allStats['all'];
@@ -1988,6 +1990,8 @@ const User: React.FC = () => {
 											const next = !prev;
 											if (!next) {
 												setMedalModal(null);
+											} else {
+												setBadgesLoaded(false);
 											}
 											return next;
 										});
@@ -2015,7 +2019,17 @@ const User: React.FC = () => {
 													onClick={() => openMedalModal(medal, group.title)}
 													aria-label={`${medal.label} kitűző részletek`}
 												>
-													<img src={medal.image} alt={medal.label} className="medal" />
+														<img
+															src={medal.image}
+															alt={medal.label}
+															className="medal"
+															onError={(event) => {
+																const imageElement = event.currentTarget;
+																if (imageElement.src !== BADGE_FALLBACK_IMAGE) {
+																	imageElement.src = BADGE_FALLBACK_IMAGE;
+																}
+															}}
+														/>
 													<div className="medal-label">{medal.label}</div>
 													<div className="medal-date">{medal.date || '—'}</div>
 												</button>
@@ -2023,6 +2037,12 @@ const User: React.FC = () => {
 										</div>
 									</div>
 								))}
+
+								{badgesExpanded && badgesLoaded && medalGroups.length === 0 && (
+									<div className="group p-3">
+										<div className="text-muted">Nincs megjeleníthető kitűző.</div>
+									</div>
+								)}
 							</div>
 						</div>
 					</div>
