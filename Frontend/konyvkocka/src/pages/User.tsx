@@ -6,12 +6,14 @@ import {
 	SESSION_STORAGE_KEY,
 	authMe,
 	getUserBadges,
+	getOwnedUserTitles,
 	getUserFavorites,
 	getUserProfile,
 	getUserRecent,
 	toAvatarSrc,
 	toContentImageSrc,
 	updateUserSettings,
+	type OwnedUserTitleResponse,
 	type UserBadgeCategoryResponse,
 	type UserProfileResponse,
 	type UserRecentFavoriteItemResponse,
@@ -134,9 +136,9 @@ interface UserSettings {
 	timezone: string;
 }
 
-const BADGE_OPTIONS = ['Kiemelt olvasó', 'Top 100', 'Fürge Nyúl Kihívás', 'Könyvmoly', 'Filmkritikus', 'Kihívásvadász'];
 const BADGE_FALLBACK_IMAGE = 'https://assets.ppy.sh/medals/web/fruits-hits-20000000.png';
 const RECENT_AND_FAVORITE_LIMIT = 3;
+const MAX_ACTIVE_BADGES = 3;
 const PERMISSION_LEVEL_LABELS: Record<UserProfile['permissionLevel'], string> = {
 	USER: 'Felhasználó',
 	MODERATOR: 'Moderátor',
@@ -200,13 +202,10 @@ const mapPermissionLevel = (permissionLevel: string | undefined): UserProfile['p
 	return 'USER';
 };
 
-const ensureBadgeCount = (badges: string[]): string[] => {
-	const selected = badges.filter(Boolean).slice(0, 3);
-	while (selected.length < 3) {
-		selected.push(BADGE_OPTIONS[selected.length] ?? BADGE_OPTIONS[0]);
-	}
-	return selected;
-};
+const normalizeActiveBadges = (badges: string[]): string[] => badges.filter(Boolean).slice(0, MAX_ACTIVE_BADGES);
+
+const buildActiveBadgesFromOwnedTitles = (titles: OwnedUserTitleResponse[]): string[] =>
+	normalizeActiveBadges(titles.filter((title) => title.isActive).map((title) => title.name));
 
 const mapApiStatsToViewStats = (profileData: UserProfileResponse, badges: string[]): Record<string, ViewStats> => ({
 	all: {
@@ -568,6 +567,11 @@ interface LocationState {
 	view?: 'settings';
 }
 
+interface BadgeOption {
+	id: number;
+	name: string;
+}
+
 const User: React.FC = () => {
 	const location = useLocation();
 	const locationState = location.state as LocationState | null;
@@ -584,6 +588,7 @@ const User: React.FC = () => {
 	const [allStats, setAllStats] = useState<Record<string, ViewStats>>({});
 	const [books, setBooks] = useState<Book[]>([]);
 	const [medalGroups, setMedalGroups] = useState<MedalGroup[]>([]);
+	const [badgeOptions, setBadgeOptions] = useState<BadgeOption[]>([]);
 	const [profileUserId, setProfileUserId] = useState<number | null>(null);
 	const [authRequired, setAuthRequired] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
@@ -607,7 +612,7 @@ const User: React.FC = () => {
 		email: '',
 		countryCode: 'HU',
 		avatarDataUrl: null,
-		selectedBadges: ['Kiemelt olvasó', 'Top 100', 'Fürge Nyúl Kihívás'],
+		selectedBadges: [],
 		profileVisibility: 'public',
 		showCountryOnProfile: true,
 		showOnlineStatus: true,
@@ -644,14 +649,22 @@ const User: React.FC = () => {
 	const handleBadgeSelect = (position: number, badge: string) => {
 		setSettings(prev => {
 			const next = [...prev.selectedBadges];
+			if (!badge) {
+				next[position] = '';
+				return {
+					...prev,
+					selectedBadges: next.slice(0, MAX_ACTIVE_BADGES),
+				};
+			}
+
 			const duplicateIndex = next.findIndex((item, index) => index !== position && item === badge);
 			if (duplicateIndex !== -1) {
-				next[duplicateIndex] = next[position];
+				next[duplicateIndex] = '';
 			}
 			next[position] = badge;
 			return {
 				...prev,
-				selectedBadges: next,
+				selectedBadges: next.slice(0, MAX_ACTIVE_BADGES),
 			};
 		});
 	};
@@ -836,14 +849,21 @@ const User: React.FC = () => {
 				setProfileUserId(storedUserId);
 
 				if (storedUserId) {
-					const [profileResponse, meResponse, recentItems, favoriteItems] = await Promise.all([
+					const [profileResponse, meResponse, recentItems, favoriteItems, ownedTitles] = await Promise.all([
 						getUserProfile(storedUserId),
 						authMe().catch(() => null),
 						getUserRecent(storedUserId, 'all').catch(() => [] as UserRecentFavoriteItemResponse[]),
 						getUserFavorites(storedUserId, 'all').catch(() => [] as UserRecentFavoriteItemResponse[]),
+						getOwnedUserTitles().catch(() => [] as OwnedUserTitleResponse[]),
 					]);
 
-					const selectedBadges = ensureBadgeCount(profileResponse.activeTitles);
+					const ownedBadgeOptions = ownedTitles.map((title) => ({ id: title.id, name: title.name }));
+					setBadgeOptions(ownedBadgeOptions);
+
+					const activeBadgesFromOwnedTitles = buildActiveBadgesFromOwnedTitles(ownedTitles);
+					const selectedBadges = activeBadgesFromOwnedTitles.length > 0
+						? activeBadgesFromOwnedTitles
+						: normalizeActiveBadges(profileResponse.activeTitles);
 					const countryCode = (profileResponse.countryCode || 'HU').toUpperCase();
 					const mappedProfile: UserProfile = {
 						username: profileResponse.username,
@@ -901,17 +921,13 @@ const User: React.FC = () => {
 				if (savedSettings) {
 					const parsed = JSON.parse(savedSettings) as Partial<UserSettings>;
 					const { email: _ignoredEmail, username: _ignoredUsername, ...safeParsed } = parsed;
-					const legacySelectedTitles = (parsed as { selectedTitles?: string[] }).selectedTitles;
-					const normalizedSelectedBadges = Array.isArray(parsed.selectedBadges)
-						? parsed.selectedBadges.slice(0, 3)
-						: Array.isArray(legacySelectedTitles)
-							? legacySelectedTitles.slice(0, 3)
-							: undefined;
+					const { selectedBadges: _ignoredSelectedBadges, selectedTitles: _ignoredSelectedTitles, ...safeParsedWithoutBadges } =
+						safeParsed as Partial<UserSettings> & { selectedTitles?: string[] };
 					setSettings(prev => ({
 						...prev,
-						...safeParsed,
+						...safeParsedWithoutBadges,
 						avatarDataUrl: null,
-						selectedBadges: normalizedSelectedBadges ?? prev.selectedBadges,
+						selectedBadges: prev.selectedBadges,
 						username: prev.username,
 						email: serverEmail || prev.email,
 					}));
@@ -971,7 +987,6 @@ const User: React.FC = () => {
 		const payload = {
 			username: settings.username,
 			countryCode: settings.countryCode,
-			selectedBadges: settings.selectedBadges,
 			profileVisibility: settings.profileVisibility,
 			showCountryOnProfile: settings.showCountryOnProfile,
 			showOnlineStatus: settings.showOnlineStatus,
@@ -989,6 +1004,10 @@ const User: React.FC = () => {
 			notificationFrequency: settings.notificationFrequency,
 		};
 
+		const selectedTitleIds = normalizeActiveBadges(settings.selectedBadges)
+			.map((badgeName) => badgeOptions.find((option) => option.name === badgeName)?.id)
+			.filter((id): id is number => typeof id === 'number');
+
 		if (!profileUserId) {
 			setSaveModal({
 				type: 'error',
@@ -1003,8 +1022,28 @@ const User: React.FC = () => {
 				avatarDataUrl: settings.avatarDataUrl,
 				countryCode: settings.countryCode,
 				newPlainPassword: settings.newPassword,
-				activeTitleIds: [],
+				activeTitleIds: selectedTitleIds,
 			});
+
+			if (profileUserId) {
+				try {
+					const refreshedProfile = await getUserProfile(profileUserId);
+					const refreshedOwnedTitles = await getOwnedUserTitles().catch(() => [] as OwnedUserTitleResponse[]);
+					const refreshedOptions = refreshedOwnedTitles.map((title) => ({ id: title.id, name: title.name }));
+					setBadgeOptions(refreshedOptions);
+					const refreshedActiveBadges = buildActiveBadgesFromOwnedTitles(refreshedOwnedTitles);
+					const canonicalBadges = refreshedActiveBadges.length > 0
+						? refreshedActiveBadges
+						: normalizeActiveBadges(refreshedProfile.activeTitles);
+					setAllStats(mapApiStatsToViewStats(refreshedProfile, canonicalBadges));
+					setSettings(prev => ({
+						...prev,
+						selectedBadges: canonicalBadges,
+					}));
+				} catch (refreshProfileError) {
+					console.warn('A mentés utáni jelvény frissítés sikertelen:', refreshProfileError);
+				}
+			}
 
 			let nextAvatar = settings.avatarDataUrl;
 			try {
@@ -1561,24 +1600,35 @@ const User: React.FC = () => {
 														className="form-select text-start"
 														type="button"
 														aria-expanded={openSelect === `badge-${position}`}
+														disabled={badgeOptions.length === 0}
 														onClick={(e) => {
 															e.stopPropagation();
+															if (badgeOptions.length === 0) return;
 															setOpenSelect(prev => (prev === `badge-${position}` ? null : `badge-${position}` as OpenSelectId));
 														}}
 													>
-														<span>{settings.selectedBadges[position]}</span>
+														<span>{settings.selectedBadges[position] || 'Nincs kiválasztva'}</span>
 													</button>
 													<div className={`custom-select-menu ${openSelect === `badge-${position}` ? 'show' : ''}`}>
-														{BADGE_OPTIONS.map((badge) => (
+														<div
+															className="country-item"
+															onClick={() => {
+																handleBadgeSelect(position, '');
+																setOpenSelect(null);
+															}}
+														>
+															Nincs kiválasztva
+														</div>
+														{badgeOptions.map((badge) => (
 															<div
-																key={badge}
+																key={badge.id}
 																className="country-item"
 																onClick={() => {
-																	handleBadgeSelect(position, badge);
+																	handleBadgeSelect(position, badge.name);
 																	setOpenSelect(null);
 																}}
 															>
-																{badge}
+																{badge.name}
 															</div>
 														))}
 													</div>
@@ -1586,6 +1636,9 @@ const User: React.FC = () => {
 											</div>
 										))}
 									</div>
+									{badgeOptions.length === 0 && (
+										<small className="text-muted d-block mt-2">Még nincs megszerzett jelvényed, ezért nem állítható be aktív jelvény.</small>
+									)}
 								</div>
 								<div className="col-md-6 mb-3">
 									<label className="form-label">Értesítési gyakoriság</label>
@@ -1838,7 +1891,7 @@ const User: React.FC = () => {
 									<div className="col-md-4">
 										<div className="stat-title">Jelvények</div>
 										<div className="mt-2 badge-row">
-											{(settings.selectedBadges.length > 0 ? settings.selectedBadges : currentStats.badges.slice(0, 3)).map((badge, index) => (
+											{currentStats.badges.slice(0, MAX_ACTIVE_BADGES).map((badge, index) => (
 												<span key={index} className="badge-custom">{badge}</span>
 											))}
 										</div>
@@ -2019,17 +2072,17 @@ const User: React.FC = () => {
 													onClick={() => openMedalModal(medal, group.title)}
 													aria-label={`${medal.label} kitűző részletek`}
 												>
-														<img
-															src={medal.image}
-															alt={medal.label}
-															className="medal"
-															onError={(event) => {
-																const imageElement = event.currentTarget;
-																if (imageElement.src !== BADGE_FALLBACK_IMAGE) {
-																	imageElement.src = BADGE_FALLBACK_IMAGE;
-																}
-															}}
-														/>
+													<img
+														src={medal.image}
+														alt={medal.label}
+														className="medal"
+														onError={(event) => {
+															const imageElement = event.currentTarget;
+															if (imageElement.src !== BADGE_FALLBACK_IMAGE) {
+																imageElement.src = BADGE_FALLBACK_IMAGE;
+															}
+														}}
+													/>
 													<div className="medal-label">{medal.label}</div>
 													<div className="medal-date">{medal.date || '—'}</div>
 												</button>

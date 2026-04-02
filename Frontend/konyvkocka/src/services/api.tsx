@@ -493,6 +493,14 @@ export interface UserBadgeCategoryResponse {
 	badges: UserBadgeCardResponse[];
 }
 
+export interface OwnedUserTitleResponse {
+	id: number;
+	name: string;
+	rarity: string;
+	isActive: boolean;
+	earnedAt: string;
+}
+
 export interface UpdateUserSettingsParams {
 	avatarDataUrl?: string | null;
 	countryCode?: string | null;
@@ -523,6 +531,9 @@ export const getUserFavorites = async (
 
 export const getUserBadges = async (userId: number): Promise<UserBadgeCategoryResponse[]> =>
 	request<UserBadgeCategoryResponse[]>(`/api/user/${userId}/badges`);
+
+export const getOwnedUserTitles = async (): Promise<OwnedUserTitleResponse[]> =>
+	request<OwnedUserTitleResponse[]>('/api/user/settings/titles', { auth: true });
 
 export const updateUserSettings = async (params: UpdateUserSettingsParams): Promise<void> => {
 	const body: {

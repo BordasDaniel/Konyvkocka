@@ -523,26 +523,24 @@ namespace KonyvkockaAPI.Controllers
                 if (dto.ActiveTitleIds.Count > 3)
                     return BadRequest(new ErrorResponseDTO { Error = "TooManyTitles", Message = "Maximum 3 aktív rangcím állítható be." });
 
-                if (dto.ActiveTitleIds.Count > 0)
-                {
-                    // Ellenőrzés: csak a saját megszerzett title-k közül lehet választani
-                    var ownedTitleIds = await _context.UserTitles
-                        .Where(ut => ut.UserId == userId)
-                        .Select(ut => ut.TitleId)
-                        .ToListAsync();
+                // Ellenőrzés: csak a saját megszerzett title-k közül lehet választani
+                var ownedTitleIds = await _context.UserTitles
+                    .Where(ut => ut.UserId == userId)
+                    .Select(ut => ut.TitleId)
+                    .ToListAsync();
 
-                    var invalid = dto.ActiveTitleIds.Except(ownedTitleIds).ToList();
-                    if (invalid.Count > 0)
-                        return BadRequest(new ErrorResponseDTO { Error = "TitleNotOwned", Message = "Egy vagy több rangcím nem szerepel a gyűjteményedben." });
+                var invalid = dto.ActiveTitleIds.Except(ownedTitleIds).ToList();
+                if (invalid.Count > 0)
+                    return BadRequest(new ErrorResponseDTO { Error = "TitleNotOwned", Message = "Egy vagy több rangcím nem szerepel a gyűjteményedben." });
 
-                    // Összes aktív title kikapcsolása, majd a küldöttek bekapcsolása
-                    var allUserTitles = await _context.UserTitles
-                        .Where(ut => ut.UserId == userId)
-                        .ToListAsync();
+                // Összes aktív title kikapcsolása, majd a küldöttek bekapcsolása.
+                // Ha a lista üres, akkor minden title inaktív lesz.
+                var allUserTitles = await _context.UserTitles
+                    .Where(ut => ut.UserId == userId)
+                    .ToListAsync();
 
-                    foreach (var t in allUserTitles)
-                        t.IsActive = dto.ActiveTitleIds.Contains(t.TitleId);
-                }
+                foreach (var t in allUserTitles)
+                    t.IsActive = dto.ActiveTitleIds.Contains(t.TitleId);
 
                 await _context.SaveChangesAsync();
 
