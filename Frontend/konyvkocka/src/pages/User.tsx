@@ -56,7 +56,6 @@ interface ViewStats {
 	completionRate: string;
 	readBooks: string;
 	longestStreak: string;
-	reviewsSent: string;
 	badges: string[];
 	labels: {
 		labelReadingPoints: string;
@@ -65,7 +64,6 @@ interface ViewStats {
 		labelReadBooks: string;
 		labelMediaViewed: string;
 		labelLongestStreak: string;
-		labelReviewsSent: string;
 	};
 	sections: {
 		readSectionTitle: string;
@@ -207,26 +205,28 @@ const normalizeActiveBadges = (badges: string[]): string[] => badges.filter(Bool
 const buildActiveBadgesFromOwnedTitles = (titles: OwnedUserTitleResponse[]): string[] =>
 	normalizeActiveBadges(titles.filter((title) => title.isActive).map((title) => title.name));
 
-const mapApiStatsToViewStats = (profileData: UserProfileResponse, badges: string[]): Record<string, ViewStats> => ({
+const mapApiStatsToViewStats = (profileData: UserProfileResponse, badges: string[]): Record<string, ViewStats> => {
+	const allCompleted = profileData.all.booksCompleted + profileData.all.mediaCompleted;
+	const allTouched = profileData.books.total + profileData.media.total;
+
+	return {
 	all: {
 		globalRank: formatRank(profileData.all.globalRank),
 		countryRank: formatRank(profileData.all.countryRank),
 		readingTime: formatDuration(profileData.all.timeMin),
 		readingPoints: profileData.all.points.toLocaleString('hu-HU'),
-		mediaViewed: profileData.all.mediaCompleted.toLocaleString('hu-HU'),
+		mediaViewed: allTouched.toLocaleString('hu-HU'),
 		completionRate: formatPercent(profileData.all.completionRate),
-		readBooks: profileData.all.booksCompleted.toLocaleString('hu-HU'),
+		readBooks: allCompleted.toLocaleString('hu-HU'),
 		longestStreak: `${profileData.all.dayStreak} nap`,
-		reviewsSent: '0',
 		badges,
 		labels: {
 			labelReadingPoints: 'Összes pont',
 			labelReadingTime: 'Összesen eltöltött idő',
 			labelCompletion: 'Befejezési arány:',
-			labelReadBooks: 'Elolvasott könyvek:',
-			labelMediaViewed: 'Megtekintett sorozatok/filmek:',
+			labelReadBooks: 'Befejezett elemek:',
+			labelMediaViewed: 'Könyvtárban / érintett elemek:',
 			labelLongestStreak: 'Nap sorozat:',
-			labelReviewsSent: 'Összes vélemény:',
 		},
 		sections: {
 			readSectionTitle: 'Legutóbb megtekintett tartalom',
@@ -244,20 +244,18 @@ const mapApiStatsToViewStats = (profileData: UserProfileResponse, badges: string
 		countryRank: formatRank(profileData.books.countryRank),
 		readingTime: formatDuration(profileData.books.readTimeMin),
 		readingPoints: profileData.books.points.toLocaleString('hu-HU'),
-		mediaViewed: '0',
+		mediaViewed: profileData.books.total.toLocaleString('hu-HU'),
 		completionRate: formatPercent(profileData.books.completionRate),
 		readBooks: profileData.books.completed.toLocaleString('hu-HU'),
 		longestStreak: `${profileData.dayStreak} nap`,
-		reviewsSent: '0',
 		badges,
 		labels: {
 			labelReadingPoints: 'Könyv pontok',
 			labelReadingTime: 'Olvasási idő',
 			labelCompletion: 'Befejezési arány:',
-			labelReadBooks: 'Elolvasott könyvek:',
-			labelMediaViewed: 'Megtekintett sorozatok/filmek:',
+			labelReadBooks: 'Befejezett könyvek:',
+			labelMediaViewed: 'Könyvtárban lévő könyvek:',
 			labelLongestStreak: 'Leghosszabb olvasási sorozat:',
-			labelReviewsSent: 'Könyv vélemények:',
 		},
 		sections: {
 			readSectionTitle: 'Legutóbb olvasott könyvek',
@@ -275,20 +273,18 @@ const mapApiStatsToViewStats = (profileData: UserProfileResponse, badges: string
 		countryRank: formatRank(profileData.media.countryRank),
 		readingTime: formatDuration(profileData.media.watchTimeMin),
 		readingPoints: profileData.media.points.toLocaleString('hu-HU'),
-		mediaViewed: profileData.media.completed.toLocaleString('hu-HU'),
+		mediaViewed: profileData.media.total.toLocaleString('hu-HU'),
 		completionRate: formatPercent(profileData.media.completionRate),
-		readBooks: '0',
+		readBooks: profileData.media.completed.toLocaleString('hu-HU'),
 		longestStreak: `${profileData.dayStreak} nap`,
-		reviewsSent: '0',
 		badges,
 		labels: {
 			labelReadingPoints: 'Média pontok',
 			labelReadingTime: 'Nézési idő',
 			labelCompletion: 'Befejezési arány:',
-			labelReadBooks: 'Elolvasott könyvek:',
-			labelMediaViewed: 'Megtekintett média tartalmak:',
+			labelReadBooks: 'Befejezett média tartalmak:',
+			labelMediaViewed: 'Médiatárban lévő tartalmak:',
 			labelLongestStreak: 'Leghosszabb nézési sorozat:',
-			labelReviewsSent: 'Média vélemények:',
 		},
 		sections: {
 			readSectionTitle: 'Legutóbb megtekintett média tartalmak',
@@ -301,7 +297,8 @@ const mapApiStatsToViewStats = (profileData: UserProfileResponse, badges: string
 			favSectionButton: 'Mutasd a kedvenc média tartalmakat',
 		},
 	},
-});
+	};
+};
 
 const mapRecentItemsToBooks = (items: UserRecentFavoriteItemResponse[]): Book[] =>
 	items.map((item) => ({
@@ -1920,19 +1917,13 @@ const User: React.FC = () => {
 										<strong><span>{currentStats.labels.labelReadBooks}</span></strong>{' '}
 										<span>{currentStats.readBooks}</span>
 									</li>
-									{activeView !== 'book' && (
-										<li>
-											<strong><span>{currentStats.labels.labelMediaViewed}</span></strong>{' '}
-											<span>{currentStats.mediaViewed}</span>
-										</li>
-									)}
+									<li>
+										<strong><span>{currentStats.labels.labelMediaViewed}</span></strong>{' '}
+										<span>{currentStats.mediaViewed}</span>
+									</li>
 									<li>
 										<strong><span>{currentStats.labels.labelLongestStreak}</span></strong>{' '}
 										<span>{currentStats.longestStreak}</span>
-									</li>
-									<li>
-										<strong><span>{currentStats.labels.labelReviewsSent}</span></strong>{' '}
-										<span>{currentStats.reviewsSent}</span>
 									</li>
 								</ul>
 							</div>
