@@ -119,16 +119,16 @@ export default function Leaderboard() {
 
 	const getContentLabel = (filter: ContentFilter): string => {
 		switch (filter) {
-			case 'all': return 'Osszes';
-			case 'book': return 'Konyvek';
-			case 'media': return 'Media';
+			case 'all': return 'Összes';
+			case 'book': return 'Könyvek';
+			case 'media': return 'Média';
 		}
 	};
 
 	const getLocationLabel = (filter: LocationFilter): string => {
 		switch (filter) {
-			case 'world': return 'Vilag';
-			case 'country': return 'Orszag';
+			case 'world': return 'Világ';
+			case 'country': return 'Ország';
 		}
 	};
 
@@ -195,7 +195,7 @@ export default function Leaderboard() {
 					</div>
 
 					<div className="leaderboard-filter-group">
-						<span className="leaderboard-filter-label">Regio:</span>
+						<span className="leaderboard-filter-label">Régió:</span>
 						<div className="leaderboard-filter-buttons">
 							{(['world', 'country'] as LocationFilter[]).map((filter) => (
 								<button
