@@ -41,6 +41,11 @@ const extractYouTubeId = (url: URL): string | null => {
 	return null;
 };
 
+const isDirectEmbeddableVideoUrl = (url: URL): boolean => {
+	const path = url.pathname.toLowerCase();
+	return /\.(mp4|webm|ogg|m3u8|mpd)$/.test(path);
+};
+
 export const toEmbedVideoUrl = (rawUrl: string | null | undefined): string => {
 	if (!rawUrl) return '';
 
@@ -51,26 +56,30 @@ export const toEmbedVideoUrl = (rawUrl: string | null | undefined): string => {
 	try {
 		parsed = new URL(trimmed);
 	} catch {
-		return trimmed;
+		return '';
 	}
 
 	const youtubeId = extractYouTubeId(parsed);
-	if (!youtubeId) {
+	if (youtubeId) {
+		const embedUrl = new URL(`https://www.youtube-nocookie.com/embed/${youtubeId}`);
+		const startFromStart = parseYouTubeTimeToSeconds(parsed.searchParams.get('start'));
+		const startFromT = parseYouTubeTimeToSeconds(parsed.searchParams.get('t'));
+		const startSeconds = startFromStart ?? startFromT;
+
+		if (startSeconds && startSeconds > 0) {
+			embedUrl.searchParams.set('start', String(startSeconds));
+		}
+
+		embedUrl.searchParams.set('rel', '0');
+		embedUrl.searchParams.set('modestbranding', '1');
+		embedUrl.searchParams.set('playsinline', '1');
+
+		return embedUrl.toString();
+	}
+
+	if (isDirectEmbeddableVideoUrl(parsed)) {
 		return trimmed;
 	}
 
-	const embedUrl = new URL(`https://www.youtube-nocookie.com/embed/${youtubeId}`);
-	const startFromStart = parseYouTubeTimeToSeconds(parsed.searchParams.get('start'));
-	const startFromT = parseYouTubeTimeToSeconds(parsed.searchParams.get('t'));
-	const startSeconds = startFromStart ?? startFromT;
-
-	if (startSeconds && startSeconds > 0) {
-		embedUrl.searchParams.set('start', String(startSeconds));
-	}
-
-	embedUrl.searchParams.set('rel', '0');
-	embedUrl.searchParams.set('modestbranding', '1');
-	embedUrl.searchParams.set('playsinline', '1');
-
-	return embedUrl.toString();
+	return '';
 };

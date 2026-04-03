@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Alapértelmezett borító</title>
+  <desc id="desc">Nincs elérhető borítókép ehhez a tartalomhoz.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1f2430"/>
+      <stop offset="100%" stop-color="#10131a"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f0c46a" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#ad7b2a" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="600" height="900" rx="26" fill="url(#bg)"/>
+
+  <g opacity="0.2">
+    <rect x="60" y="70" width="480" height="18" rx="9" fill="#ffffff"/>
+    <rect x="60" y="104" width="320" height="14" rx="7" fill="#ffffff"/>
+  </g>
+
+  <g transform="translate(300 420)">
+    <rect x="-150" y="-150" width="300" height="300" rx="24" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
+    <path d="M-70,-50h140a24,24 0 0 1 24,24v104a24,24 0 0 1 -24,24h-140a24,24 0 0 1 -24,-24v-104a24,24 0 0 1 24,-24z" fill="none" stroke="url(#shine)" stroke-width="18"/>
+    <circle cx="-8" cy="2" r="26" fill="url(#shine)"/>
+    <path d="M38,-14l42,16-42,16z" fill="#161a23"/>
+  </g>
+
+  <g font-family="Segoe UI, Arial, sans-serif" text-anchor="middle">
+    <text x="300" y="662" fill="#f2d294" font-size="38" font-weight="700">Nincs borítókép</text>
+    <text x="300" y="706" fill="#d2d7e0" font-size="22">Alapértelmezett tartalomkép</text>
+  </g>
+</svg>

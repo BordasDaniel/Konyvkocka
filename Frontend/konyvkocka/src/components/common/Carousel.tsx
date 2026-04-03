@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { CONTENT_FALLBACK_IMAGE } from '../../services/api'
 
 type Slide = {
   id: string
@@ -172,6 +173,13 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
     resetTimer()
   }
 
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const imageElement = event.currentTarget
+    if (imageElement.dataset.fallbackApplied === 'true') return
+    imageElement.dataset.fallbackApplied = 'true'
+    imageElement.src = CONTENT_FALLBACK_IMAGE
+  }
+
   return (
     <section className="hero-carousel">
       <div
@@ -214,6 +222,7 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
                     loading={idx === activeIndex ? 'eager' : 'lazy'}
                     decoding="async"
                     fetchPriority={idx === activeIndex ? 'high' : 'auto'}
+                    onError={handleImageError}
                   />
                 </div>
               </div>

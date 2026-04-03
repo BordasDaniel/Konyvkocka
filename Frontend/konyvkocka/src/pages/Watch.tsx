@@ -40,6 +40,7 @@ const Watch: React.FC = () => {
           if (!isMounted) return;
 
           const resolvedVideoUrl = detail.watchUrl ?? detail.episodes?.[0]?.streamUrl ?? '';
+          const resolvedEmbedUrl = toEmbedVideoUrl(resolvedVideoUrl);
           setVideoUrl(resolvedVideoUrl);
           setTitle(detail.title || 'Video lejatszas');
           setDescription(detail.description || '');
@@ -48,22 +49,16 @@ const Watch: React.FC = () => {
 
           if (!resolvedVideoUrl) {
             setError('A kivalasztott tartalomhoz nincs lejatszhato video URL.');
+          } else if (!resolvedEmbedUrl) {
+            setError('A kivalasztott tartalomhoz nincs beagyazhato video link.');
           }
         } else {
-          const videoParam = urlParams.get('video') || '';
-          const titleParam = urlParams.get('title') || 'Video lejatszas';
-          const tagsParam = urlParams.get('tags') || '';
-          const descParam = urlParams.get('desc') || '';
-
-          setVideoUrl(videoParam);
-          setTitle(titleParam);
-          setDescription(descParam);
-          setTags(tagsParam ? tagsParam.split(',').map(t => t.trim()).filter(Boolean) : []);
-          document.title = `${titleParam} - KonyvKocka`;
-
-          if (!videoParam) {
-            setError('Nincs elerheto video ehhez a tartalomhoz.');
-          }
+          setVideoUrl('');
+          setTitle('Videó lejátszása');
+          setDescription('');
+          setTags([]);
+          document.title = 'Videó lejátszása - KonyvKocka';
+          setError('Nincs megadott tartalom ehhez az oldalhoz.');
         }
       } catch (loadError) {
         if (!isMounted) return;
@@ -141,23 +136,25 @@ const Watch: React.FC = () => {
                   )}
                 </div>
                 {/* Episode-like quick action inside the info card */}
-                <div 
-                  className="episode-box" 
-                  id="episodeBox" 
-                  role="button" 
-                  tabIndex={0} 
-                  aria-label="Teljes film – oldal frissítése"
-                  onClick={handleRefresh}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleRefresh();
-                    }
-                  }}
-                >
-                  <i className="bi bi-play-circle me-2"></i>
-                  Teljes film
-                </div>
+                {!error && embedVideoUrl && (
+                  <div
+                    className="episode-box"
+                    id="episodeBox"
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Teljes film – oldal frissítése"
+                    onClick={handleRefresh}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleRefresh();
+                      }
+                    }}
+                  >
+                    <i className="bi bi-play-circle me-2"></i>
+                    Teljes film
+                  </div>
+                )}
               </div>
             </div>
           </div>

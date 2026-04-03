@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import type { CardData } from './Card';
 import { useAuth } from '../../context/AuthContext';
+import { CONTENT_FALLBACK_IMAGE } from '../../services/api';
 import { toEmbedVideoUrl } from '../../utils/helpers';
 import '../../styles/modal.css';
 
@@ -113,7 +114,17 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 						<div className="px-3">
 							<div className="row g-2">
 								<div className="col-md-5">
-									<img className="cover" src={displayCard.img} alt={`${displayCard.title} borító`} />
+									<img
+										className="cover"
+										src={displayCard.img}
+										alt={`${displayCard.title} borító`}
+										onError={(event) => {
+											const imageElement = event.currentTarget;
+											if (imageElement.dataset.fallbackApplied === 'true') return;
+											imageElement.dataset.fallbackApplied = 'true';
+											imageElement.src = CONTENT_FALLBACK_IMAGE;
+										}}
+									/>
 								</div>
 								<div className="col-md-7">
 										<h4>{displayCard.title}</h4>

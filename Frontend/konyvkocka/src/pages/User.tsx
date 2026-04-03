@@ -10,6 +10,7 @@ import {
 	getUserFavorites,
 	getUserProfile,
 	getUserRecent,
+	CONTENT_FALLBACK_IMAGE,
 	toAvatarSrc,
 	toContentImageSrc,
 	updateUserSettings,
@@ -1954,7 +1955,17 @@ const User: React.FC = () => {
 										{books.map((book) => (
 											<li key={book.id} className="list-group-item book-item">
 												<div className="d-flex gap-3 align-items-center">
-													<img src={book.cover} alt={book.title} className="book-logo" />
+													<img
+														src={book.cover}
+														alt={book.title}
+														className="book-logo"
+														onError={(event) => {
+															const imageElement = event.currentTarget;
+															if (imageElement.dataset.fallbackApplied === 'true') return;
+															imageElement.dataset.fallbackApplied = 'true';
+															imageElement.src = CONTENT_FALLBACK_IMAGE;
+														}}
+													/>
 													<div className="grow">
 														<div className="book-title">{book.title}</div>
 													</div>
@@ -1995,7 +2006,17 @@ const User: React.FC = () => {
 										{books.map((book) => (
 											<li key={book.id} className="list-group-item book-item">
 												<div className="d-flex gap-3 align-items-center">
-													<img src={book.cover} alt={book.title} className="book-logo" />
+													<img
+														src={book.cover}
+														alt={book.title}
+														className="book-logo"
+														onError={(event) => {
+															const imageElement = event.currentTarget;
+															if (imageElement.dataset.fallbackApplied === 'true') return;
+															imageElement.dataset.fallbackApplied = 'true';
+															imageElement.src = CONTENT_FALLBACK_IMAGE;
+														}}
+													/>
 													<div className="grow">
 														<div className="book-title">{book.title}</div>
 													</div>
