@@ -3,6 +3,7 @@ using KonyvkockaAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace KonyvkockaAPI.Controllers
 {
@@ -16,6 +17,206 @@ namespace KonyvkockaAPI.Controllers
         public AdminController(KonyvkockaContext context)
         {
             _context = context;
+        }
+
+        // ================================================================
+        // GET /api/admin/overview
+        // Admin dashboard áttekintő statisztikák + legutóbbi aktivitások
+        // ================================================================
+        [HttpGet("overview")]
+        public async Task<IActionResult> GetOverview()
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                var now = DateTime.UtcNow;
+                var todayStart = now.Date;
+                var yesterdayStart = todayStart.AddDays(-1);
+                var monthStart = new DateTime(now.Year, now.Month, 1);
+                var nextMonthStart = monthStart.AddMonths(1);
+                var previousMonthStart = monthStart.AddMonths(-1);
+
+                var totalUsers = await _context.Users.CountAsync();
+                var newUsersToday = await _context.Users.CountAsync(u => u.CreationDate >= todayStart);
+
+                var activeSubscribers = await _context.Users.CountAsync(u => u.Premium && (!u.PremiumExpiresAt.HasValue || u.PremiumExpiresAt.Value >= now));
+                var newSubscribersToday = await _context.Purchases
+                    .Where(p => p.PurchaseStatus == "SUCCESS" && p.PurchaseDate.HasValue && p.PurchaseDate.Value >= todayStart)
+                    .Select(p => p.UserId)
+                    .Distinct()
+                    .CountAsync();
+
+                var monthlyRevenue = await _context.Purchases
+                    .Where(p => p.PurchaseStatus == "SUCCESS" && p.PurchaseDate.HasValue && p.PurchaseDate.Value >= monthStart && p.PurchaseDate.Value < nextMonthStart)
+                    .SumAsync(p => p.Price ?? 0);
+
+                var previousMonthlyRevenue = await _context.Purchases
+                    .Where(p => p.PurchaseStatus == "SUCCESS" && p.PurchaseDate.HasValue && p.PurchaseDate.Value >= previousMonthStart && p.PurchaseDate.Value < monthStart)
+                    .SumAsync(p => p.Price ?? 0);
+
+                var totalBooks = await _context.Books.CountAsync();
+                var totalMovies = await _context.Movies.CountAsync();
+                var totalSeries = await _context.Series.CountAsync();
+                var totalContent = totalBooks + totalMovies + totalSeries;
+
+                var activeUsersToday = await _context.Users.CountAsync(u => u.LastLoginDate >= todayStart);
+                var activeUsersYesterday = await _context.Users.CountAsync(u => u.LastLoginDate >= yesterdayStart && u.LastLoginDate < todayStart);
+
+                var activeChallenges = await _context.Challenges.CountAsync(c => c.IsActive == true);
+                var newChallengesThisMonth = await _context.Challenges.CountAsync(c => c.CreatedAt.HasValue && c.CreatedAt.Value >= monthStart);
+
+                var revenueDelta = monthlyRevenue - previousMonthlyRevenue;
+                var revenueDeltaPct = previousMonthlyRevenue == 0
+                    ? (monthlyRevenue > 0 ? 100.0 : 0.0)
+                    : (revenueDelta / (double)previousMonthlyRevenue) * 100.0;
+
+                var dailyVisitorsDelta = activeUsersToday - activeUsersYesterday;
+                var dailyVisitorsDeltaPct = activeUsersYesterday == 0
+                    ? (activeUsersToday > 0 ? 100.0 : 0.0)
+                    : (dailyVisitorsDelta / (double)activeUsersYesterday) * 100.0;
+
+                var activities = new List<AdminOverviewActivityDTO>();
+
+                var recentUsers = await _context.Users
+                    .OrderByDescending(u => u.CreationDate)
+                    .Take(3)
+                    .Select(u => new { u.Username, u.CreationDate })
+                    .ToListAsync();
+
+                activities.AddRange(recentUsers.Select(u => new AdminOverviewActivityDTO
+                {
+                    Icon = "bi-person-plus-fill",
+                    Color = "#4a9eff",
+                    Text = $"Új felhasználó regisztrált: {u.Username}",
+                    Timestamp = u.CreationDate
+                }));
+
+                var recentPurchases = await _context.Purchases
+                    .Include(p => p.User)
+                    .Where(p => p.PurchaseStatus == "SUCCESS")
+                    .OrderByDescending(p => p.PurchaseDate)
+                    .Take(3)
+                    .Select(p => new
+                    {
+                        Username = p.User.Username,
+                        p.Price,
+                        Time = p.PurchaseDate
+                    })
+                    .ToListAsync();
+
+                activities.AddRange(recentPurchases
+                    .Where(p => p.Time.HasValue)
+                    .Select(p => new AdminOverviewActivityDTO
+                    {
+                        Icon = "bi-star-fill",
+                        Color = "var(--secondary)",
+                        Text = $"Új Premium előfizető: {p.Username} ({(p.Price ?? 0).ToString("N0", new CultureInfo("hu-HU"))} Ft)",
+                        Timestamp = p.Time!.Value
+                    }));
+
+                var recentArticles = await _context.Articles
+                    .OrderByDescending(a => a.CreatedAt)
+                    .Take(2)
+                    .Select(a => new { a.Title, a.CreatedAt })
+                    .ToListAsync();
+
+                activities.AddRange(recentArticles.Select(a => new AdminOverviewActivityDTO
+                {
+                    Icon = "bi-newspaper",
+                    Color = "#4ade80",
+                    Text = $"Új hír közzétéve: {a.Title}",
+                    Timestamp = a.CreatedAt
+                }));
+
+                var recentChallenges = await _context.Challenges
+                    .Where(c => c.CreatedAt.HasValue)
+                    .OrderByDescending(c => c.CreatedAt)
+                    .Take(2)
+                    .Select(c => new { c.Title, c.CreatedAt })
+                    .ToListAsync();
+
+                activities.AddRange(recentChallenges.Select(c => new AdminOverviewActivityDTO
+                {
+                    Icon = "bi-trophy-fill",
+                    Color = "#a78bfa",
+                    Text = $"Új kihívás létrehozva: {c.Title}",
+                    Timestamp = c.CreatedAt ?? now
+                }));
+
+                var response = new AdminOverviewDTO
+                {
+                    Stats = new List<AdminOverviewStatDTO>
+                    {
+                        new()
+                        {
+                            Label = "Felhasználók",
+                            Value = totalUsers.ToString("N0", new CultureInfo("hu-HU")),
+                            Change = newUsersToday > 0 ? $"+{newUsersToday}" : "0",
+                            ChangeType = newUsersToday > 0 ? "up" : "neutral",
+                            Icon = "bi-people-fill",
+                            Color = "#4a9eff"
+                        },
+                        new()
+                        {
+                            Label = "Aktív előfizetők",
+                            Value = activeSubscribers.ToString("N0", new CultureInfo("hu-HU")),
+                            Change = newSubscribersToday > 0 ? $"+{newSubscribersToday}" : "0",
+                            ChangeType = newSubscribersToday > 0 ? "up" : "neutral",
+                            Icon = "bi-star-fill",
+                            Color = "var(--secondary)"
+                        },
+                        new()
+                        {
+                            Label = "Havi bevétel",
+                            Value = $"{monthlyRevenue.ToString("N0", new CultureInfo("hu-HU"))} Ft",
+                            Change = $"{(revenueDeltaPct >= 0 ? "+" : string.Empty)}{revenueDeltaPct:0.0}%",
+                            ChangeType = revenueDeltaPct > 0 ? "up" : revenueDeltaPct < 0 ? "down" : "neutral",
+                            Icon = "bi-cash-stack",
+                            Color = "#4ade80"
+                        },
+                        new()
+                        {
+                            Label = "Tartalmak",
+                            Value = totalContent.ToString("N0", new CultureInfo("hu-HU")),
+                            Change = "0",
+                            ChangeType = "neutral",
+                            Icon = "bi-collection-fill",
+                            Color = "#f472b6"
+                        },
+                        new()
+                        {
+                            Label = "Mai látogatók",
+                            Value = activeUsersToday.ToString("N0", new CultureInfo("hu-HU")),
+                            Change = $"{(dailyVisitorsDeltaPct >= 0 ? "+" : string.Empty)}{dailyVisitorsDeltaPct:0.0}%",
+                            ChangeType = dailyVisitorsDeltaPct > 0 ? "up" : dailyVisitorsDeltaPct < 0 ? "down" : "neutral",
+                            Icon = "bi-eye-fill",
+                            Color = "#fb923c"
+                        },
+                        new()
+                        {
+                            Label = "Aktív kihívások",
+                            Value = activeChallenges.ToString("N0", new CultureInfo("hu-HU")),
+                            Change = newChallengesThisMonth > 0 ? $"+{newChallengesThisMonth}" : "0",
+                            ChangeType = newChallengesThisMonth > 0 ? "up" : "neutral",
+                            Icon = "bi-trophy-fill",
+                            Color = "#a78bfa"
+                        }
+                    },
+                    Activities = activities
+                        .OrderByDescending(a => a.Timestamp)
+                        .Take(8)
+                        .ToList()
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
         }
 
         // ================================================================
@@ -335,7 +536,7 @@ namespace KonyvkockaAPI.Controllers
                         Price          = p.Price,
                         Tier           = p.Tier,
                         PurchaseStatus = p.PurchaseStatus,
-                        UpdatedAt      = p.UpdatedAt
+                        UpdatedAt      = p.PurchaseDate
                     })
                     .ToListAsync();
 

@@ -1,5 +1,29 @@
 namespace KonyvkockaAPI.DTO.Response
 {
+    public class AdminOverviewStatDTO
+    {
+        public string Label { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+        public string Change { get; set; } = string.Empty;
+        public string ChangeType { get; set; } = "neutral";
+        public string Icon { get; set; } = string.Empty;
+        public string Color { get; set; } = string.Empty;
+    }
+
+    public class AdminOverviewActivityDTO
+    {
+        public string Icon { get; set; } = string.Empty;
+        public string Color { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+    }
+
+    public class AdminOverviewDTO
+    {
+        public List<AdminOverviewStatDTO> Stats { get; set; } = new();
+        public List<AdminOverviewActivityDTO> Activities { get; set; } = new();
+    }
+
     public class AdminPurchaseItemDTO
     {
         public int Id { get; set; }

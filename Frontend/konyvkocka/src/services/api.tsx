@@ -826,6 +826,30 @@ export const createPurchase = async (tier: string): Promise<CreatePurchaseRespon
 // ADMIN VÉGPONTOK
 // ========================
 
+export interface AdminOverviewStatResponse {
+	label: string;
+	value: string;
+	change: string;
+	changeType: 'up' | 'down' | 'neutral';
+	icon: string;
+	color: string;
+}
+
+export interface AdminOverviewActivityResponse {
+	icon: string;
+	color: string;
+	text: string;
+	timestamp: string;
+}
+
+export interface AdminOverviewResponse {
+	stats: AdminOverviewStatResponse[];
+	activities: AdminOverviewActivityResponse[];
+}
+
+export const getAdminOverview = async (): Promise<AdminOverviewResponse> =>
+	request<AdminOverviewResponse>('/api/admin/overview', { auth: true });
+
 export interface AdminUserItemResponse {
 	id: number;
 	username: string;

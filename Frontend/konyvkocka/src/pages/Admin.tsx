@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
+  getAdminOverview,
   getAdminPurchases,
+  type AdminOverviewResponse,
   type AdminPurchaseItemResponse,
 } from '../services/api';
 import '../styles/admin.css';
@@ -20,6 +22,13 @@ interface StatCard {
   changeType: 'up' | 'down' | 'neutral';
   icon: string;
   color: string;
+}
+
+interface OverviewActivityItem {
+  icon: string;
+  color: string;
+  text: string;
+  time: string;
 }
 
 interface AdminUser {
@@ -124,15 +133,6 @@ interface AdminTitleOption {
 // ========================
 // MOCK ADATOK
 // ========================
-
-const STATS: StatCard[] = [
-  { label: 'Felhasználók', value: '12,847', change: '+324', changeType: 'up', icon: 'bi-people-fill', color: '#4a9eff' },
-  { label: 'Aktív előfizetők', value: '3,291', change: '+89', changeType: 'up', icon: 'bi-star-fill', color: 'var(--secondary)' },
-  { label: 'Havi bevétel', value: '9,840,990 Ft', change: '+12.3%', changeType: 'up', icon: 'bi-cash-stack', color: '#4ade80' },
-  { label: 'Tartalmak', value: '2,456', change: '+18', changeType: 'up', icon: 'bi-collection-fill', color: '#f472b6' },
-  { label: 'Mai látogatók', value: '1,893', change: '-5.2%', changeType: 'down', icon: 'bi-eye-fill', color: '#fb923c' },
-  { label: 'Aktív kihívások', value: '14', change: '+2', changeType: 'up', icon: 'bi-trophy-fill', color: '#a78bfa' },
-];
 
 const MOCK_USERS: AdminUser[] = [
   { id: 1, username: 'BookMaster99', email: 'bookmaster@example.com', avatar: 'https://i.pravatar.cc/150?img=1', permissionLevel: 'user', subscription: 'premium', premiumExpiresAt: '2026-08-12', level: 120, xp: 840, countryCode: 'HU', joinDate: '2020-03-15', lastLoginDate: '2026-03-12', dayStreak: 47, readTimeMin: 18320, watchTimeMin: 5220, bookPoints: 8450, seriesPoints: 2160, moviePoints: 980 },
@@ -480,6 +480,10 @@ const Admin: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const hasAdminAccess = Boolean(user && (user.isAdmin || user.isModerator));
+  const [overviewStats, setOverviewStats] = useState<StatCard[]>([]);
+  const [overviewActivities, setOverviewActivities] = useState<OverviewActivityItem[]>([]);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS);
   const [content, setContent] = useState<AdminContent[]>(MOCK_CONTENT);
@@ -749,6 +753,56 @@ const Admin: React.FC = () => {
       String(p.id).includes(q)
     );
   }, [purchasesData, purchasesSearch]);
+
+  const formatOverviewTime = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return 'Ismeretlen időpont';
+
+    return date.toLocaleString('hu-HU', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  };
+
+  const loadOverview = useCallback(async () => {
+    setOverviewLoading(true);
+    setOverviewError(null);
+
+    try {
+      const data: AdminOverviewResponse = await getAdminOverview();
+      setOverviewStats(data.stats.map((stat) => ({
+        label: stat.label,
+        value: stat.value,
+        change: stat.change,
+        changeType: stat.changeType,
+        icon: stat.icon,
+        color: stat.color,
+      })));
+      setOverviewActivities(data.activities.map((item) => ({
+        icon: item.icon,
+        color: item.color,
+        text: item.text,
+        time: formatOverviewTime(item.timestamp),
+      })));
+    } catch (error) {
+      console.error('Admin overview betöltés sikertelen:', error);
+      setOverviewStats([]);
+      setOverviewActivities([]);
+      setOverviewError('Az áttekintés adatok betöltése sikertelen.');
+    } finally {
+      setOverviewLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'overview') {
+      void loadOverview();
+    }
+  }, [activeTab, loadOverview]);
 
   // Mentés handler (mock)
   const handleSave = (section: string) => {
@@ -1260,9 +1314,13 @@ const Admin: React.FC = () => {
           {/* ======================== ÁTTEKINTÉS ======================== */}
           {activeTab === 'overview' && (
             <div className="admin-section">
+              {overviewError && (
+                <div className="alert alert-warning mb-3" role="alert">{overviewError}</div>
+              )}
+
               {/* Statisztika kártyák */}
               <div className="admin-stats-grid">
-                {STATS.map((stat, idx) => (
+                {overviewStats.map((stat, idx) => (
                   <div key={idx} className="admin-stat-card">
                     <div className="admin-stat-icon" style={{ color: stat.color }}>
                       <i className={`bi ${stat.icon}`}></i>
@@ -1279,6 +1337,14 @@ const Admin: React.FC = () => {
                 ))}
               </div>
 
+              {overviewLoading && (
+                <div className="admin-card mt-3 text-center py-4">
+                  <div className="spinner-border text-light" role="status">
+                    <span className="visually-hidden">Betöltés...</span>
+                  </div>
+                </div>
+              )}
+
               {/* Legutóbbi aktivitás */}
               <div className="admin-card mt-4">
                 <h3 className="admin-card-title">
@@ -1286,14 +1352,16 @@ const Admin: React.FC = () => {
                   Legutóbbi aktivitás
                 </h3>
                 <div className="admin-activity-list">
-                  {[
-                    { icon: 'bi-person-plus-fill', color: '#4a9eff', text: 'Új felhasználó regisztrált: TavasziOlvaso', time: '2026.02.25. 14:32' },
-                    { icon: 'bi-star-fill', color: 'var(--secondary)', text: 'Új Premium előfizető: ReadingQueen', time: '2026.02.25. 14:14' },
-                    { icon: 'bi-book-fill', color: '#4ade80', text: 'Új könyv hozzáadva: "Az éjszaka gyermekei"', time: '2026.02.25. 13:45' },
-                    { icon: 'bi-flag-fill', color: '#f87171', text: 'Bejelentés: TrollUser69 spam tevékenység', time: '2026.02.25. 12:30' },
-                    { icon: 'bi-trophy-fill', color: '#a78bfa', text: '156 felhasználó teljesítette a "30 napos maraton" kihívást', time: '2026.02.25. 11:18' },
-                    { icon: 'bi-cash-stack', color: '#4ade80', text: 'Napi bevétel összesítő: 327,450 Ft', time: '2026.02.25. 09:00' },
-                  ].map((item, idx) => (
+                  {overviewActivities.length === 0 && !overviewLoading && (
+                    <div className="admin-activity-item">
+                      <div className="admin-activity-icon" style={{ color: '#9ca3af' }}>
+                        <i className="bi bi-info-circle"></i>
+                      </div>
+                      <div className="admin-activity-text">Nincs elérhető aktivitás adat.</div>
+                      <div className="admin-activity-time">-</div>
+                    </div>
+                  )}
+                  {overviewActivities.map((item, idx) => (
                     <div key={idx} className="admin-activity-item">
                       <div className="admin-activity-icon" style={{ color: item.color }}>
                         <i className={`bi ${item.icon}`}></i>
