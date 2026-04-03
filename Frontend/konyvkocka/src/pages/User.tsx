@@ -10,7 +10,7 @@ import {
 	getUserFavorites,
 	getUserProfile,
 	getUserRecent,
-	CONTENT_FALLBACK_IMAGE,
+	applyContentImageFallback,
 	toAvatarSrc,
 	toContentImageSrc,
 	updateUserSettings,
@@ -1960,10 +1960,7 @@ const User: React.FC = () => {
 														alt={book.title}
 														className="book-logo"
 														onError={(event) => {
-															const imageElement = event.currentTarget;
-															if (imageElement.dataset.fallbackApplied === 'true') return;
-															imageElement.dataset.fallbackApplied = 'true';
-															imageElement.src = CONTENT_FALLBACK_IMAGE;
+															applyContentImageFallback(event.currentTarget);
 														}}
 													/>
 													<div className="grow">
@@ -2011,10 +2008,7 @@ const User: React.FC = () => {
 														alt={book.title}
 														className="book-logo"
 														onError={(event) => {
-															const imageElement = event.currentTarget;
-															if (imageElement.dataset.fallbackApplied === 'true') return;
-															imageElement.dataset.fallbackApplied = 'true';
-															imageElement.src = CONTENT_FALLBACK_IMAGE;
+															applyContentImageFallback(event.currentTarget);
 														}}
 													/>
 													<div className="grow">

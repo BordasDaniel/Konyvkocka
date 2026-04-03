@@ -6,6 +6,16 @@ const DEFAULT_AVATAR =
 	"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%232f3b52'/%3E%3Cstop offset='100%25' stop-color='%23192234'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='64' cy='64' r='64' fill='url(%23g)'/%3E%3Ccircle cx='64' cy='49' r='23' fill='%23d6deeb'/%3E%3Cpath d='M24 113c5-22 21-34 40-34s35 12 40 34' fill='%23d6deeb'/%3E%3C/svg%3E";
 export const CONTENT_FALLBACK_IMAGE = '/assets/img/default-cover.svg';
 
+export const applyContentImageFallback = (imageElement: HTMLImageElement): void => {
+	const fallbackAbsoluteUrl = new URL(CONTENT_FALLBACK_IMAGE, window.location.origin).toString();
+	if (imageElement.src === fallbackAbsoluteUrl || imageElement.getAttribute('src') === CONTENT_FALLBACK_IMAGE) {
+		return;
+	}
+
+	imageElement.onerror = null;
+	imageElement.src = CONTENT_FALLBACK_IMAGE;
+};
+
 type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
 interface RequestOptions {
@@ -366,6 +376,7 @@ export interface HistoryItemResponse {
 	poster: string | null;
 	status: string | null;
 	progress: number | null;
+	totalUnits: number | null;
 	rating: number | null;
 	lastSeen: string | null;
 	addedAt: string | null;

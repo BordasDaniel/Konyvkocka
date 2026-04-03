@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useState, useRef, useEffect } from "react";
+import { ApiHttpError, getNotifications } from "../../services/api";
 
 function Navbar() {
     const { user, isAuthenticated, logout } = useAuth();
@@ -8,6 +9,7 @@ function Navbar() {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [mobileProfileMenuOpen, setMobileProfileMenuOpen] = useState(false);
     const [mobilePanelHeight, setMobilePanelHeight] = useState<number>(0);
+    const [unreadCount, setUnreadCount] = useState(0);
     const dropdownRef = useRef<HTMLLIElement>(null);
     const mobileMainPanelRef = useRef<HTMLUListElement>(null);
     const mobileProfilePanelRef = useRef<HTMLUListElement>(null);
@@ -77,6 +79,77 @@ function Navbar() {
 
         return () => window.removeEventListener('resize', syncMobilePanelHeight);
     }, [mobileProfileMenuOpen, isAuthenticated, user?.isAdmin, user?.username]);
+
+    useEffect(() => {
+      let isMounted = true;
+
+      const applyUnreadCount = (value: number) => {
+        if (!isMounted) return;
+        setUnreadCount(Math.max(0, value));
+      };
+
+      const refreshUnreadCount = async () => {
+        if (!isAuthenticated) {
+          applyUnreadCount(0);
+          return;
+        }
+
+        try {
+          const response = await getNotifications({
+            unread: true,
+            page: 1,
+            pageSize: 1,
+          });
+          applyUnreadCount(response.unreadCount);
+        } catch (error) {
+          if (error instanceof ApiHttpError && (error.status === 401 || error.status === 403)) {
+            applyUnreadCount(0);
+            return;
+          }
+
+          console.error('Failed to load unread notification count:', error);
+        }
+      };
+
+      const onUnreadCountChanged = (event: Event) => {
+        const customEvent = event as CustomEvent<{ unreadCount?: number }>;
+        const nextUnreadCount = customEvent.detail?.unreadCount;
+
+        if (typeof nextUnreadCount === 'number') {
+          applyUnreadCount(nextUnreadCount);
+          return;
+        }
+
+        void refreshUnreadCount();
+      };
+
+      const onWindowFocus = () => {
+        void refreshUnreadCount();
+      };
+
+      const onVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          void refreshUnreadCount();
+        }
+      };
+
+      const intervalId = window.setInterval(() => {
+        void refreshUnreadCount();
+      }, 60000);
+
+      void refreshUnreadCount();
+      window.addEventListener('kk_notifications_unread_changed', onUnreadCountChanged as EventListener);
+      window.addEventListener('focus', onWindowFocus);
+      document.addEventListener('visibilitychange', onVisibilityChange);
+
+      return () => {
+        isMounted = false;
+        window.clearInterval(intervalId);
+        window.removeEventListener('kk_notifications_unread_changed', onUnreadCountChanged as EventListener);
+        window.removeEventListener('focus', onWindowFocus);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+      };
+    }, [isAuthenticated]);
 
     const handleLogout = () => {
         logout();
@@ -185,7 +258,7 @@ function Navbar() {
                       <NavLink to="/ertesitesek" className="nav-link" onClick={handleNavigationClick}>
                         <span style={{ position: 'relative', display: 'inline-block' }}>
                           <i className="bi bi-bell-fill me-2"></i>
-                          <span className="navbar-notification-dot"></span>
+                          {unreadCount > 0 && <span className="navbar-notification-dot" aria-hidden="true"></span>}
                         </span>
                         Értesítések
                       </NavLink>
@@ -297,7 +370,7 @@ function Navbar() {
                     <NavLink to="/ertesitesek" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                       <span style={{ position: 'relative', display: 'inline-block' }}>
                         <i className="bi bi-bell-fill me-2"></i>
-                        <span className="navbar-notification-dot"></span>
+                        {unreadCount > 0 && <span className="navbar-notification-dot" aria-hidden="true"></span>}
                       </span>
                       Értesítések
                     </NavLink>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { CONTENT_FALLBACK_IMAGE } from '../../services/api'
+import { applyContentImageFallback } from '../../services/api'
 
 type Slide = {
   id: string
@@ -175,9 +175,7 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
 
   const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
     const imageElement = event.currentTarget
-    if (imageElement.dataset.fallbackApplied === 'true') return
-    imageElement.dataset.fallbackApplied = 'true'
-    imageElement.src = CONTENT_FALLBACK_IMAGE
+    applyContentImageFallback(imageElement)
   }
 
   return (

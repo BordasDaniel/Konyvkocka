@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import showMoreCardImage from '../../assets/img/carousel.jpg';
-import { CONTENT_FALLBACK_IMAGE } from '../../services/api';
+import { applyContentImageFallback } from '../../services/api';
 
 export interface CardData {
   id: string;
@@ -61,9 +61,7 @@ const Card: React.FC<CardProps> = ({
 
   const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>, cardId: string) => {
     const img = event.currentTarget;
-    if (img.dataset.fallbackApplied === 'true') return;
-    img.dataset.fallbackApplied = 'true';
-    img.src = CONTENT_FALLBACK_IMAGE;
+    applyContentImageFallback(img);
     setLoadedImages((prev) => ({ ...prev, [cardId]: true }));
   };
 

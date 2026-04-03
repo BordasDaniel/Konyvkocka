@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import type { CardData } from './Card';
 import { useAuth } from '../../context/AuthContext';
-import { CONTENT_FALLBACK_IMAGE } from '../../services/api';
+import { applyContentImageFallback } from '../../services/api';
 import { toEmbedVideoUrl } from '../../utils/helpers';
 import '../../styles/modal.css';
 
@@ -119,10 +119,7 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 										src={displayCard.img}
 										alt={`${displayCard.title} borító`}
 										onError={(event) => {
-											const imageElement = event.currentTarget;
-											if (imageElement.dataset.fallbackApplied === 'true') return;
-											imageElement.dataset.fallbackApplied = 'true';
-											imageElement.src = CONTENT_FALLBACK_IMAGE;
+											applyContentImageFallback(event.currentTarget);
 										}}
 									/>
 								</div>

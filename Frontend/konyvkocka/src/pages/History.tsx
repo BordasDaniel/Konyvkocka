@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/history.css';
-import { ApiHttpError, CONTENT_FALLBACK_IMAGE, getHistory, toContentImageSrc, type HistoryItemResponse } from '../services/api';
+import { ApiHttpError, applyContentImageFallback, getHistory, toContentImageSrc, type HistoryItemResponse } from '../services/api';
 
 // Előzmény elem típus
 interface HistoryItem {
@@ -11,10 +11,20 @@ interface HistoryItem {
   type: 'book' | 'movie' | 'series';
   progress: number; // 0-100
   lastPosition: string; // pl. "124. oldal" vagy "S2 E5 - 23:45"
-  totalDuration: string; // pl. "320 oldal" vagy "45 perc"
+  totalDuration: string; // pl. "320 oldal" vagy "1 óra 34 perc"
   viewedAt: Date;
   rating?: number;
 }
+
+const formatMinutesAsDuration = (value: number): string => {
+  const totalMinutes = Math.max(0, Math.floor(value));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours <= 0) return `${minutes} perc`;
+  if (minutes === 0) return `${hours} óra`;
+  return `${hours} óra ${minutes} perc`;
+};
 
 const mapHistoryItem = (item: HistoryItemResponse): HistoryItem => {
   const status = item.status?.toUpperCase() ?? '';
@@ -34,13 +44,17 @@ const mapHistoryItem = (item: HistoryItemResponse): HistoryItem => {
       ? 'series'
       : 'book';
 
+  const totalUnits = typeof item.totalUnits === 'number' && item.totalUnits > 0
+    ? item.totalUnits
+    : null;
+
   const lastPosition = status === 'COMPLETED'
     ? 'Befejezve'
     : normalizedType === 'book'
       ? `${rawProgress || 0}. oldal`
       : normalizedType === 'series'
         ? `Epizód ${rawProgress || 0}`
-        : `${rawProgress || 0}. perc`;
+        : formatMinutesAsDuration(rawProgress || 0);
 
   return {
     id: item.contentId,
@@ -51,10 +65,10 @@ const mapHistoryItem = (item: HistoryItemResponse): HistoryItem => {
     lastPosition,
     totalDuration:
       normalizedType === 'book'
-        ? 'Ismeretlen oldalszám'
+        ? `${totalUnits ?? Math.max(0, rawProgress)} oldal`
         : normalizedType === 'series'
-          ? 'Ismeretlen epizódszám'
-          : 'Ismeretlen hossz',
+          ? `${totalUnits ?? Math.max(0, rawProgress)} epizód`
+          : formatMinutesAsDuration(totalUnits ?? Math.max(0, rawProgress)),
     viewedAt: new Date(item.lastSeen ?? item.addedAt ?? Date.now()),
     rating: item.rating == null ? undefined : Number(item.rating),
   };
@@ -320,7 +334,7 @@ const History: React.FC = () => {
 
                     return (
                       <div
-                        key={item.id}
+                        key={`${item.type}-${item.id}`}
                         className={`history-item ${isCompleted ? 'completed' : ''}`}
                       >
                         {/* Borító */}
@@ -329,10 +343,7 @@ const History: React.FC = () => {
                             src={item.cover}
                             alt={item.title}
                             onError={(event) => {
-                              const imageElement = event.currentTarget;
-                              if (imageElement.dataset.fallbackApplied === 'true') return;
-                              imageElement.dataset.fallbackApplied = 'true';
-                              imageElement.src = CONTENT_FALLBACK_IMAGE;
+                              applyContentImageFallback(event.currentTarget);
                             }}
                           />
                           <div className="item-type-badge" style={{ backgroundColor: typeInfo.color }}>

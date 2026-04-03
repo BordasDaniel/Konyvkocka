@@ -130,7 +130,8 @@ namespace KonyvkockaAPI.Controllers
                 {
                     var seriesQuery = _context.UserSeries
                         .Where(us => us.UserId == userId)
-                        .Include(us => us.Series);
+                        .Include(us => us.Series)
+                        .ThenInclude(s => s.Episodes);
 
                     if (normalized == "series")
                     {
@@ -391,6 +392,7 @@ namespace KonyvkockaAPI.Controllers
             Cover       = ub.Book.CoverApiName,
             Status      = ub.Status,
             Progress    = ub.CurrentPage,
+            TotalUnits  = ub.Book.PageNum,
             Rating      = ub.Rating,
             LastSeen    = ub.LastSeen,
             AddedAt     = ub.AddedAt
@@ -404,6 +406,7 @@ namespace KonyvkockaAPI.Controllers
             Poster      = um.Movie.PosterApiName,
             Status      = um.Status,
             Progress    = um.CurrentPosition,
+            TotalUnits  = um.Movie.Length,
             Rating      = um.Rating,
             LastSeen    = um.LastSeen,
             AddedAt     = um.AddedAt
@@ -417,6 +420,7 @@ namespace KonyvkockaAPI.Controllers
             Poster      = us.Series.PosterApiName,
             Status      = us.Status,
             Progress    = us.CurrentEpisode,
+            TotalUnits  = us.Series.Episodes.Count,
             Rating      = us.Rating,
             LastSeen    = us.LastSeen,
             AddedAt     = us.AddedAt
