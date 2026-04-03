@@ -62,7 +62,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				email: parsed.email,
 				avatar: toAvatarSrc(typeof parsed.avatar === 'string' ? parsed.avatar : null),
 				isSubscriber: Boolean(parsed.isSubscriber),
+				permissionLevel: parsed.permissionLevel === 'ADMIN' || parsed.permissionLevel === 'MODERATOR' ? parsed.permissionLevel : 'USER',
 				isAdmin: Boolean(parsed.isAdmin),
+				isModerator: Boolean(parsed.isModerator),
 			};
 		} catch {
 			return null;

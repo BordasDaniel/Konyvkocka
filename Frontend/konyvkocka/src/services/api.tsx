@@ -134,8 +134,17 @@ export interface UiAuthUser {
 	email: string;
 	avatar: string;
 	isSubscriber: boolean;
+	permissionLevel: 'USER' | 'MODERATOR' | 'ADMIN';
 	isAdmin: boolean;
+	isModerator: boolean;
 }
+
+const normalizePermissionLevel = (permissionLevel: string | null | undefined): UiAuthUser['permissionLevel'] => {
+	const normalized = permissionLevel?.toUpperCase();
+	if (normalized === 'ADMIN') return 'ADMIN';
+	if (normalized === 'MODERATOR') return 'MODERATOR';
+	return 'USER';
+};
 
 const decodeBase64Prefix = (rawBase64: string, bytesToRead = 16): Uint8Array | null => {
 	try {
@@ -211,14 +220,20 @@ export const parseContentKey = (key: string): { type: NormalizedContentType; id:
 	return { type: normalizeContentType(typePart), id };
 };
 
-export const mapUserMeToUiUser = (user: ApiUserMe): UiAuthUser => ({
-	id: user.id,
-	username: user.username,
-	email: user.email,
-	avatar: toAvatarSrc(user.avatar),
-	isSubscriber: user.isSubscriber,
-	isAdmin: user.permissionLevel?.toUpperCase() === 'ADMIN',
-});
+export const mapUserMeToUiUser = (user: ApiUserMe): UiAuthUser => {
+	const permissionLevel = normalizePermissionLevel(user.permissionLevel);
+
+	return {
+		id: user.id,
+		username: user.username,
+		email: user.email,
+		avatar: toAvatarSrc(user.avatar),
+		isSubscriber: user.isSubscriber,
+		permissionLevel,
+		isAdmin: permissionLevel === 'ADMIN',
+		isModerator: permissionLevel === 'MODERATOR',
+	};
+};
 
 export const authLogin = async (email: string, plainPassword: string): Promise<AuthResponse> => {
 	const passwordHash = await sha256Hex(plainPassword);

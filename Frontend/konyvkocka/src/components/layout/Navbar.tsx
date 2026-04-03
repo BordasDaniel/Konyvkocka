@@ -15,6 +15,7 @@ function Navbar() {
     const mobileProfilePanelRef = useRef<HTMLUListElement>(null);
     const navbarCollapseRef = useRef<HTMLDivElement>(null);
     const navbarTogglerRef = useRef<HTMLButtonElement>(null);
+    const hasAdminAccess = Boolean(user && (user.isAdmin || user.isModerator));
 
     const mainNavItems = [
         { to: '/', label: 'Kezdőlap', icon: 'bi-house-door' },
@@ -78,7 +79,7 @@ function Navbar() {
         window.addEventListener('resize', syncMobilePanelHeight);
 
         return () => window.removeEventListener('resize', syncMobilePanelHeight);
-    }, [mobileProfileMenuOpen, isAuthenticated, user?.isAdmin, user?.username]);
+    }, [mobileProfileMenuOpen, isAuthenticated, user?.isAdmin, user?.isModerator, user?.username]);
 
     useEffect(() => {
       let isMounted = true;
@@ -287,7 +288,7 @@ function Navbar() {
                       </NavLink>
                     </li>
 
-                    {user.isAdmin && (
+                    {hasAdminAccess && (
                       <>
                         <li><hr className="dropdown-divider" /></li>
                         <li className="nav-item">
@@ -396,7 +397,7 @@ function Navbar() {
                       <i className="bi bi-bag-check me-2"></i>Vásárlások
                     </NavLink>
                   </li>
-                  {user.isAdmin && (
+                  {hasAdminAccess && (
                     <>
                       <li><hr className="dropdown-divider" /></li>
                       <li>

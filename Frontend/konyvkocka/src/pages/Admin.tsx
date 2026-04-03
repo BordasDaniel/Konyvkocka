@@ -477,8 +477,9 @@ const MOCK_CHALLENGES: AdminChallenge[] = [
 // ========================
 
 const Admin: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const hasAdminAccess = Boolean(user && (user.isAdmin || user.isModerator));
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS);
   const [content, setContent] = useState<AdminContent[]>(MOCK_CONTENT);
@@ -1147,6 +1148,69 @@ const Admin: React.FC = () => {
                     <i className="bi bi-question-circle me-1"></i>
                     Támogatás
                   </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!hasAdminAccess) {
+    return (
+      <main className="d-flex align-items-center justify-content-center mt-5 pt-4" style={{
+        minHeight: '80vh',
+        background: 'transparent'
+      }}>
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-md-6 col-lg-5">
+              <div className="text-center p-4" style={{
+                background: 'rgba(12, 10, 8, 0.5)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                border: '1px solid rgba(194, 157, 89, 0.15)',
+                borderRadius: '16px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
+              }}>
+                <div className="mb-3">
+                  <i className="bi bi-shield-lock" style={{
+                    fontSize: '4.5rem',
+                    color: 'var(--secondary)'
+                  }}></i>
+                </div>
+
+                <h1 className="display-1 fw-bold mb-3" style={{
+                  fontSize: 'clamp(4rem, 12vw, 6rem)',
+                  color: 'var(--secondary)',
+                  letterSpacing: '0.1em'
+                }}>
+                  403
+                </h1>
+
+                <h2 className="h5 mb-3" style={{ color: 'var(--h1Text)' }}>Hozzáférés megtagadva</h2>
+                <p className="mb-4" style={{
+                  color: 'rgba(224, 224, 224, 0.7)',
+                  fontSize: '0.95rem',
+                  lineHeight: '1.6'
+                }}>
+                  Az admin felülethez admin vagy moderátor jogosultság szükséges.
+                </p>
+
+                <div className="mb-4">
+                  <button className="btn px-5 py-2" onClick={() => navigate('/')} style={{
+                    background: 'linear-gradient(135deg, var(--secondary), var(--primary))',
+                    color: 'var(--bg)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 12px rgba(194, 157, 89, 0.25)',
+                    transition: 'all 0.3s ease'
+                  }}>
+                    <i className="bi bi-house-door me-2"></i>
+                    KEZDŐLAP
+                  </button>
                 </div>
               </div>
             </div>
