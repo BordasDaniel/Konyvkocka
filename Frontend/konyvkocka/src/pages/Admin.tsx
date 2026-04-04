@@ -3,11 +3,17 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
   ApiHttpError,
+  getAdminChallengeOptions,
+  getAdminChallenges,
   getAdminOverview,
   getAdminNews,
   getAdminPurchases,
   sendAdminAnnouncement,
+  updateAdminChallenge,
   updateAdminNews,
+  type AdminChallengeBadgeOptionResponse,
+  type AdminChallengeItemResponse,
+  type AdminChallengeTitleOptionResponse,
   type AdminOverviewResponse,
   type AdminNewsItemResponse,
   type AdminPurchaseItemResponse,
@@ -126,6 +132,13 @@ interface AdminChallenge {
   createdAt: string;
   participants: number;
   completions: number;
+}
+
+interface AdminChallengeSummary {
+  total: number;
+  active: number;
+  repeatable: number;
+  event: number;
 }
 
 interface AdminBadgeOption {
@@ -329,20 +342,6 @@ const MOCK_CONTENT: AdminContent[] = [
   },
 ];
 
-const MOCK_BADGE_OPTIONS: AdminBadgeOption[] = [
-  { id: 1, name: 'Első Fejezet', category: 'READING', rarity: 'COMMON', isHidden: false },
-  { id: 2, name: 'Maraton Mester', category: 'EVENT', rarity: 'EPIC', isHidden: false },
-  { id: 3, name: 'Csendes Megfigyelő', category: 'SOCIAL', rarity: 'RARE', isHidden: true },
-  { id: 4, name: 'Nézőtitán', category: 'WATCHING', rarity: 'LEGENDARY', isHidden: false },
-];
-
-const MOCK_TITLE_OPTIONS: AdminTitleOption[] = [
-  { id: 1, name: 'Könyvmoly', description: 'Kiemelkedő olvasási aktivitásért járó cím.', rarity: 'COMMON' },
-  { id: 2, name: 'Kihívásvadász', description: 'Több event challenge teljesítéséért.', rarity: 'RARE' },
-  { id: 3, name: 'Aréna Bajnok', description: 'Nehéz kihívások teljesítéséért.', rarity: 'EPIC' },
-  { id: 4, name: 'Legendák Őrzője', description: 'Különleges, ritka achievement cím.', rarity: 'LEGENDARY' },
-];
-
 const MOCK_TAG_OPTIONS: AdminTagOption[] = [
   { id: 1, name: 'Klasszikus' },
   { id: 2, name: 'Sci-Fi' },
@@ -468,9 +467,18 @@ const Admin: React.FC = () => {
   });
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsSaving, setNewsSaving] = useState(false);
-  const [challenges, setChallenges] = useState<AdminChallenge[]>(MOCK_CHALLENGES);
-  const [badges] = useState<AdminBadgeOption[]>(MOCK_BADGE_OPTIONS);
-  const [titles] = useState<AdminTitleOption[]>(MOCK_TITLE_OPTIONS);
+  const [challenges, setChallenges] = useState<AdminChallenge[]>([]);
+  const [challengeTotalFromApi, setChallengeTotalFromApi] = useState(0);
+  const [challengeSummary, setChallengeSummary] = useState<AdminChallengeSummary>({
+    total: 0,
+    active: 0,
+    repeatable: 0,
+    event: 0,
+  });
+  const [challengesLoading, setChallengesLoading] = useState(false);
+  const [challengeSaving, setChallengeSaving] = useState(false);
+  const [badges, setBadges] = useState<AdminBadgeOption[]>([]);
+  const [titles, setTitles] = useState<AdminTitleOption[]>([]);
   const [tags] = useState<AdminTagOption[]>(MOCK_TAG_OPTIONS);
   const [userSearch, setUserSearch] = useState('');
   const [contentSearch, setContentSearch] = useState('');
@@ -579,32 +587,6 @@ const Admin: React.FC = () => {
     return items;
   }, [content, contentTypeFilter, contentSearch]);
 
-  const challengeSummary = useMemo(() => ({
-    total: challenges.length,
-    active: challenges.filter(ch => ch.isActive).length,
-    repeatable: challenges.filter(ch => ch.isRepeatable).length,
-    event: challenges.filter(ch => ch.type === 'EVENT').length,
-  }), [challenges]);
-
-  // Szűrt kihívások
-  const filteredChallenges = useMemo(() => {
-    let items = challenges;
-
-    if (challengeTypeFilter !== 'all') {
-      items = items.filter(ch => ch.type === challengeTypeFilter);
-    }
-
-    if (!challengeSearch.trim()) return items;
-
-    const q = challengeSearch.toLowerCase();
-    return items.filter(ch =>
-      ch.title.toLowerCase().includes(q) ||
-      ch.type.toLowerCase().includes(q) ||
-      ch.difficulty.toLowerCase().includes(q) ||
-      ch.description.toLowerCase().includes(q)
-    );
-  }, [challenges, challengeSearch, challengeTypeFilter]);
-
   const getPaginationRange = (current: number, total: number): number[] => {
     const delta = 2;
     const start = Math.max(1, current - delta);
@@ -627,11 +609,8 @@ const Admin: React.FC = () => {
   const totalNewsPages = Math.max(1, Math.ceil(newsTotalFromApi / pageSize));
   const pagedNews = news;
 
-  const totalChallengePages = Math.max(1, Math.ceil(filteredChallenges.length / pageSize));
-  const pagedChallenges = useMemo(() => {
-    const start = (challengesPage - 1) * pageSize;
-    return filteredChallenges.slice(start, start + pageSize);
-  }, [filteredChallenges, challengesPage]);
+  const totalChallengePages = Math.max(1, Math.ceil(challengeTotalFromApi / pageSize));
+  const pagedChallenges = challenges;
 
   useEffect(() => {
     setUsersPage(1);
@@ -737,11 +716,95 @@ const Admin: React.FC = () => {
     }
   }, [mapAdminNewsItem, newsPage, newsSearch, newsTypeFilter]);
 
+  const mapAdminChallengeItem = useCallback((item: AdminChallengeItemResponse): AdminChallenge => ({
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    iconUrl: item.iconUrl,
+    type: item.type,
+    targetValue: item.targetValue,
+    rewardXP: item.rewardXP,
+    rewardBadgeId: item.rewardBadgeId,
+    rewardTitleId: item.rewardTitleId,
+    difficulty: item.difficulty,
+    isActive: item.isActive,
+    isRepeatable: item.isRepeatable,
+    createdAt: item.createdAt,
+    participants: item.participants,
+    completions: item.completions,
+  }), []);
+
+  const mapAdminBadgeOption = useCallback((item: AdminChallengeBadgeOptionResponse): AdminBadgeOption => ({
+    id: item.id,
+    name: item.name,
+    category: item.category as AdminBadgeOption['category'],
+    rarity: item.rarity as AdminBadgeOption['rarity'],
+    isHidden: item.isHidden,
+  }), []);
+
+  const mapAdminTitleOption = useCallback((item: AdminChallengeTitleOptionResponse): AdminTitleOption => ({
+    id: item.id,
+    name: item.name,
+    description: item.description ?? '',
+    rarity: item.rarity as AdminTitleOption['rarity'],
+  }), []);
+
+  const loadChallenges = useCallback(async () => {
+    setChallengesLoading(true);
+    try {
+      const typeParam = challengeTypeFilter === 'all' ? undefined : challengeTypeFilter;
+      const data = await getAdminChallenges({
+        page: challengesPage,
+        pageSize,
+        type: typeParam,
+        q: challengeSearch,
+      });
+
+      setChallenges(data.challenges.map(mapAdminChallengeItem));
+      setChallengeTotalFromApi(data.total);
+      setChallengeSummary(data.summary);
+    } catch {
+      setChallenges(MOCK_CHALLENGES);
+      setChallengeTotalFromApi(MOCK_CHALLENGES.length);
+      setChallengeSummary({
+        total: MOCK_CHALLENGES.length,
+        active: MOCK_CHALLENGES.filter(ch => ch.isActive).length,
+        repeatable: MOCK_CHALLENGES.filter(ch => ch.isRepeatable).length,
+        event: MOCK_CHALLENGES.filter(ch => ch.type === 'EVENT').length,
+      });
+    } finally {
+      setChallengesLoading(false);
+    }
+  }, [challengeSearch, challengeTypeFilter, challengesPage, mapAdminChallengeItem]);
+
+  const loadChallengeOptions = useCallback(async () => {
+    try {
+      const data = await getAdminChallengeOptions();
+      setBadges(data.badges.map(mapAdminBadgeOption));
+      setTitles(data.titles.map(mapAdminTitleOption));
+    } catch {
+      setBadges([]);
+      setTitles([]);
+    }
+  }, [mapAdminBadgeOption, mapAdminTitleOption]);
+
   useEffect(() => {
     if (activeTab === 'news') {
       void loadNews();
     }
   }, [activeTab, loadNews]);
+
+  useEffect(() => {
+    if (activeTab === 'challenges') {
+      void loadChallenges();
+    }
+  }, [activeTab, loadChallenges]);
+
+  useEffect(() => {
+    if (activeTab === 'challenges') {
+      void loadChallengeOptions();
+    }
+  }, [activeTab, loadChallengeOptions]);
 
   const formatOverviewTime = (timestamp: string): string => {
     const date = new Date(timestamp);
@@ -929,14 +992,54 @@ const Admin: React.FC = () => {
     setChallengeDraft(prev => prev ? { ...prev, [field]: value } : prev);
   };
 
-  const saveChallengeDraft = () => {
+  const saveChallengeDraft = async () => {
     if (!challengeDraft) return;
 
-    setChallenges(prev => prev.map(item =>
-      item.id === challengeDraft.id ? challengeDraft : item
-    ));
+    const title = challengeDraft.title.trim();
+    const description = challengeDraft.description.trim();
 
-    closeChallengeModal();
+    if (!title || !description) {
+      setSaveModal({
+        title: 'Hiányzó mező',
+        message: 'A cím és a leírás kitöltése kötelező.',
+      });
+      return;
+    }
+
+    setChallengeSaving(true);
+
+    try {
+      await updateAdminChallenge(challengeDraft.id, {
+        title,
+        description,
+        type: challengeDraft.type,
+        targetValue: challengeDraft.targetValue,
+        rewardXP: challengeDraft.rewardXP,
+        rewardBadgeId: challengeDraft.rewardBadgeId,
+        rewardTitleId: challengeDraft.rewardTitleId,
+        difficulty: challengeDraft.difficulty,
+        isActive: challengeDraft.isActive,
+        isRepeatable: challengeDraft.isRepeatable,
+      });
+
+      await loadChallenges();
+      closeChallengeModal();
+      setSaveModal({
+        title: 'Kihívás frissítve',
+        message: 'A kihívás adatai sikeresen elmentésre kerültek.',
+      });
+    } catch (error) {
+      const messageText = error instanceof ApiHttpError
+        ? error.message
+        : 'A kihívás mentése sikertelen. Kérlek próbáld újra.';
+
+      setSaveModal({
+        title: 'Mentési hiba',
+        message: messageText,
+      });
+    } finally {
+      setChallengeSaving(false);
+    }
   };
 
   const deleteChallenge = (id: number) => {
@@ -2465,7 +2568,7 @@ const Admin: React.FC = () => {
                   <h3 className="admin-card-title">
                     <i className="bi bi-trophy-fill me-2"></i>
                     Kihívások kezelése
-                    <span className="admin-count">{challenges.length}</span>
+                    <span className="admin-count">{challengeTotalFromApi}</span>
                   </h3>
                   <div className="admin-header-controls">
                     <div className="admin-filter-pills">
@@ -2516,7 +2619,12 @@ const Admin: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {pagedChallenges.map(ch => (
+                      {challengesLoading ? (
+                        <tr>
+                          <td colSpan={9} className="text-center text-muted py-4">Kihívások betöltése...</td>
+                        </tr>
+                      ) : (
+                        pagedChallenges.map(ch => (
                         <tr key={ch.id} className="admin-challenge-row" onClick={() => openChallengeModal(ch)}>
                           <td><span className="admin-news-title">{ch.title}</span></td>
                           <td>
@@ -2574,12 +2682,13 @@ const Admin: React.FC = () => {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ))
+                      )}
                     </tbody>
                   </table>
                 </div>
 
-                {filteredChallenges.length > 0 && totalChallengePages > 1 && (
+                {challengeTotalFromApi > 0 && totalChallengePages > 1 && (
                   <nav className="admin-pagination-wrap" aria-label="Kihívások lapozása">
                     <ul className="pagination kk-pagination justify-content-center mb-0">
                       <li className={`page-item ${challengesPage === 1 ? 'disabled' : ''}`}>
@@ -2813,10 +2922,10 @@ const Admin: React.FC = () => {
                     </div>
 
                     <div className="admin-user-modal-footer">
-                      <button className="admin-user-secondary-btn" onClick={closeChallengeModal}>Mégse</button>
-                      <button className="admin-send-btn" onClick={saveChallengeDraft}>
+                      <button className="admin-user-secondary-btn" onClick={closeChallengeModal} disabled={challengeSaving}>Mégse</button>
+                      <button className="admin-send-btn" onClick={saveChallengeDraft} disabled={challengeSaving}>
                         <i className="bi bi-check2-circle me-2"></i>
-                        Kihívás mentése
+                        {challengeSaving ? 'Mentés...' : 'Kihívás mentése'}
                       </button>
                     </div>
                   </div>

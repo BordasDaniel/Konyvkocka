@@ -998,3 +998,97 @@ export const getAdminPurchases = async (params: {
 
 	return request<AdminPurchasesResponse>(`/api/admin/purchases?${searchParams.toString()}`, { auth: true });
 };
+
+export interface AdminChallengeItemResponse {
+	id: number;
+	title: string;
+	description: string;
+	iconUrl: string | null;
+	type: 'READ' | 'WATCH' | 'SOCIAL' | 'MIXED' | 'DEDICATION' | 'EVENT';
+	targetValue: number;
+	rewardXP: number;
+	rewardBadgeId: number | null;
+	rewardTitleId: number | null;
+	difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EPIC';
+	isActive: boolean;
+	isRepeatable: boolean;
+	createdAt: string;
+	participants: number;
+	completions: number;
+}
+
+export interface AdminChallengeSummaryResponse {
+	total: number;
+	active: number;
+	repeatable: number;
+	event: number;
+}
+
+export interface AdminChallengesResponse {
+	total: number;
+	page: number;
+	pageSize: number;
+	challenges: AdminChallengeItemResponse[];
+	summary: AdminChallengeSummaryResponse;
+}
+
+export interface AdminChallengeBadgeOptionResponse {
+	id: number;
+	name: string;
+	category: string;
+	rarity: string;
+	isHidden: boolean;
+}
+
+export interface AdminChallengeTitleOptionResponse {
+	id: number;
+	name: string;
+	description: string | null;
+	rarity: string;
+}
+
+export interface AdminChallengeOptionsResponse {
+	badges: AdminChallengeBadgeOptionResponse[];
+	titles: AdminChallengeTitleOptionResponse[];
+}
+
+export interface UpdateAdminChallengePayload {
+	title: string;
+	description: string;
+	type: 'READ' | 'WATCH' | 'SOCIAL' | 'MIXED' | 'DEDICATION' | 'EVENT';
+	targetValue: number;
+	rewardXP: number;
+	rewardBadgeId: number | null;
+	rewardTitleId: number | null;
+	difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EPIC';
+	isActive: boolean;
+	isRepeatable: boolean;
+}
+
+export const getAdminChallenges = async (params: {
+	page?: number;
+	pageSize?: number;
+	type?: 'READ' | 'WATCH' | 'SOCIAL' | 'MIXED' | 'DEDICATION' | 'EVENT';
+	q?: string;
+} = {}): Promise<AdminChallengesResponse> => {
+	const searchParams = new URLSearchParams();
+	searchParams.set('page', String(params.page ?? 1));
+	searchParams.set('pageSize', String(params.pageSize ?? 20));
+	if (params.type) searchParams.set('type', params.type);
+	if (params.q && params.q.trim().length > 0) searchParams.set('q', params.q.trim());
+
+	return request<AdminChallengesResponse>(`/api/admin/challenges?${searchParams.toString()}`, { auth: true });
+};
+
+export const getAdminChallengeOptions = async (): Promise<AdminChallengeOptionsResponse> =>
+	request<AdminChallengeOptionsResponse>('/api/admin/challenges/options', { auth: true });
+
+export const updateAdminChallenge = async (
+	id: number,
+	payload: UpdateAdminChallengePayload,
+): Promise<AdminChallengeItemResponse> =>
+	request<AdminChallengeItemResponse>(`/api/admin/challenges/${id}`, {
+		auth: true,
+		method: 'PUT',
+		body: payload,
+	});

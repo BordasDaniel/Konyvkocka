@@ -666,6 +666,312 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
+        // GET /api/admin/challenges/options
+        // Kihívás szerkesztéshez badge/title opciók – admin/moderátor jogosultság szükséges
+        // ================================================================
+        [HttpGet("challenges/options")]
+        public async Task<IActionResult> GetChallengeOptions()
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                var badges = await _context.Badges
+                    .OrderBy(b => b.Name)
+                    .Select(b => new AdminChallengeBadgeOptionDTO
+                    {
+                        Id = b.Id,
+                        Name = b.Name,
+                        Category = b.Category,
+                        Rarity = b.Rarity,
+                        IsHidden = b.IsHidden
+                    })
+                    .ToListAsync();
+
+                var titles = await _context.Titles
+                    .OrderBy(t => t.Name)
+                    .Select(t => new AdminChallengeTitleOptionDTO
+                    {
+                        Id = t.Id,
+                        Name = t.Name,
+                        Description = t.Description,
+                        Rarity = t.Rarity
+                    })
+                    .ToListAsync();
+
+                return Ok(new AdminChallengeOptionsDTO
+                {
+                    Badges = badges,
+                    Titles = titles
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // GET /api/admin/challenges
+        // Kihívások listázása – admin/moderátor jogosultság szükséges
+        //
+        // Query paraméterek:
+        //   page      – oldalszám (alapértelmezett: 1)
+        //   pageSize  – oldal mérete (alapértelmezett: 20, max: 100)
+        //   type      – szűrés típus alapján (opcionális)
+        //   q         – keresés cím/típus/nehézség/leírás alapján (opcionális)
+        // ================================================================
+        [HttpGet("challenges")]
+        public async Task<IActionResult> GetChallenges(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? type = null,
+            [FromQuery] string? q = null)
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                if (page < 1) page = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 20;
+
+                var summary = new AdminChallengeSummaryDTO
+                {
+                    Total = await _context.Challenges.CountAsync(),
+                    Active = await _context.Challenges.CountAsync(c => c.IsActive == true),
+                    Repeatable = await _context.Challenges.CountAsync(c => c.IsRepeatable),
+                    Event = await _context.Challenges.CountAsync(c => c.Type == "EVENT")
+                };
+
+                IQueryable<Challenge> query = _context.Challenges;
+
+                if (!string.IsNullOrWhiteSpace(type))
+                {
+                    var normalizedType = type.Trim().ToUpperInvariant();
+                    var allowedTypes = new[] { "READ", "WATCH", "SOCIAL", "MIXED", "DEDICATION", "EVENT" };
+
+                    if (!allowedTypes.Contains(normalizedType))
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidType",
+                            Message = "Érvénytelen type. Lehetséges: READ, WATCH, SOCIAL, MIXED, DEDICATION, EVENT"
+                        });
+                    }
+
+                    query = query.Where(c => c.Type == normalizedType);
+                }
+
+                if (!string.IsNullOrWhiteSpace(q))
+                {
+                    var search = q.Trim().ToLower();
+                    query = query.Where(c =>
+                        c.Title.ToLower().Contains(search) ||
+                        c.Description.ToLower().Contains(search) ||
+                        c.Type.ToLower().Contains(search) ||
+                        c.Difficulty.ToLower().Contains(search));
+                }
+
+                var total = await query.CountAsync();
+
+                var challenges = await query
+                    .OrderByDescending(c => c.CreatedAt)
+                    .ThenByDescending(c => c.Id)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(c => new AdminChallengeItemDTO
+                    {
+                        Id = c.Id,
+                        Title = c.Title,
+                        Description = c.Description,
+                        IconUrl = c.IconUrl,
+                        Type = c.Type,
+                        TargetValue = c.TargetValue,
+                        RewardXP = c.RewardXp,
+                        RewardBadgeId = c.RewardBadgeId,
+                        RewardTitleId = c.RewardTitleId,
+                        Difficulty = c.Difficulty,
+                        IsActive = c.IsActive ?? false,
+                        IsRepeatable = c.IsRepeatable,
+                        CreatedAt = c.CreatedAt,
+                        Participants = _context.UserChallenges.Count(uc => uc.ChallengeId == c.Id),
+                        Completions = _context.UserChallenges.Count(uc => uc.ChallengeId == c.Id && (uc.Status == "COMPLETED" || uc.Status == "CLAIMED"))
+                    })
+                    .ToListAsync();
+
+                return Ok(new { total, page, pageSize, challenges, summary });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // PUT /api/admin/challenges/{id}
+        // Kihívás frissítése – admin/moderátor jogosultság szükséges
+        // ================================================================
+        [HttpPut("challenges/{id}")]
+        public async Task<IActionResult> UpdateChallenge(int id, [FromBody] UpdateAdminChallengeDTO dto)
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                if (dto == null)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidPayload",
+                        Message = "A kérés törzse kötelező"
+                    });
+                }
+
+                var title = dto.Title?.Trim() ?? string.Empty;
+                var description = dto.Description?.Trim() ?? string.Empty;
+                var type = dto.Type?.Trim().ToUpperInvariant() ?? string.Empty;
+                var difficulty = dto.Difficulty?.Trim().ToUpperInvariant() ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(title) || title.Length > 128)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidTitle",
+                        Message = "A cím kötelező, maximum 128 karakter hosszú lehet"
+                    });
+                }
+
+                if (string.IsNullOrWhiteSpace(description))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidDescription",
+                        Message = "A leírás kötelező"
+                    });
+                }
+
+                var allowedTypes = new[] { "READ", "WATCH", "SOCIAL", "MIXED", "DEDICATION", "EVENT" };
+                if (!allowedTypes.Contains(type))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidType",
+                        Message = "Érvénytelen type. Lehetséges: READ, WATCH, SOCIAL, MIXED, DEDICATION, EVENT"
+                    });
+                }
+
+                var allowedDifficulties = new[] { "EASY", "MEDIUM", "HARD", "EPIC" };
+                if (!allowedDifficulties.Contains(difficulty))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidDifficulty",
+                        Message = "Érvénytelen difficulty. Lehetséges: EASY, MEDIUM, HARD, EPIC"
+                    });
+                }
+
+                if (dto.TargetValue < 1)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidTargetValue",
+                        Message = "A célérték minimum 1 lehet"
+                    });
+                }
+
+                if (dto.RewardXP < 0)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidRewardXP",
+                        Message = "A jutalom XP nem lehet negatív"
+                    });
+                }
+
+                if (dto.RewardBadgeId.HasValue)
+                {
+                    var badgeExists = await _context.Badges.AnyAsync(b => b.Id == dto.RewardBadgeId.Value);
+                    if (!badgeExists)
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidRewardBadge",
+                            Message = "A megadott reward badge nem létezik"
+                        });
+                    }
+                }
+
+                if (dto.RewardTitleId.HasValue)
+                {
+                    var titleExists = await _context.Titles.AnyAsync(t => t.Id == dto.RewardTitleId.Value);
+                    if (!titleExists)
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidRewardTitle",
+                            Message = "A megadott reward title nem létezik"
+                        });
+                    }
+                }
+
+                var challenge = await _context.Challenges.FirstOrDefaultAsync(c => c.Id == id);
+                if (challenge == null)
+                {
+                    return NotFound(new ErrorResponseDTO
+                    {
+                        Error = "NotFound",
+                        Message = "A kihívás nem található"
+                    });
+                }
+
+                challenge.Title = title;
+                challenge.Description = description;
+                challenge.Type = type;
+                challenge.TargetValue = dto.TargetValue;
+                challenge.RewardXp = dto.RewardXP;
+                challenge.RewardBadgeId = dto.RewardBadgeId;
+                challenge.RewardTitleId = dto.RewardTitleId;
+                challenge.Difficulty = difficulty;
+                challenge.IsActive = dto.IsActive;
+                challenge.IsRepeatable = dto.IsRepeatable;
+
+                await _context.SaveChangesAsync();
+
+                var participants = await _context.UserChallenges.CountAsync(uc => uc.ChallengeId == challenge.Id);
+                var completions = await _context.UserChallenges.CountAsync(uc => uc.ChallengeId == challenge.Id && (uc.Status == "COMPLETED" || uc.Status == "CLAIMED"));
+
+                return Ok(new AdminChallengeItemDTO
+                {
+                    Id = challenge.Id,
+                    Title = challenge.Title,
+                    Description = challenge.Description,
+                    IconUrl = challenge.IconUrl,
+                    Type = challenge.Type,
+                    TargetValue = challenge.TargetValue,
+                    RewardXP = challenge.RewardXp,
+                    RewardBadgeId = challenge.RewardBadgeId,
+                    RewardTitleId = challenge.RewardTitleId,
+                    Difficulty = challenge.Difficulty,
+                    IsActive = challenge.IsActive ?? false,
+                    IsRepeatable = challenge.IsRepeatable,
+                    CreatedAt = challenge.CreatedAt,
+                    Participants = participants,
+                    Completions = completions
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
         // GET /api/admin/purchases
         // Összes vásárlás listázása – admin/moderátor jogosultság szükséges
         //

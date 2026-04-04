@@ -77,4 +77,54 @@ namespace KonyvkockaAPI.DTO.Response
         public int Events { get; set; }
         public int Functions { get; set; }
     }
+
+    public class AdminChallengeItemDTO
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = null!;
+        public string Description { get; set; } = null!;
+        public string? IconUrl { get; set; }
+        public string Type { get; set; } = null!;
+        public int TargetValue { get; set; }
+        public int RewardXP { get; set; }
+        public int? RewardBadgeId { get; set; }
+        public int? RewardTitleId { get; set; }
+        public string Difficulty { get; set; } = null!;
+        public bool IsActive { get; set; }
+        public bool IsRepeatable { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public int Participants { get; set; }
+        public int Completions { get; set; }
+    }
+
+    public class AdminChallengeSummaryDTO
+    {
+        public int Total { get; set; }
+        public int Active { get; set; }
+        public int Repeatable { get; set; }
+        public int Event { get; set; }
+    }
+
+    public class AdminChallengeBadgeOptionDTO
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = null!;
+        public string Category { get; set; } = null!;
+        public string Rarity { get; set; } = null!;
+        public bool IsHidden { get; set; }
+    }
+
+    public class AdminChallengeTitleOptionDTO
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = null!;
+        public string? Description { get; set; }
+        public string Rarity { get; set; } = null!;
+    }
+
+    public class AdminChallengeOptionsDTO
+    {
+        public List<AdminChallengeBadgeOptionDTO> Badges { get; set; } = new();
+        public List<AdminChallengeTitleOptionDTO> Titles { get; set; } = new();
+    }
 }
