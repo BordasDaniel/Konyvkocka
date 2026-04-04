@@ -3,8 +3,11 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
   getAdminOverview,
+  getAdminNews,
   getAdminPurchases,
+  updateAdminNews,
   type AdminOverviewResponse,
+  type AdminNewsItemResponse,
   type AdminPurchaseItemResponse,
 } from '../services/api';
 import '../styles/admin.css';
@@ -92,7 +95,15 @@ interface AdminNewsItem {
   content: string;
   eventTag: 'UPDATE' | 'ANNOUNCEMENT' | 'EVENT' | 'FUNCTION';
   createdAt: string;
-  updatedAt: string;
+  updatedAt: string | null;
+}
+
+interface AdminNewsSummary {
+  total: number;
+  updates: number;
+  announcements: number;
+  events: number;
+  functions: number;
 }
 
 type AdminChallengeDifficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'EPIC';
@@ -316,49 +327,6 @@ const MOCK_CONTENT: AdminContent[] = [
   },
 ];
 
-const MOCK_NEWS: AdminNewsItem[] = [
-  {
-    id: 1,
-    title: 'KönyvKocka 1.0 Launch Esemény',
-    content: 'Ünnepélyes rajt exkluzív tartalmakkal, nyereményjátékkal és élő közösségi programokkal.',
-    eventTag: 'EVENT',
-    createdAt: '2025-11-05T10:30:00',
-    updatedAt: '2025-11-05T10:30:00',
-  },
-  {
-    id: 2,
-    title: 'Új Megtekintés oldal',
-    content: 'A watch felület átdolgozva: gyorsabb betöltés, jobb listanézet és pontosabb lejátszási folytatás.',
-    eventTag: 'FUNCTION',
-    createdAt: '2025-10-30T14:20:00',
-    updatedAt: '2025-10-31T09:40:00',
-  },
-  {
-    id: 3,
-    title: 'PDF olvasó továbbfejlesztve',
-    content: 'Új könyvjelzőzés, stabilabb nagyítás és gyorsabb oldalszinkron a mentett állapotokkal.',
-    eventTag: 'UPDATE',
-    createdAt: '2025-10-28T08:15:00',
-    updatedAt: '2025-10-28T19:05:00',
-  },
-  {
-    id: 4,
-    title: 'Fizetési oldal finomhangolás',
-    content: 'Pontszerű UX javítások, egyértelműbb visszajelzések és hibakezelés a checkout folyamatban.',
-    eventTag: 'ANNOUNCEMENT',
-    createdAt: '2025-10-21T12:00:00',
-    updatedAt: '2025-10-22T11:32:00',
-  },
-  {
-    id: 5,
-    title: 'Téli olvasási akció',
-    content: 'Decemberben minden teljesített olvasás dupla pontot ad, a toplista külön jutalmazással fut.',
-    eventTag: 'EVENT',
-    createdAt: '2025-12-20T09:00:00',
-    updatedAt: '2025-12-20T09:00:00',
-  },
-];
-
 const MOCK_BADGE_OPTIONS: AdminBadgeOption[] = [
   { id: 1, name: 'Első Fejezet', category: 'READING', rarity: 'COMMON', isHidden: false },
   { id: 2, name: 'Maraton Mester', category: 'EVENT', rarity: 'EPIC', isHidden: false },
@@ -487,7 +455,17 @@ const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS);
   const [content, setContent] = useState<AdminContent[]>(MOCK_CONTENT);
-  const [news, setNews] = useState<AdminNewsItem[]>(MOCK_NEWS);
+  const [news, setNews] = useState<AdminNewsItem[]>([]);
+  const [newsTotalFromApi, setNewsTotalFromApi] = useState(0);
+  const [newsSummary, setNewsSummary] = useState<AdminNewsSummary>({
+    total: 0,
+    updates: 0,
+    announcements: 0,
+    events: 0,
+    functions: 0,
+  });
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsSaving, setNewsSaving] = useState(false);
   const [challenges, setChallenges] = useState<AdminChallenge[]>(MOCK_CHALLENGES);
   const [badges] = useState<AdminBadgeOption[]>(MOCK_BADGE_OPTIONS);
   const [titles] = useState<AdminTitleOption[]>(MOCK_TITLE_OPTIONS);
@@ -598,31 +576,6 @@ const Admin: React.FC = () => {
     return items;
   }, [content, contentTypeFilter, contentSearch]);
 
-  // Szűrt hírek
-  const filteredNews = useMemo(() => {
-    let items = news;
-
-    if (newsTypeFilter !== 'all') {
-      items = items.filter(item => item.eventTag === newsTypeFilter);
-    }
-
-    if (!newsSearch.trim()) return items;
-    const q = newsSearch.toLowerCase();
-    return items.filter(n =>
-      n.title.toLowerCase().includes(q) ||
-      n.content.toLowerCase().includes(q) ||
-      n.eventTag.toLowerCase().includes(q)
-    );
-  }, [news, newsSearch, newsTypeFilter]);
-
-  const newsSummary = useMemo(() => ({
-    total: news.length,
-    updates: news.filter(item => item.eventTag === 'UPDATE').length,
-    announcements: news.filter(item => item.eventTag === 'ANNOUNCEMENT').length,
-    events: news.filter(item => item.eventTag === 'EVENT').length,
-    functions: news.filter(item => item.eventTag === 'FUNCTION').length,
-  }), [news]);
-
   const challengeSummary = useMemo(() => ({
     total: challenges.length,
     active: challenges.filter(ch => ch.isActive).length,
@@ -668,11 +621,8 @@ const Admin: React.FC = () => {
     return filteredContent.slice(start, start + pageSize);
   }, [filteredContent, contentPage]);
 
-  const totalNewsPages = Math.max(1, Math.ceil(filteredNews.length / pageSize));
-  const pagedNews = useMemo(() => {
-    const start = (newsPage - 1) * pageSize;
-    return filteredNews.slice(start, start + pageSize);
-  }, [filteredNews, newsPage]);
+  const totalNewsPages = Math.max(1, Math.ceil(newsTotalFromApi / pageSize));
+  const pagedNews = news;
 
   const totalChallengePages = Math.max(1, Math.ceil(filteredChallenges.length / pageSize));
   const pagedChallenges = useMemo(() => {
@@ -746,6 +696,49 @@ const Admin: React.FC = () => {
   const totalPurchasePages = Math.max(1, Math.ceil(purchasesTotalFromApi / pageSize));
 
   const filteredPurchasesForDisplay = purchasesData;
+
+  const mapAdminNewsItem = useCallback((item: AdminNewsItemResponse): AdminNewsItem => ({
+    id: item.id,
+    title: item.title,
+    content: item.content,
+    eventTag: item.eventTag,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  }), []);
+
+  const loadNews = useCallback(async () => {
+    setNewsLoading(true);
+    try {
+      const eventTagParam = newsTypeFilter === 'all' ? undefined : newsTypeFilter;
+      const data = await getAdminNews({
+        page: newsPage,
+        pageSize,
+        eventTag: eventTagParam,
+        q: newsSearch,
+      });
+      setNews(data.news.map(mapAdminNewsItem));
+      setNewsTotalFromApi(data.total);
+      setNewsSummary(data.summary);
+    } catch {
+      setNews([]);
+      setNewsTotalFromApi(0);
+      setNewsSummary({
+        total: 0,
+        updates: 0,
+        announcements: 0,
+        events: 0,
+        functions: 0,
+      });
+    } finally {
+      setNewsLoading(false);
+    }
+  }, [mapAdminNewsItem, newsPage, newsSearch, newsTypeFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'news') {
+      void loadNews();
+    }
+  }, [activeTab, loadNews]);
 
   const formatOverviewTime = (timestamp: string): string => {
     const date = new Date(timestamp);
@@ -890,23 +883,43 @@ const Admin: React.FC = () => {
     setNewsDraft(prev => prev ? { ...prev, [field]: value } : prev);
   };
 
-  const saveNewsDraft = () => {
+  const saveNewsDraft = async () => {
     if (!newsDraft) return;
 
-    const normalizedNews: AdminNewsItem = {
-      ...newsDraft,
-      updatedAt: new Date().toISOString(),
-    };
+    const title = newsDraft.title.trim();
+    const content = newsDraft.content.trim();
+    if (!title || !content) {
+      setSaveModal({
+        title: 'Hiányzó mező',
+        message: 'A cím és a tartalom kitöltése kötelező.',
+      });
+      return;
+    }
 
-    setNews(prev => prev.map(item =>
-      item.id === normalizedNews.id ? normalizedNews : item
-    ));
+    setNewsSaving(true);
 
-    closeNewsModal();
-    setSaveModal({
-      title: 'Cikk frissítve',
-      message: 'A hír adatai sikeresen elmentésre kerültek.',
-    });
+    try {
+      await updateAdminNews(newsDraft.id, {
+        title,
+        content,
+        eventTag: newsDraft.eventTag,
+      });
+
+      await loadNews();
+
+      closeNewsModal();
+      setSaveModal({
+        title: 'Cikk frissítve',
+        message: 'A hír adatai sikeresen elmentésre kerültek.',
+      });
+    } catch {
+      setSaveModal({
+        title: 'Mentési hiba',
+        message: 'A cikk mentése sikertelen. Kérlek próbáld újra.',
+      });
+    } finally {
+      setNewsSaving(false);
+    }
   };
 
   const updateChallengeDraft = <K extends keyof AdminChallenge>(field: K, value: AdminChallenge[K]) => {
@@ -2161,7 +2174,7 @@ const Admin: React.FC = () => {
                   <h3 className="admin-card-title">
                     <i className="bi bi-newspaper me-2"></i>
                     Hírcikkek kezelése
-                    <span className="admin-count">{news.length}</span>
+                    <span className="admin-count">{newsTotalFromApi}</span>
                   </h3>
                   <div className="admin-header-controls">
                     <div className="admin-filter-pills">
@@ -2207,7 +2220,12 @@ const Admin: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {pagedNews.map(item => (
+                      {newsLoading ? (
+                        <tr>
+                          <td colSpan={6} className="text-center text-muted py-4">Hírek betöltése...</td>
+                        </tr>
+                      ) : (
+                        pagedNews.map(item => (
                         <tr key={item.id} className="admin-news-row" onClick={() => openNewsModal(item)}>
                           <td><span className="admin-news-title">{item.title}</span></td>
                           <td>
@@ -2217,7 +2235,7 @@ const Admin: React.FC = () => {
                           </td>
                           <td>{getEventTagBadge(item.eventTag)}</td>
                           <td>{new Date(item.createdAt).toLocaleString('hu-HU')}</td>
-                          <td>{new Date(item.updatedAt).toLocaleString('hu-HU')}</td>
+                          <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleString('hu-HU') : 'Nincs adat'}</td>
                           <td>
                             <div className="admin-actions">
                               <button
@@ -2243,12 +2261,13 @@ const Admin: React.FC = () => {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ))
+                      )}
                     </tbody>
                   </table>
                 </div>
 
-                {filteredNews.length > 0 && totalNewsPages > 1 && (
+                {newsTotalFromApi > 0 && totalNewsPages > 1 && (
                   <nav className="admin-pagination-wrap" aria-label="Hírek lapozása">
                     <ul className="pagination kk-pagination justify-content-center mb-0">
                       <li className={`page-item ${newsPage === 1 ? 'disabled' : ''}`}>
@@ -2301,7 +2320,7 @@ const Admin: React.FC = () => {
                         </div>
                         <div className="admin-user-snapshot">
                           <span className="admin-user-snapshot-label">Utolsó frissítés</span>
-                          <strong>{new Date(selectedNews.updatedAt).toLocaleString('hu-HU')}</strong>
+                          <strong>{selectedNews.updatedAt ? new Date(selectedNews.updatedAt).toLocaleString('hu-HU') : 'Nincs adat'}</strong>
                         </div>
                       </div>
 
@@ -2361,10 +2380,10 @@ const Admin: React.FC = () => {
                     </div>
 
                     <div className="admin-user-modal-footer">
-                      <button className="admin-user-secondary-btn" onClick={closeNewsModal}>Mégse</button>
-                      <button className="admin-send-btn" onClick={saveNewsDraft}>
+                      <button className="admin-user-secondary-btn" onClick={closeNewsModal} disabled={newsSaving}>Mégse</button>
+                      <button className="admin-send-btn" onClick={saveNewsDraft} disabled={newsSaving}>
                         <i className="bi bi-check2-circle me-2"></i>
-                        Cikk mentése
+                        {newsSaving ? 'Mentés...' : 'Cikk mentése'}
                       </button>
                     </div>
                   </div>

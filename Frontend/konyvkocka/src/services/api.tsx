@@ -277,6 +277,60 @@ export interface HomeCardResponse {
 	tags: string[];
 }
 
+
+export interface AdminNewsItemResponse {
+	id: number;
+	title: string;
+	content: string;
+	eventTag: 'UPDATE' | 'ANNOUNCEMENT' | 'EVENT' | 'FUNCTION';
+	createdAt: string;
+	updatedAt: string | null;
+}
+
+export interface AdminNewsResponse {
+	total: number;
+	page: number;
+	pageSize: number;
+	news: AdminNewsItemResponse[];
+	summary: {
+		total: number;
+		updates: number;
+		announcements: number;
+		events: number;
+		functions: number;
+	};
+}
+
+export interface UpdateAdminNewsPayload {
+	title: string;
+	content: string;
+	eventTag: 'UPDATE' | 'ANNOUNCEMENT' | 'EVENT' | 'FUNCTION';
+}
+
+export const getAdminNews = async (params: {
+	page?: number;
+	pageSize?: number;
+	eventTag?: 'UPDATE' | 'ANNOUNCEMENT' | 'EVENT' | 'FUNCTION';
+	q?: string;
+} = {}): Promise<AdminNewsResponse> => {
+	const searchParams = new URLSearchParams();
+	searchParams.set('page', String(params.page ?? 1));
+	searchParams.set('pageSize', String(params.pageSize ?? 20));
+	if (params.eventTag) searchParams.set('eventTag', params.eventTag);
+	if (params.q && params.q.trim().length > 0) searchParams.set('q', params.q.trim());
+
+	return request<AdminNewsResponse>(`/api/admin/news?${searchParams.toString()}`, { auth: true });
+};
+
+export const updateAdminNews = async (
+	id: number,
+	payload: UpdateAdminNewsPayload,
+): Promise<AdminNewsItemResponse> =>
+	request<AdminNewsItemResponse>(`/api/admin/news/${id}`, {
+		auth: true,
+		method: 'PUT',
+		body: payload,
+	});
 export interface HomeCarouselResponse {
 	id: number;
 	type: string;

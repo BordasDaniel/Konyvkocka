@@ -1,4 +1,5 @@
 using KonyvkockaAPI.DTO.Response;
+using KonyvkockaAPI.DTO.Request;
 using KonyvkockaAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -482,6 +483,181 @@ namespace KonyvkockaAPI.Controllers
                     .ToListAsync();
 
                 return Ok(new { total, page, pageSize, users });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // GET /api/admin/news
+        // Hírek listázása – admin/moderátor jogosultság szükséges
+        //
+        // Query paraméterek:
+        //   page      – oldalszám (alapértelmezett: 1)
+        //   pageSize  – oldal mérete (alapértelmezett: 20, max: 100)
+        //   eventTag  – szűrés EventTag alapján (opcionális)
+        //   q         – keresés cím/tartalom/EventTag alapján (opcionális)
+        // ================================================================
+        [HttpGet("news")]
+        public async Task<IActionResult> GetNews(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? eventTag = null,
+            [FromQuery] string? q = null)
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                if (page < 1) page = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 20;
+
+                var summary = new AdminNewsSummaryDTO
+                {
+                    Total = await _context.Articles.CountAsync(),
+                    Updates = await _context.Articles.CountAsync(a => a.EventTag == "UPDATE"),
+                    Announcements = await _context.Articles.CountAsync(a => a.EventTag == "ANNOUNCEMENT"),
+                    Events = await _context.Articles.CountAsync(a => a.EventTag == "EVENT"),
+                    Functions = await _context.Articles.CountAsync(a => a.EventTag == "FUNCTION")
+                };
+
+                IQueryable<Article> query = _context.Articles;
+
+                if (!string.IsNullOrWhiteSpace(eventTag))
+                {
+                    var normalizedTag = eventTag.Trim().ToUpperInvariant();
+                    var allowedEventTags = new[] { "UPDATE", "ANNOUNCEMENT", "EVENT", "FUNCTION" };
+
+                    if (!allowedEventTags.Contains(normalizedTag))
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidEventTag",
+                            Message = "Érvénytelen EventTag. Lehetséges: UPDATE, ANNOUNCEMENT, EVENT, FUNCTION"
+                        });
+                    }
+
+                    query = query.Where(a => a.EventTag == normalizedTag);
+                }
+
+                if (!string.IsNullOrWhiteSpace(q))
+                {
+                    var search = q.Trim().ToLower();
+                    query = query.Where(a =>
+                        a.Title.ToLower().Contains(search) ||
+                        a.Content.ToLower().Contains(search) ||
+                        a.EventTag.ToLower().Contains(search));
+                }
+
+                var total = await query.CountAsync();
+
+                var news = await query
+                    .OrderByDescending(a => a.CreatedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(a => new AdminNewsItemDTO
+                    {
+                        Id = a.Id,
+                        Title = a.Title,
+                        Content = a.Content,
+                        EventTag = a.EventTag,
+                        CreatedAt = a.CreatedAt,
+                        UpdatedAt = a.UpdatedAt
+                    })
+                    .ToListAsync();
+
+                return Ok(new { total, page, pageSize, news, summary });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // PUT /api/admin/news/{id}
+        // Hír frissítése – admin/moderátor jogosultság szükséges
+        // ================================================================
+        [HttpPut("news/{id}")]
+        public async Task<IActionResult> UpdateNews(int id, [FromBody] UpdateAdminNewsDTO dto)
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                if (dto == null)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidPayload",
+                        Message = "A kérés törzse kötelező"
+                    });
+                }
+
+                var title = dto.Title?.Trim() ?? string.Empty;
+                var content = dto.Content?.Trim() ?? string.Empty;
+                var eventTag = dto.EventTag?.Trim().ToUpperInvariant() ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(title) || title.Length > 255)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidTitle",
+                        Message = "A cím kötelező, maximum 255 karakter hosszú lehet"
+                    });
+                }
+
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidContent",
+                        Message = "A tartalom kötelező"
+                    });
+                }
+
+                var allowedEventTags = new[] { "UPDATE", "ANNOUNCEMENT", "EVENT", "FUNCTION" };
+                if (!allowedEventTags.Contains(eventTag))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidEventTag",
+                        Message = "Érvénytelen EventTag. Lehetséges: UPDATE, ANNOUNCEMENT, EVENT, FUNCTION"
+                    });
+                }
+
+                var article = await _context.Articles.FirstOrDefaultAsync(a => a.Id == id);
+                if (article == null)
+                {
+                    return NotFound(new ErrorResponseDTO
+                    {
+                        Error = "NotFound",
+                        Message = "A hír nem található"
+                    });
+                }
+
+                article.Title = title;
+                article.Content = content;
+                article.EventTag = eventTag;
+                article.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new AdminNewsItemDTO
+                {
+                    Id = article.Id,
+                    Title = article.Title,
+                    Content = article.Content,
+                    EventTag = article.EventTag,
+                    CreatedAt = article.CreatedAt,
+                    UpdatedAt = article.UpdatedAt
+                });
             }
             catch (Exception ex)
             {

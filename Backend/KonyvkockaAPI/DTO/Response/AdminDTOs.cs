@@ -58,4 +58,23 @@ namespace KonyvkockaAPI.DTO.Response
         public int SeriesPoints { get; set; }
         public int MoviePoints { get; set; }
     }
+
+    public class AdminNewsItemDTO
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = null!;
+        public string Content { get; set; } = null!;
+        public string EventTag { get; set; } = null!;
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+    }
+
+    public class AdminNewsSummaryDTO
+    {
+        public int Total { get; set; }
+        public int Updates { get; set; }
+        public int Announcements { get; set; }
+        public int Events { get; set; }
+        public int Functions { get; set; }
+    }
 }
