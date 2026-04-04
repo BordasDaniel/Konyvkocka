@@ -497,12 +497,14 @@ namespace KonyvkockaAPI.Controllers
         //   page     – oldalszám (alapértelmezett: 1)
         //   pageSize – oldal mérete (alapértelmezett: 20, max: 100)
         //   status   – szűrés státusz alapján (opcionális)
+        //   q        – keresés vásárlás azonosítóra, felhasználónévre vagy e-mailre (opcionális)
         // ================================================================
         [HttpGet("purchases")]
         public async Task<IActionResult> GetPurchases(
             [FromQuery] int page     = 1,
             [FromQuery] int pageSize = 20,
-            [FromQuery] string? status = null)
+            [FromQuery] string? status = null,
+            [FromQuery] string? q = null)
         {
             try
             {
@@ -517,7 +519,37 @@ namespace KonyvkockaAPI.Controllers
 
                 if (!string.IsNullOrWhiteSpace(status))
                 {
-                    query = query.Where(p => p.PurchaseStatus == status.ToUpper());
+                    var normalizedStatus = status.Trim().ToUpperInvariant();
+                    var allowedStatuses = new[] { "SUCCESS", "PENDING", "FAILED", "REFUNDED" };
+
+                    if (!allowedStatuses.Contains(normalizedStatus))
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidStatus",
+                            Message = "Érvénytelen status. Lehetséges: SUCCESS, PENDING, FAILED, REFUNDED"
+                        });
+                    }
+
+                    query = query.Where(p => p.PurchaseStatus == normalizedStatus);
+                }
+
+                if (!string.IsNullOrWhiteSpace(q))
+                {
+                    var search = q.Trim().ToLower();
+                    if (int.TryParse(search, out var purchaseId))
+                    {
+                        query = query.Where(p =>
+                            p.Id == purchaseId ||
+                            p.User.Username.ToLower().Contains(search) ||
+                            p.User.Email.ToLower().Contains(search));
+                    }
+                    else
+                    {
+                        query = query.Where(p =>
+                            p.User.Username.ToLower().Contains(search) ||
+                            p.User.Email.ToLower().Contains(search));
+                    }
                 }
 
                 var total = await query.CountAsync();

@@ -721,6 +721,7 @@ const Admin: React.FC = () => {
         page: purchasesPage,
         pageSize,
         status: statusParam,
+        q: purchasesSearch,
       });
       setPurchasesData(data.purchases);
       setPurchasesTotalFromApi(data.total);
@@ -730,7 +731,7 @@ const Admin: React.FC = () => {
     } finally {
       setPurchasesLoading(false);
     }
-  }, [purchasesPage, purchasesStatusFilter]);
+  }, [purchasesPage, purchasesSearch, purchasesStatusFilter]);
 
   useEffect(() => {
     if (activeTab === 'purchases') {
@@ -740,19 +741,11 @@ const Admin: React.FC = () => {
 
   useEffect(() => {
     setPurchasesPage(1);
-  }, [purchasesStatusFilter]);
+  }, [purchasesSearch, purchasesStatusFilter]);
 
   const totalPurchasePages = Math.max(1, Math.ceil(purchasesTotalFromApi / pageSize));
 
-  const filteredPurchasesForDisplay = useMemo(() => {
-    if (!purchasesSearch.trim()) return purchasesData;
-    const q = purchasesSearch.toLowerCase();
-    return purchasesData.filter(p =>
-      p.username.toLowerCase().includes(q) ||
-      p.email.toLowerCase().includes(q) ||
-      String(p.id).includes(q)
-    );
-  }, [purchasesData, purchasesSearch]);
+  const filteredPurchasesForDisplay = purchasesData;
 
   const formatOverviewTime = (timestamp: string): string => {
     const date = new Date(timestamp);

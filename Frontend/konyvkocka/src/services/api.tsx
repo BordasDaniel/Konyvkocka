@@ -914,11 +914,13 @@ export const getAdminPurchases = async (params: {
 	page?: number;
 	pageSize?: number;
 	status?: string;
+	q?: string;
 } = {}): Promise<AdminPurchasesResponse> => {
 	const searchParams = new URLSearchParams();
 	searchParams.set('page', String(params.page ?? 1));
 	searchParams.set('pageSize', String(params.pageSize ?? 20));
 	if (params.status) searchParams.set('status', params.status);
+	if (params.q && params.q.trim().length > 0) searchParams.set('q', params.q.trim());
 
 	return request<AdminPurchasesResponse>(`/api/admin/purchases?${searchParams.toString()}`, { auth: true });
 };
