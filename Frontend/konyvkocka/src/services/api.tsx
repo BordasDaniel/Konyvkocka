@@ -331,6 +331,26 @@ export const updateAdminNews = async (
 		method: 'PUT',
 		body: payload,
 	});
+
+export interface CreateAdminAnnouncementPayload {
+	target: 'all' | 'subscribers' | 'free' | 'specific';
+	message: string;
+	usernames?: string[];
+}
+
+export interface AdminAnnouncementResponse {
+	sentCount: number;
+	missingUsernames: string[];
+}
+
+export const sendAdminAnnouncement = async (
+	payload: CreateAdminAnnouncementPayload,
+): Promise<AdminAnnouncementResponse> =>
+	request<AdminAnnouncementResponse>('/api/admin/announcements', {
+		auth: true,
+		method: 'POST',
+		body: payload,
+	});
 export interface HomeCarouselResponse {
 	id: number;
 	type: string;

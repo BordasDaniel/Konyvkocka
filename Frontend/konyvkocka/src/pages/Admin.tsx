@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
+  ApiHttpError,
   getAdminOverview,
   getAdminNews,
   getAdminPurchases,
+  sendAdminAnnouncement,
   updateAdminNews,
   type AdminOverviewResponse,
   type AdminNewsItemResponse,
@@ -503,6 +505,7 @@ const Admin: React.FC = () => {
   const [announcementTarget, setAnnouncementTarget] = useState<'all' | 'subscribers' | 'free' | 'specific'>('all');
   const [announcementUsers, setAnnouncementUsers] = useState('');
   const [announcementSent, setAnnouncementSent] = useState(false);
+  const [announcementSending, setAnnouncementSending] = useState(false);
   const [usersPage, setUsersPage] = useState(1);
   const [contentPage, setContentPage] = useState(1);
   const [newsPage, setNewsPage] = useState(1);
@@ -1087,15 +1090,58 @@ const Admin: React.FC = () => {
   };
 
   // Bejelentés küldése
-  const sendAnnouncement = () => {
-    if (!announcementText.trim()) return;
-    // TODO: API hívás
-    setAnnouncementSent(true);
-    setTimeout(() => {
-      setAnnouncementSent(false);
+  const sendAnnouncement = async () => {
+    const message = announcementText.trim();
+    if (!message) return;
+
+    const specificUsernames = announcementUsers
+      .split(',')
+      .map(name => name.trim())
+      .filter(Boolean);
+
+    if (announcementTarget === 'specific' && specificUsernames.length === 0) {
+      setSaveModal({
+        title: 'Hiányzó címzett',
+        message: 'Adott felhasználók célcsoportnál legalább egy felhasználónevet adj meg.',
+      });
+      return;
+    }
+
+    setAnnouncementSending(true);
+
+    try {
+      const result = await sendAdminAnnouncement({
+        target: announcementTarget,
+        message,
+        usernames: announcementTarget === 'specific' ? specificUsernames : undefined,
+      });
+
+      setAnnouncementSent(true);
+      setSaveModal({
+        title: 'Bejelentés elküldve',
+        message: result.missingUsernames.length > 0
+          ? `${result.sentCount} címzettnek elküldve. Nem található felhasználók: ${result.missingUsernames.join(', ')}`
+          : `${result.sentCount} címzettnek elküldve.`,
+      });
+
+      setTimeout(() => {
+        setAnnouncementSent(false);
+      }, 3000);
+
       setAnnouncementText('');
       setAnnouncementUsers('');
-    }, 3000);
+    } catch (error) {
+      const messageText = error instanceof ApiHttpError
+        ? error.message
+        : 'A bejelentés küldése sikertelen. Kérlek próbáld újra.';
+
+      setSaveModal({
+        title: 'Küldési hiba',
+        message: messageText,
+      });
+    } finally {
+      setAnnouncementSending(false);
+    }
   };
 
   // Helper: badge színek
@@ -2984,10 +3030,10 @@ const Admin: React.FC = () => {
                       <button
                         className="admin-send-btn"
                         onClick={sendAnnouncement}
-                        disabled={!announcementText.trim()}
+                        disabled={announcementSending || !announcementText.trim() || (announcementTarget === 'specific' && !announcementUsers.trim())}
                       >
                         <i className="bi bi-send-fill me-2"></i>
-                        Bejelentés küldése
+                        {announcementSending ? 'Küldés...' : 'Bejelentés küldése'}
                       </button>
                     </div>
                   </div>

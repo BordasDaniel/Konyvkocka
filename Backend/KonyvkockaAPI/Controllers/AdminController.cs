@@ -755,5 +755,135 @@ namespace KonyvkockaAPI.Controllers
                 return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
             }
         }
+
+        // ================================================================
+        // POST /api/admin/announcements
+        // Rendszerszintű bejelentés küldése a mail táblába
+        // ================================================================
+        [HttpPost("announcements")]
+        public async Task<IActionResult> SendAnnouncement([FromBody] CreateAdminAnnouncementDTO dto)
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                if (dto == null)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidPayload",
+                        Message = "A kérés törzse kötelező"
+                    });
+                }
+
+                var target = dto.Target?.Trim().ToLowerInvariant() ?? string.Empty;
+                var message = dto.Message?.Trim() ?? string.Empty;
+                var allowedTargets = new[] { "all", "subscribers", "free", "specific" };
+
+                if (!allowedTargets.Contains(target))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidTarget",
+                        Message = "Érvénytelen célcsoport. Lehetséges: all, subscribers, free, specific"
+                    });
+                }
+
+                if (string.IsNullOrWhiteSpace(message))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidMessage",
+                        Message = "Az üzenet szövege kötelező"
+                    });
+                }
+
+                IQueryable<User> usersQuery = _context.Users;
+                List<string> missingUsernames = new();
+
+                if (target == "subscribers")
+                {
+                    usersQuery = usersQuery.Where(u => u.Premium);
+                }
+                else if (target == "free")
+                {
+                    usersQuery = usersQuery.Where(u => !u.Premium);
+                }
+                else if (target == "specific")
+                {
+                    var normalizedUsernames = (dto.Usernames ?? new List<string>())
+                        .Where(u => !string.IsNullOrWhiteSpace(u))
+                        .Select(u => u.Trim().ToLowerInvariant())
+                        .Distinct()
+                        .ToList();
+
+                    if (normalizedUsernames.Count == 0)
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidRecipients",
+                            Message = "Adott felhasználók célcsoportnál legalább egy felhasználónevet meg kell adni"
+                        });
+                    }
+
+                    var foundUsers = await _context.Users
+                        .Where(u => normalizedUsernames.Contains(u.Username.ToLower()))
+                        .Select(u => new { u.Id, u.Username })
+                        .ToListAsync();
+
+                    var foundUsernameSet = foundUsers
+                        .Select(u => u.Username.ToLowerInvariant())
+                        .ToHashSet();
+
+                    missingUsernames = normalizedUsernames
+                        .Where(username => !foundUsernameSet.Contains(username))
+                        .ToList();
+
+                    usersQuery = _context.Users.Where(u => foundUsernameSet.Contains(u.Username.ToLower()));
+                }
+
+                var receiverIds = await usersQuery.Select(u => u.Id).ToListAsync();
+
+                if (receiverIds.Count == 0)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "NoRecipients",
+                        Message = "A kiválasztott célcsoporthoz nem tartozik egyetlen felhasználó sem"
+                    });
+                }
+
+                var senderId = int.TryParse(User.FindFirst("userId")?.Value, out var parsedSenderId)
+                    ? parsedSenderId
+                    : 1;
+                var now = DateTime.UtcNow;
+
+                var mails = receiverIds.Select(receiverId => new Mail
+                {
+                    ReceiverId = receiverId,
+                    SenderId = senderId,
+                    Type = "SYSTEM",
+                    Subject = "Rendszerbejelentés",
+                    Message = message,
+                    IsRead = false,
+                    CreatedAt = now
+                }).ToList();
+
+                await _context.Mails.AddRangeAsync(mails);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    sentCount = mails.Count,
+                    missingUsernames
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
     }
 }
