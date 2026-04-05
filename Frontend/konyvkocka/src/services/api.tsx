@@ -379,6 +379,7 @@ export interface ContentDetailResponse {
 	description: string;
 	rating: number;
 	trailerUrl: string | null;
+	ageRating: ContentAgeRatingResponse | null;
 	tags: string[];
 	watchUrl: string | null;
 	episodes: EpisodeResponse[] | null;
@@ -467,9 +468,25 @@ export interface LibraryResponse {
 	results: LibraryItemResponse[];
 }
 
-export const getLibrary = async (params: { q?: string } = {}): Promise<LibraryResponse> => {
+export interface LibraryQueryParams {
+	q?: string;
+	status?: string;
+	ageRating?: string;
+	tags?: string;
+	contentType?: string;
+	sortBy?: 'lastAdded' | 'completedDate' | 'rating' | 'duration';
+	favorite?: boolean;
+}
+
+export const getLibrary = async (params: LibraryQueryParams = {}): Promise<LibraryResponse> => {
 	const searchParams = new URLSearchParams();
 	if (params.q) searchParams.set('q', params.q);
+	if (params.status) searchParams.set('status', params.status);
+	if (params.ageRating) searchParams.set('ageRating', params.ageRating);
+	if (params.tags) searchParams.set('tags', params.tags);
+	if (params.contentType) searchParams.set('contentType', params.contentType);
+	if (params.sortBy) searchParams.set('sortBy', params.sortBy);
+	if (typeof params.favorite === 'boolean') searchParams.set('favorite', String(params.favorite));
 	const query = searchParams.toString();
 	const path = query.length > 0 ? `/api/library?${query}` : '/api/library';
 	return request<LibraryResponse>(path, { auth: true });

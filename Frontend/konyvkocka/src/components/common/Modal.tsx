@@ -86,6 +86,22 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 		));
 	};
 
+	const getAgeRatingClassName = () => {
+		const ageRating = displayCard.ageRating;
+		if (!ageRating) return '';
+
+		const minAge = typeof ageRating.minAge === 'number' ? ageRating.minAge : null;
+		const normalizedName = ageRating.name.toLowerCase();
+
+		if (minAge === 18 || normalizedName.includes('18')) return 'age-rating-18';
+		if (minAge === 16 || normalizedName.includes('16')) return 'age-rating-16';
+		if (minAge === 12 || normalizedName.includes('12')) return 'age-rating-12';
+		if (minAge === 0 || normalizedName.includes('minden')) return 'age-rating-all';
+		if (normalizedName.includes('gyerek') || (minAge !== null && minAge > 0 && minAge < 12)) return 'age-rating-kid';
+
+		return 'age-rating-unknown';
+	};
+
 	const handleBackdropClick = (e: React.MouseEvent) => {
 		if ((e.target as HTMLElement).classList.contains('modal')) onClose?.();
 	};
@@ -125,6 +141,13 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 								</div>
 								<div className="col-md-7">
 										<h4>{displayCard.title}</h4>
+										{displayCard.ageRating && (
+											<div className="age-rating-row">
+												<span className={`age-rating-badge ${getAgeRatingClassName()}`}>
+													Korhatár: {displayCard.ageRating.name}
+												</span>
+											</div>
+										)}
 										<div className="tags-inline">
 											{(displayCard.tags || []).map((t, idx) => (
 												<span key={idx}>{t}</span>

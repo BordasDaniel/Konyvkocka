@@ -6,6 +6,10 @@ export interface CardData {
   id: string;
   img: string;
   title: string;
+  ageRating?: {
+    name: string;
+    minAge?: number | null;
+  };
   tags: string[];
   rating: number;
   desc: string;
