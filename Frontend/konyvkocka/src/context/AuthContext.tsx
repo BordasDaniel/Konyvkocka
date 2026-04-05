@@ -17,11 +17,17 @@ import {
 
 type User = UiAuthUser;
 
+type LoginFailureReason = 'suspended' | 'invalid' | 'unknown';
+
+type LoginResult =
+	| { success: true }
+	| { success: false; reason: LoginFailureReason; message: string };
+
 interface AuthContextType {
 	user: User | null;
 	isAuthenticated: boolean;
 	isLoading: boolean;
-	login: (email: string, password: string) => Promise<boolean>;
+	login: (email: string, password: string) => Promise<LoginResult>;
 	register: (username: string, email: string, password: string) => Promise<boolean>;
 	logout: () => void;
 }
@@ -56,15 +62,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			if (typeof parsed.username !== 'string' || parsed.username.trim().length === 0) return null;
 			if (typeof parsed.email !== 'string' || parsed.email.trim().length === 0) return null;
 
+			const permissionLevel =
+				parsed.permissionLevel === 'ADMIN' ||
+				parsed.permissionLevel === 'MODERATOR' ||
+				parsed.permissionLevel === 'BANNED'
+					? parsed.permissionLevel
+					: 'USER';
+
 			return {
 				id: parsed.id,
 				username: parsed.username,
 				email: parsed.email,
 				avatar: toAvatarSrc(typeof parsed.avatar === 'string' ? parsed.avatar : null),
 				isSubscriber: Boolean(parsed.isSubscriber),
-				permissionLevel: parsed.permissionLevel === 'ADMIN' || parsed.permissionLevel === 'MODERATOR' ? parsed.permissionLevel : 'USER',
-				isAdmin: Boolean(parsed.isAdmin),
-				isModerator: Boolean(parsed.isModerator),
+				permissionLevel,
+				isAdmin: permissionLevel === 'ADMIN',
+				isModerator: permissionLevel === 'MODERATOR',
 			};
 		} catch {
 			return null;
@@ -186,7 +199,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	}, []);
 
 	// Bejelentkezés
-	const login = async (email: string, password: string): Promise<boolean> => {
+	const login = async (email: string, password: string): Promise<LoginResult> => {
 		try {
 			const response = await authLogin(email, password);
 			const mappedUser = mapUserMeToUiUser(response.user);
@@ -194,13 +207,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			localStorage.setItem(SESSION_STORAGE_KEY, response.token);
 			setUser(mappedUser);
 			persistUserSafely(mappedUser);
-			return true;
+			return { success: true };
 		} catch (error) {
 			console.error('Login failed:', error);
 			setUser(null);
 			localStorage.removeItem('kk_user');
 			localStorage.removeItem(SESSION_STORAGE_KEY);
-			return false;
+
+			let reason: LoginFailureReason = 'unknown';
+			let message = 'Sikertelen bejelentkezés. Kérlek próbáld újra.';
+
+			if (error instanceof ApiHttpError) {
+				const payload = error.payload as { error?: unknown; message?: unknown } | null;
+				const errorCode = typeof payload?.error === 'string' ? payload.error.trim().toUpperCase() : '';
+				const responseMessage = error.message;
+
+				const suspendedByCode = errorCode === 'ACCOUNTSUSPENDED';
+				const suspendedByMessage = /felf[üu]ggeszt|suspend|banned|restricted|korl[áa]tozott/i.test(responseMessage);
+
+				if (error.status === 403 || suspendedByCode || suspendedByMessage) {
+					reason = 'suspended';
+					message = 'Sikertelen bejelentkezés. A felhasználói fiókod fel van függesztve.';
+				} else if (error.status === 401 || errorCode === 'INVALIDCREDENTIALS') {
+					reason = 'invalid';
+					message = 'Sikertelen bejelentkezés. Ellenőrizd az email címet és a jelszót.';
+				} else if (typeof responseMessage === 'string' && responseMessage.trim().length > 0) {
+					message = responseMessage;
+				}
+			}
+
+			return { success: false, reason, message };
 		}
 	};
 

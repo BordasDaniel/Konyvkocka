@@ -16,9 +16,22 @@ const Login: React.FC = () => {
   const [formType, setFormType] = useState<FormType>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [_isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginErrorModal, setLoginErrorModal] = useState<{ open: boolean; title: string; message: string }>({
+    open: false,
+    title: '',
+    message: '',
+  });
   const navigate = useNavigate();
   const { login, register, isAuthenticated } = useAuth();
+
+  const openLoginErrorModal = (title: string, message: string) => {
+    setLoginErrorModal({ open: true, title, message });
+  };
+
+  const closeLoginErrorModal = () => {
+    setLoginErrorModal({ open: false, title: '', message: '' });
+  };
 
   // Ha már be van jelentkezve, irányítsuk át a profil oldalra
   useEffect(() => {
@@ -86,6 +99,29 @@ const Login: React.FC = () => {
     return () => clearTimeout(timer);
   }, [formType]);
 
+  useEffect(() => {
+    if (!loginErrorModal.open) return;
+
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyOverflow = document.body.style.overflow;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeLoginErrorModal();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overflow = originalBodyOverflow;
+    };
+  }, [loginErrorModal.open]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -93,7 +129,7 @@ const Login: React.FC = () => {
     if (typeof window.grecaptcha !== 'undefined') {
       const recaptchaResponse = window.grecaptcha.getResponse();
       if (recaptchaResponse.length === 0) {
-        alert('Kérlek, erősítsd meg, hogy nem vagy robot!');
+        openLoginErrorModal('Sikertelen bejelentkezés', 'Kérlek, erősítsd meg, hogy nem vagy robot.');
         return;
       }
     }
@@ -104,16 +140,20 @@ const Login: React.FC = () => {
 
     if (email && password) {
       setIsSubmitting(true);
-      const success = await login(email, password);
+      const result = await login(email, password);
       setIsSubmitting(false);
       
-      if (success) {
+      if (result.success) {
         navigate('/profil');
       } else {
-        alert('Sikertelen bejelentkezés! Ellenőrizd az adataidat.');
+        if (result.reason === 'suspended') {
+          openLoginErrorModal('Sikertelen bejelentkezés', 'A felhasználói fiókod fel van függesztve. Kérlek, vedd fel a kapcsolatot az ügyfélszolgálattal.');
+        } else {
+          openLoginErrorModal('Sikertelen bejelentkezés', result.message);
+        }
       }
     } else {
-      alert('Kérlek, töltsd ki az összes mezőt!');
+      openLoginErrorModal('Sikertelen bejelentkezés', 'Kérlek, töltsd ki az összes mezőt.');
     }
   };
 
@@ -219,7 +259,9 @@ const Login: React.FC = () => {
                       <div className="mb-3 d-flex justify-content-center">
                         <div id="recaptcha-container"></div>
                       </div>
-                      <button type="submit" className="btn btn-primary w-100 text-white">Bejelentkezés</button>
+                      <button type="submit" className="btn btn-primary w-100 text-white" disabled={isSubmitting}>
+                        {isSubmitting ? 'Bejelentkezés...' : 'Bejelentkezés'}
+                      </button>
                     </form>
                     <div className="text-center form-change-links mt-3">
                       <a href="#" onClick={(e) => { e.preventDefault(); setFormType('forgot'); }} className="text-light">Elfelejtetted a jelszavad?</a>
@@ -316,6 +358,27 @@ const Login: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {loginErrorModal.open && (
+        <div className="login-error-modal-backdrop" onClick={closeLoginErrorModal}>
+          <div
+            className="login-error-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="login-feedback-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="login-error-modal-icon" aria-hidden="true">
+              <i className="bi bi-x-circle"></i>
+            </div>
+            <h4 id="login-feedback-title">{loginErrorModal.title}</h4>
+            <p>{loginErrorModal.message}</p>
+            <button type="button" className="btn btn-primary text-white" onClick={closeLoginErrorModal}>
+              Rendben
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

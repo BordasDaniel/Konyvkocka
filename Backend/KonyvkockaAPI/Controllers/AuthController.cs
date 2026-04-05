@@ -87,6 +87,13 @@ namespace KonyvkockaAPI.Controllers
                         Message = "Hibás email vagy jelszó"
                     });
 
+                if (IsSuspendedPermissionLevel(user.PermissionLevel))
+                    return StatusCode(403, new ErrorResponseDTO
+                    {
+                        Error = "AccountSuspended",
+                        Message = "Sikertelen bejelentkezés: a felhasználói fiók fel van függesztve"
+                    });
+
                 string doubleHash = CreateSHA256(loginDto.PasswordHash + user.PasswordSalt);
 
                 if (user.PasswordHash != doubleHash)
@@ -264,6 +271,12 @@ namespace KonyvkockaAPI.Controllers
             var sb = new StringBuilder();
             foreach (byte b in data) sb.Append(b.ToString("x2"));
             return sb.ToString();
+        }
+
+        private static bool IsSuspendedPermissionLevel(string? permissionLevel)
+        {
+            var normalized = permissionLevel?.Trim().ToUpperInvariant();
+            return normalized is "BANNED" or "SUSPENDED" or "RESTRICTED" or "KORLATOZOTT";
         }
 
         #endregion

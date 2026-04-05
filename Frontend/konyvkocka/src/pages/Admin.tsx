@@ -975,15 +975,6 @@ const Admin: React.FC = () => {
     }
   }, [activeTab, loadOverview]);
 
-  // Mentés handler (mock)
-  const handleSave = (section: string) => {
-    // TODO: API hívás
-    setSaveModal({
-      title: 'Mentés kész',
-      message: `${section} módosításai sikeresen mentve lettek.`,
-    });
-  };
-
   const openUserModal = (user: AdminUser) => {
     setSelectedUserId(user.id);
     setUserDraft({ ...user });
@@ -1053,19 +1044,11 @@ const Admin: React.FC = () => {
       return;
     }
 
-    if (userDraft.permissionLevel === 'banned') {
-      setSaveModal({
-        title: 'Nem támogatott jogosultság',
-        message: 'A BANNED jogosultság nem támogatott ebben az adatbázisban.',
-      });
-      return;
-    }
-
     setUserSaving(true);
 
     try {
       await updateAdminUser(userDraft.id, {
-        permissionLevel: userDraft.permissionLevel.toUpperCase() as 'USER' | 'MODERATOR' | 'ADMIN',
+        permissionLevel: userDraft.permissionLevel.toUpperCase() as 'USER' | 'MODERATOR' | 'ADMIN' | 'BANNED',
         premium: userDraft.subscription === 'premium',
         premiumExpiresAt: userDraft.subscription === 'premium' ? userDraft.premiumExpiresAt : null,
         level: userDraft.level,
@@ -1259,15 +1242,6 @@ const Admin: React.FC = () => {
     }
   };
 
-  const deleteChallenge = (id: number) => {
-    if (!window.confirm('Biztosan törlöd ezt a kihívást?')) return;
-
-    setChallenges(prev => prev.filter(item => item.id !== id));
-    if (selectedChallengeId === id) {
-      closeChallengeModal();
-    }
-  };
-
   useEffect(() => {
     const hasEditorModal = Boolean(selectedUserId || selectedContentId || selectedNewsId || selectedChallengeId);
     const hasAnyModal = hasEditorModal || Boolean(saveModal);
@@ -1396,15 +1370,6 @@ const Admin: React.FC = () => {
     return alreadyContainsAge ? normalizedName : `${normalizedName} (${option.minAge}+)`;
   };
 
-  const deleteContent = () => {
-    if (window.confirm('Biztosan törlöd ezt a tartalmat?')) {
-      setSaveModal({
-        title: 'Művelet nem elérhető',
-        message: 'A tartalom törlés backend endpoint még nincs implementálva.',
-      });
-    }
-  };
-
   const addTagToContentDraft = (tagId: number) => {
     setContentDraft(prev => {
       if (!prev || prev.tagIds.includes(tagId)) return prev;
@@ -1417,13 +1382,6 @@ const Admin: React.FC = () => {
       if (!prev) return prev;
       return { ...prev, tagIds: prev.tagIds.filter(id => id !== tagId) };
     });
-  };
-
-  // Hír törlése
-  const deleteNews = (id: number) => {
-    if (window.confirm('Biztosan törlöd ezt a hírt?')) {
-      setNews(prev => prev.filter(n => n.id !== id));
-    }
   };
 
   // Bejelentés küldése
@@ -1923,12 +1881,6 @@ const Admin: React.FC = () => {
                   </nav>
                 )}
 
-                <div className="admin-save-bar">
-                  <button className="admin-send-btn" onClick={() => handleSave('Felhasználók')}>
-                    <i className="bi bi-floppy-fill me-2"></i>
-                    Módosítások mentése
-                  </button>
-                </div>
               </div>
 
               {selectedUser && (
@@ -1985,7 +1937,7 @@ const Admin: React.FC = () => {
                                   <span>{permissionLevelLabels[selectedUser.permissionLevel]}</span>
                                 </button>
                                 <div className={`admin-custom-select-menu ${activeUserDropdown === 'permissionLevel' ? 'show' : ''}`}>
-                                  {(['user', 'moderator', 'admin'] as const).map(option => (
+                                  {(['user', 'moderator', 'admin', 'banned'] as const).map(option => (
                                     <button
                                       key={option}
                                       type="button"
@@ -2237,16 +2189,6 @@ const Admin: React.FC = () => {
                               >
                                 <i className="bi bi-pencil-fill"></i>
                               </button>
-                              <button
-                                className="admin-btn-icon text-danger"
-                                title="Törlés"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  deleteContent();
-                                }}
-                              >
-                                <i className="bi bi-trash-fill"></i>
-                              </button>
                             </div>
                           </td>
                         </tr>
@@ -2276,12 +2218,6 @@ const Admin: React.FC = () => {
                   </nav>
                 )}
 
-                <div className="admin-save-bar">
-                  <button className="admin-send-btn" onClick={() => handleSave('Tartalmak')}>
-                    <i className="bi bi-floppy-fill me-2"></i>
-                    Változtatások mentése
-                  </button>
-                </div>
               </div>
 
               {selectedContent && (
@@ -2304,7 +2240,7 @@ const Admin: React.FC = () => {
                           <strong>{selectedContent.contentType}</strong>
                         </div>
                         <div className="admin-user-snapshot">
-                          <span className="admin-user-snapshot-label">Azonosító</span>
+                          <p>Book/Movie/Series tabla mezok szerint (nincs uj letrehozas, csak edit).</p>
                           <strong>#{selectedContent.id}</strong>
                         </div>
                         <div className="admin-user-snapshot">
@@ -2708,16 +2644,6 @@ const Admin: React.FC = () => {
                               >
                                 <i className="bi bi-pencil-fill"></i>
                               </button>
-                              <button
-                                className="admin-btn-icon text-danger"
-                                title="Törlés"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  deleteNews(item.id);
-                                }}
-                              >
-                                <i className="bi bi-trash-fill"></i>
-                              </button>
                             </div>
                           </td>
                         </tr>
@@ -2747,12 +2673,6 @@ const Admin: React.FC = () => {
                   </nav>
                 )}
 
-                <div className="admin-save-bar">
-                  <button className="admin-send-btn" onClick={() => handleSave('Hírek')}>
-                    <i className="bi bi-floppy-fill me-2"></i>
-                    Változtatások mentése
-                  </button>
-                </div>
               </div>
 
               {selectedNews && (
@@ -2980,16 +2900,6 @@ const Admin: React.FC = () => {
                               >
                                 <i className="bi bi-pencil-fill"></i>
                               </button>
-                              <button
-                                className="admin-btn-icon text-danger"
-                                title="Törlés"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  deleteChallenge(ch.id);
-                                }}
-                              >
-                                <i className="bi bi-trash-fill"></i>
-                              </button>
                             </div>
                           </td>
                         </tr>
@@ -3019,12 +2929,6 @@ const Admin: React.FC = () => {
                   </nav>
                 )}
 
-                <div className="admin-save-bar">
-                  <button className="admin-send-btn" onClick={() => handleSave('Kihívások')}>
-                    <i className="bi bi-floppy-fill me-2"></i>
-                    Változtatások mentése
-                  </button>
-                </div>
               </div>
 
               {selectedChallenge && (

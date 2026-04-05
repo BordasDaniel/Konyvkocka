@@ -48,7 +48,7 @@ public partial class User
     public int WatchTimeMin { get; set; }
 
     /// <summary>
-    /// Jogosultsági szint: "USER" | "MODERATOR" | "ADMIN"
+    /// Jogosultsági szint: "USER" | "MODERATOR" | "ADMIN" | "BANNED"
     /// </summary>
     public string PermissionLevel { get; set; } = "USER";
 

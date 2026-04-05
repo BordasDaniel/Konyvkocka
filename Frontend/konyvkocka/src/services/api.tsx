@@ -134,7 +134,7 @@ export interface UiAuthUser {
 	email: string;
 	avatar: string;
 	isSubscriber: boolean;
-	permissionLevel: 'USER' | 'MODERATOR' | 'ADMIN';
+	permissionLevel: 'USER' | 'MODERATOR' | 'ADMIN' | 'BANNED';
 	isAdmin: boolean;
 	isModerator: boolean;
 }
@@ -143,6 +143,7 @@ const normalizePermissionLevel = (permissionLevel: string | null | undefined): U
 	const normalized = permissionLevel?.toUpperCase();
 	if (normalized === 'ADMIN') return 'ADMIN';
 	if (normalized === 'MODERATOR') return 'MODERATOR';
+	if (normalized === 'BANNED') return 'BANNED';
 	return 'USER';
 };
 
@@ -1090,7 +1091,7 @@ export const updateAdminContent = async (
 	});
 
 export interface UpdateAdminUserPayload {
-	permissionLevel: 'USER' | 'MODERATOR' | 'ADMIN';
+	permissionLevel: 'USER' | 'MODERATOR' | 'ADMIN' | 'BANNED';
 	premium: boolean;
 	premiumExpiresAt: string | null;
 	level: number;

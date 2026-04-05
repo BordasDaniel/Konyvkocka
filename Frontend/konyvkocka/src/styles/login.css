@@ -49,6 +49,12 @@ body
         transition: 0.3s;
 }
 
+.login-container .btn:disabled {
+    opacity: 0.72;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
 
 
 .login-container .form-change-links a
@@ -62,4 +68,55 @@ body
     color: var(--h1Text) !important;
     text-decoration: underline;
     font-weight: bold;
+}
+
+.login-error-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1250;
+    background: rgba(4, 4, 4, 0.58);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.login-error-modal {
+    width: min(360px, 100%);
+    background: linear-gradient(180deg, rgba(13, 11, 9, 0.98), rgba(9, 8, 7, 0.96));
+    border: 1px solid rgba(194, 157, 89, 0.2);
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.login-error-modal-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 0.9rem;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    font-size: 1.8rem;
+}
+
+.login-error-modal h4 {
+    margin: 0 0 0.45rem;
+    color: var(--h1Text);
+}
+
+.login-error-modal p {
+    margin: 0 0 1.2rem;
+    color: rgba(255, 255, 255, 0.62);
+    line-height: 1.5;
+}
+
+.login-error-modal .btn {
+    width: 100%;
+    justify-content: center;
 }

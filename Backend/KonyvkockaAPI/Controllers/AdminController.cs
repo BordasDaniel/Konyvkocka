@@ -1171,13 +1171,13 @@ namespace KonyvkockaAPI.Controllers
                 var normalizedPermissionLevel = dto.PermissionLevel?.Trim().ToUpperInvariant() ?? string.Empty;
                 var normalizedCountryCode = dto.CountryCode?.Trim().ToUpperInvariant() ?? string.Empty;
 
-                var allowedPermissionLevels = new[] { "USER", "MODERATOR", "ADMIN" };
+                var allowedPermissionLevels = new[] { "USER", "MODERATOR", "ADMIN", "BANNED" };
                 if (!allowedPermissionLevels.Contains(normalizedPermissionLevel))
                 {
                     return BadRequest(new ErrorResponseDTO
                     {
                         Error = "InvalidPermissionLevel",
-                        Message = "Érvénytelen jogosultság. Lehetséges: USER, MODERATOR, ADMIN"
+                        Message = "Érvénytelen jogosultság. Lehetséges: USER, MODERATOR, ADMIN, BANNED"
                     });
                 }
 
