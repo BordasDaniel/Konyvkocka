@@ -950,20 +950,54 @@ export interface AdminUsersResponse {
 	page: number;
 	pageSize: number;
 	users: AdminUserItemResponse[];
+	summary: {
+		totalUsers: number;
+		premium: number;
+		staff: number;
+		banned: number;
+		activeToday: number;
+	};
 }
 
 export const getAdminUsers = async (params: {
 	page?: number;
 	pageSize?: number;
+	userType?: 'all' | 'premium' | 'staff' | 'banned';
 	q?: string;
 } = {}): Promise<AdminUsersResponse> => {
 	const searchParams = new URLSearchParams();
 	searchParams.set('page', String(params.page ?? 1));
 	searchParams.set('pageSize', String(params.pageSize ?? 20));
+	if (params.userType) searchParams.set('userType', params.userType);
 	if (params.q) searchParams.set('q', params.q);
 
 	return request<AdminUsersResponse>(`/api/admin/users?${searchParams.toString()}`, { auth: true });
 };
+
+export interface UpdateAdminUserPayload {
+	permissionLevel: 'USER' | 'MODERATOR' | 'ADMIN';
+	premium: boolean;
+	premiumExpiresAt: string | null;
+	level: number;
+	xp: number;
+	countryCode: string;
+	dayStreak: number;
+	readTimeMin: number;
+	watchTimeMin: number;
+	bookPoints: number;
+	seriesPoints: number;
+	moviePoints: number;
+}
+
+export const updateAdminUser = async (
+	id: number,
+	payload: UpdateAdminUserPayload,
+): Promise<AdminUserItemResponse> =>
+	request<AdminUserItemResponse>(`/api/admin/users/${id}`, {
+		auth: true,
+		method: 'PUT',
+		body: payload,
+	});
 
 export interface AdminPurchaseItemResponse {
 	id: number;

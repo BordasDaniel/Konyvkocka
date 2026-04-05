@@ -8,15 +8,19 @@ import {
   getAdminOverview,
   getAdminNews,
   getAdminPurchases,
+  getAdminUsers,
   sendAdminAnnouncement,
   updateAdminChallenge,
   updateAdminNews,
+  updateAdminUser,
+  toAvatarSrc,
   type AdminChallengeBadgeOptionResponse,
   type AdminChallengeItemResponse,
   type AdminChallengeTitleOptionResponse,
   type AdminOverviewResponse,
   type AdminNewsItemResponse,
   type AdminPurchaseItemResponse,
+  type AdminUserItemResponse,
 } from '../services/api';
 import '../styles/admin.css';
 
@@ -159,17 +163,6 @@ interface AdminTitleOption {
 // ========================
 // MOCK ADATOK
 // ========================
-
-const MOCK_USERS: AdminUser[] = [
-  { id: 1, username: 'BookMaster99', email: 'bookmaster@example.com', avatar: 'https://i.pravatar.cc/150?img=1', permissionLevel: 'user', subscription: 'premium', premiumExpiresAt: '2026-08-12', level: 120, xp: 840, countryCode: 'HU', joinDate: '2020-03-15', lastLoginDate: '2026-03-12', dayStreak: 47, readTimeMin: 18320, watchTimeMin: 5220, bookPoints: 8450, seriesPoints: 2160, moviePoints: 980 },
-  { id: 2, username: 'CinemaLover', email: 'cinema@example.com', avatar: 'https://i.pravatar.cc/150?img=2', permissionLevel: 'moderator', subscription: 'premium', premiumExpiresAt: '2027-01-01', level: 115, xp: 625, countryCode: 'RO', joinDate: '2020-06-22', lastLoginDate: '2026-03-13', dayStreak: 18, readTimeMin: 6540, watchTimeMin: 24180, bookPoints: 2210, seriesPoints: 5840, moviePoints: 6120 },
-  { id: 3, username: 'ReadingQueen', email: 'queen@example.com', avatar: 'https://i.pravatar.cc/150?img=3', permissionLevel: 'user', subscription: 'premium', premiumExpiresAt: '2026-05-17', level: 112, xp: 410, countryCode: 'HU', joinDate: '2019-11-08', lastLoginDate: '2026-03-11', dayStreak: 83, readTimeMin: 24880, watchTimeMin: 1240, bookPoints: 11020, seriesPoints: 640, moviePoints: 310 },
-  { id: 4, username: 'TrollUser69', email: 'troll@example.com', avatar: 'https://i.pravatar.cc/150?img=4', permissionLevel: 'banned', subscription: 'free', premiumExpiresAt: null, level: 5, xp: 90, countryCode: 'HU', joinDate: '2025-01-20', lastLoginDate: '2026-02-20', dayStreak: 0, readTimeMin: 14, watchTimeMin: 41, bookPoints: 0, seriesPoints: 10, moviePoints: 0 },
-  { id: 5, username: 'PageTurner', email: 'turner@example.com', avatar: 'https://i.pravatar.cc/150?img=5', permissionLevel: 'user', subscription: 'premium', premiumExpiresAt: '2026-09-09', level: 105, xp: 255, countryCode: 'SK', joinDate: '2020-08-30', lastLoginDate: '2026-03-13', dayStreak: 29, readTimeMin: 16770, watchTimeMin: 3100, bookPoints: 9040, seriesPoints: 420, moviePoints: 260 },
-  { id: 6, username: 'FilmFanatic', email: 'fanatic@example.com', avatar: 'https://i.pravatar.cc/150?img=10', permissionLevel: 'user', subscription: 'free', premiumExpiresAt: null, level: 91, xp: 710, countryCode: 'DE', joinDate: '2021-06-20', lastLoginDate: '2026-03-08', dayStreak: 6, readTimeMin: 2100, watchTimeMin: 20640, bookPoints: 840, seriesPoints: 4120, moviePoints: 4970 },
-  { id: 7, username: 'NovelNinja', email: 'ninja@example.com', avatar: 'https://i.pravatar.cc/150?img=9', permissionLevel: 'moderator', subscription: 'premium', premiumExpiresAt: '2026-12-31', level: 94, xp: 930, countryCode: 'AT', joinDate: '2020-09-14', lastLoginDate: '2026-03-13', dayStreak: 12, readTimeMin: 14320, watchTimeMin: 6220, bookPoints: 6900, seriesPoints: 1540, moviePoints: 890 },
-  { id: 8, username: 'SpamBot2025', email: 'spam@fake.com', avatar: 'https://i.pravatar.cc/150?img=20', permissionLevel: 'banned', subscription: 'free', premiumExpiresAt: null, level: 1, xp: 0, countryCode: '??', joinDate: '2025-02-01', lastLoginDate: '2026-02-22', dayStreak: 0, readTimeMin: 0, watchTimeMin: 0, bookPoints: 0, seriesPoints: 0, moviePoints: 0 },
-];
 
 const MOCK_CONTENT: AdminContent[] = [
   {
@@ -454,7 +447,17 @@ const Admin: React.FC = () => {
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [overviewError, setOverviewError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
-  const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [usersTotalFromApi, setUsersTotalFromApi] = useState(0);
+  const [userSummary, setUserSummary] = useState({
+    totalUsers: 0,
+    premium: 0,
+    staff: 0,
+    banned: 0,
+    activeToday: 0,
+  });
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userSaving, setUserSaving] = useState(false);
   const [content, setContent] = useState<AdminContent[]>(MOCK_CONTENT);
   const [news, setNews] = useState<AdminNewsItem[]>([]);
   const [newsTotalFromApi, setNewsTotalFromApi] = useState(0);
@@ -533,44 +536,12 @@ const Admin: React.FC = () => {
 
   const getUserTotalPoints = (user: AdminUser) => user.bookPoints + user.seriesPoints + user.moviePoints;
 
-  const userSummary = useMemo(() => ({
-    premium: users.filter(user => user.subscription !== 'free').length,
-    staff: users.filter(user => user.permissionLevel === 'moderator' || user.permissionLevel === 'admin').length,
-    banned: users.filter(user => user.permissionLevel === 'banned').length,
-    activeToday: users.filter(user => user.lastLoginDate >= '2026-03-13').length,
-  }), [users]);
-
   const contentSummary = useMemo(() => ({
     total: content.length,
     books: content.filter(item => item.contentType === 'BOOK').length,
     series: content.filter(item => item.contentType === 'SERIES').length,
     movies: content.filter(item => item.contentType === 'MOVIE').length,
   }), [content]);
-
-  // Szűrt felhasználók
-  const filteredUsers = useMemo(() => {
-    let items = users;
-
-    if (userTypeFilter === 'premium') {
-      items = items.filter(user => user.subscription !== 'free');
-    }
-
-    if (userTypeFilter === 'staff') {
-      items = items.filter(user => user.permissionLevel === 'moderator' || user.permissionLevel === 'admin');
-    }
-
-    if (userTypeFilter === 'banned') {
-      items = items.filter(user => user.permissionLevel === 'banned');
-    }
-
-    if (!userSearch.trim()) return items;
-
-    const q = userSearch.toLowerCase();
-    return items.filter(user =>
-      user.username.toLowerCase().includes(q) ||
-      user.email.toLowerCase().includes(q)
-    );
-  }, [users, userSearch, userTypeFilter]);
 
   // Szűrt tartalmak
   const filteredContent = useMemo(() => {
@@ -594,11 +565,8 @@ const Admin: React.FC = () => {
     return Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
   };
 
-  const totalUserPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
-  const pagedUsers = useMemo(() => {
-    const start = (usersPage - 1) * pageSize;
-    return filteredUsers.slice(start, start + pageSize);
-  }, [filteredUsers, usersPage]);
+  const totalUserPages = Math.max(1, Math.ceil(usersTotalFromApi / pageSize));
+  const pagedUsers = users;
 
   const totalContentPages = Math.max(1, Math.ceil(filteredContent.length / pageSize));
   const pagedContent = useMemo(() => {
@@ -678,6 +646,63 @@ const Admin: React.FC = () => {
   const totalPurchasePages = Math.max(1, Math.ceil(purchasesTotalFromApi / pageSize));
 
   const filteredPurchasesForDisplay = purchasesData;
+
+  const mapAdminUserItem = useCallback((item: AdminUserItemResponse): AdminUser => {
+    const permission = item.permissionLevel?.toLowerCase();
+    const mappedPermission: AdminUser['permissionLevel'] =
+      permission === 'admin' || permission === 'moderator' || permission === 'user'
+        ? permission
+        : 'banned';
+
+    return {
+      id: item.id,
+      username: item.username,
+      email: item.email,
+      avatar: toAvatarSrc(item.avatar),
+      permissionLevel: mappedPermission,
+      subscription: item.premium ? 'premium' : 'free',
+      premiumExpiresAt: item.premiumExpiresAt,
+      level: item.level,
+      xp: item.xp,
+      countryCode: item.countryCode,
+      joinDate: item.creationDate,
+      lastLoginDate: item.lastLoginDate,
+      dayStreak: item.dayStreak,
+      readTimeMin: item.readTimeMin,
+      watchTimeMin: item.watchTimeMin,
+      bookPoints: item.bookPoints,
+      seriesPoints: item.seriesPoints,
+      moviePoints: item.moviePoints,
+    };
+  }, []);
+
+  const loadUsers = useCallback(async () => {
+    setUsersLoading(true);
+    try {
+      const data = await getAdminUsers({
+        page: usersPage,
+        pageSize,
+        userType: userTypeFilter,
+        q: userSearch,
+      });
+
+      setUsers(data.users.map(mapAdminUserItem));
+      setUsersTotalFromApi(data.total);
+      setUserSummary(data.summary);
+    } catch {
+      setUsers([]);
+      setUsersTotalFromApi(0);
+      setUserSummary({
+        totalUsers: 0,
+        premium: 0,
+        staff: 0,
+        banned: 0,
+        activeToday: 0,
+      });
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [mapAdminUserItem, userSearch, userTypeFilter, usersPage]);
 
   const mapAdminNewsItem = useCallback((item: AdminNewsItemResponse): AdminNewsItem => ({
     id: item.id,
@@ -793,6 +818,12 @@ const Admin: React.FC = () => {
       void loadNews();
     }
   }, [activeTab, loadNews]);
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      void loadUsers();
+    }
+  }, [activeTab, loadUsers]);
 
   useEffect(() => {
     if (activeTab === 'challenges') {
@@ -920,19 +951,62 @@ const Admin: React.FC = () => {
     setContentDraft(prev => prev ? { ...prev, [field]: value } : prev);
   };
 
-  const saveUserDraft = () => {
+  const saveUserDraft = async () => {
     if (!userDraft) return;
 
-    const normalizedUser: AdminUser = {
-      ...userDraft,
-      premiumExpiresAt: userDraft.subscription === 'free' ? null : userDraft.premiumExpiresAt,
-    };
+    const normalizedCountryCode = userDraft.countryCode.trim().toUpperCase();
+    if (normalizedCountryCode.length !== 2) {
+      setSaveModal({
+        title: 'Hibás országkód',
+        message: 'Az országkód pontosan 2 karakter lehet.',
+      });
+      return;
+    }
 
-    setUsers(prev => prev.map(user =>
-      user.id === normalizedUser.id ? normalizedUser : user
-    ));
+    if (userDraft.permissionLevel === 'banned') {
+      setSaveModal({
+        title: 'Nem támogatott jogosultság',
+        message: 'A BANNED jogosultság nem támogatott ebben az adatbázisban.',
+      });
+      return;
+    }
 
-    closeUserModal();
+    setUserSaving(true);
+
+    try {
+      await updateAdminUser(userDraft.id, {
+        permissionLevel: userDraft.permissionLevel.toUpperCase() as 'USER' | 'MODERATOR' | 'ADMIN',
+        premium: userDraft.subscription === 'premium',
+        premiumExpiresAt: userDraft.subscription === 'premium' ? userDraft.premiumExpiresAt : null,
+        level: userDraft.level,
+        xp: userDraft.xp,
+        countryCode: normalizedCountryCode,
+        dayStreak: userDraft.dayStreak,
+        readTimeMin: userDraft.readTimeMin,
+        watchTimeMin: userDraft.watchTimeMin,
+        bookPoints: userDraft.bookPoints,
+        seriesPoints: userDraft.seriesPoints,
+        moviePoints: userDraft.moviePoints,
+      });
+
+      await loadUsers();
+      closeUserModal();
+      setSaveModal({
+        title: 'Felhasználó frissítve',
+        message: 'A felhasználó adatai sikeresen elmentésre kerültek.',
+      });
+    } catch (error) {
+      const messageText = error instanceof ApiHttpError
+        ? error.message
+        : 'A felhasználó mentése sikertelen. Kérlek próbáld újra.';
+
+      setSaveModal({
+        title: 'Mentési hiba',
+        message: messageText,
+      });
+    } finally {
+      setUserSaving(false);
+    }
   };
 
   const saveContentDraft = () => {
@@ -1537,7 +1611,7 @@ const Admin: React.FC = () => {
                 <div className="admin-users-stat">
                   <span className="admin-users-stat-label">Prémium fiókok</span>
                   <strong>
-                    {Math.round((userSummary.premium / Math.max(users.length, 1)) * 100)}%
+                    {Math.round((userSummary.premium / Math.max(userSummary.totalUsers, 1)) * 100)}%
                     <span className="admin-users-stat-range"> (300 - 1500)</span>
                   </strong>
                 </div>
@@ -1560,7 +1634,7 @@ const Admin: React.FC = () => {
                   <h3 className="admin-card-title">
                     <i className="bi bi-people-fill me-2"></i>
                     Felhasználók kezelése
-                    <span className="admin-count">{users.length}</span>
+                    <span className="admin-count">{usersTotalFromApi}</span>
                   </h3>
                   <div className="admin-header-controls">
                     <div className="admin-filter-pills">
@@ -1608,7 +1682,12 @@ const Admin: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {pagedUsers.map(user => (
+                      {usersLoading ? (
+                        <tr>
+                          <td colSpan={9} className="text-center text-muted py-4">Felhasználók betöltése...</td>
+                        </tr>
+                      ) : (
+                        pagedUsers.map(user => (
                         <tr
                           key={user.id}
                           className={user.permissionLevel === 'banned' ? 'banned-row admin-user-row' : 'admin-user-row'}
@@ -1658,12 +1737,13 @@ const Admin: React.FC = () => {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ))
+                      )}
                     </tbody>
                   </table>
                 </div>
 
-                {filteredUsers.length > 0 && totalUserPages > 1 && (
+                {usersTotalFromApi > 0 && totalUserPages > 1 && (
                   <nav className="admin-pagination-wrap" aria-label="Felhasználók lapozása">
                     <ul className="pagination kk-pagination justify-content-center mb-0">
                       <li className={`page-item ${usersPage === 1 ? 'disabled' : ''}`}>
@@ -1745,7 +1825,7 @@ const Admin: React.FC = () => {
                                   <span>{permissionLevelLabels[selectedUser.permissionLevel]}</span>
                                 </button>
                                 <div className={`admin-custom-select-menu ${activeUserDropdown === 'permissionLevel' ? 'show' : ''}`}>
-                                  {(['user', 'moderator', 'admin', 'banned'] as const).map(option => (
+                                  {(['user', 'moderator', 'admin'] as const).map(option => (
                                     <button
                                       key={option}
                                       type="button"
@@ -1859,10 +1939,10 @@ const Admin: React.FC = () => {
                     </div>
 
                     <div className="admin-user-modal-footer">
-                      <button className="admin-user-secondary-btn" onClick={closeUserModal}>Mégse</button>
-                      <button className="admin-send-btn" onClick={saveUserDraft}>
+                      <button className="admin-user-secondary-btn" onClick={closeUserModal} disabled={userSaving}>Mégse</button>
+                      <button className="admin-send-btn" onClick={saveUserDraft} disabled={userSaving}>
                         <i className="bi bi-check2-circle me-2"></i>
-                        Felhasználó mentése
+                        {userSaving ? 'Mentés...' : 'Felhasználó mentése'}
                       </button>
                     </div>
                   </div>

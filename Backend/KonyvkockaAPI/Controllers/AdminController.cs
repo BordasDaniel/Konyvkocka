@@ -432,7 +432,8 @@ namespace KonyvkockaAPI.Controllers
         public async Task<IActionResult> GetUsers(
             [FromQuery] int page     = 1,
             [FromQuery] int pageSize = 20,
-            [FromQuery] string? q    = null)
+            [FromQuery] string? q    = null,
+            [FromQuery] string? userType = null)
         {
             try
             {
@@ -443,7 +444,47 @@ namespace KonyvkockaAPI.Controllers
                 if (page < 1) page = 1;
                 if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
+                var now = DateTime.UtcNow;
+                var todayStart = now.Date;
+
+                var summary = new
+                {
+                    totalUsers = await _context.Users.CountAsync(),
+                    premium = await _context.Users.CountAsync(u => u.Premium && (!u.PremiumExpiresAt.HasValue || u.PremiumExpiresAt.Value >= now)),
+                    staff = await _context.Users.CountAsync(u => u.PermissionLevel == "ADMIN" || u.PermissionLevel == "MODERATOR"),
+                    banned = await _context.Users.CountAsync(u => u.PermissionLevel == "BANNED"),
+                    activeToday = await _context.Users.CountAsync(u => u.LastLoginDate >= todayStart)
+                };
+
                 IQueryable<User> query = _context.Users;
+
+                if (!string.IsNullOrWhiteSpace(userType))
+                {
+                    var normalizedFilter = userType.Trim().ToLowerInvariant();
+                    var allowedFilters = new[] { "all", "premium", "staff", "banned" };
+
+                    if (!allowedFilters.Contains(normalizedFilter))
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidUserType",
+                            Message = "Érvénytelen userType. Lehetséges: all, premium, staff, banned"
+                        });
+                    }
+
+                    if (normalizedFilter == "premium")
+                    {
+                        query = query.Where(u => u.Premium);
+                    }
+                    else if (normalizedFilter == "staff")
+                    {
+                        query = query.Where(u => u.PermissionLevel == "ADMIN" || u.PermissionLevel == "MODERATOR");
+                    }
+                    else if (normalizedFilter == "banned")
+                    {
+                        query = query.Where(u => u.PermissionLevel == "BANNED");
+                    }
+                }
 
                 if (!string.IsNullOrWhiteSpace(q))
                 {
@@ -482,7 +523,131 @@ namespace KonyvkockaAPI.Controllers
                     })
                     .ToListAsync();
 
-                return Ok(new { total, page, pageSize, users });
+                return Ok(new { total, page, pageSize, users, summary });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // PUT /api/admin/users/{id}
+        // Felhasználó frissítése – admin/moderátor jogosultság szükséges
+        // ================================================================
+        [HttpPut("users/{id}")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateAdminUserDTO dto)
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                if (dto == null)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidPayload",
+                        Message = "A kérés törzse kötelező"
+                    });
+                }
+
+                var normalizedPermissionLevel = dto.PermissionLevel?.Trim().ToUpperInvariant() ?? string.Empty;
+                var normalizedCountryCode = dto.CountryCode?.Trim().ToUpperInvariant() ?? string.Empty;
+
+                var allowedPermissionLevels = new[] { "USER", "MODERATOR", "ADMIN" };
+                if (!allowedPermissionLevels.Contains(normalizedPermissionLevel))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidPermissionLevel",
+                        Message = "Érvénytelen jogosultság. Lehetséges: USER, MODERATOR, ADMIN"
+                    });
+                }
+
+                if (normalizedCountryCode.Length != 2)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidCountryCode",
+                        Message = "Az országkód pontosan 2 karakter lehet"
+                    });
+                }
+
+                if (dto.Level < 1)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidLevel",
+                        Message = "A szint minimum 1 lehet"
+                    });
+                }
+
+                if (dto.Xp < 0 || dto.Xp > 999)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidXP",
+                        Message = "Az XP értéke 0 és 999 közé kell essen"
+                    });
+                }
+
+                if (dto.DayStreak < 0 || dto.ReadTimeMin < 0 || dto.WatchTimeMin < 0 || dto.BookPoints < 0 || dto.SeriesPoints < 0 || dto.MoviePoints < 0)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidNumericValues",
+                        Message = "A numerikus mezők nem lehetnek negatívak"
+                    });
+                }
+
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+                if (user == null)
+                {
+                    return NotFound(new ErrorResponseDTO
+                    {
+                        Error = "NotFound",
+                        Message = "A felhasználó nem található"
+                    });
+                }
+
+                user.PermissionLevel = normalizedPermissionLevel;
+                user.Premium = dto.Premium;
+                user.PremiumExpiresAt = dto.Premium ? dto.PremiumExpiresAt : null;
+                user.Level = dto.Level;
+                user.Xp = dto.Xp;
+                user.CountryCode = normalizedCountryCode;
+                user.DayStreak = dto.DayStreak;
+                user.ReadTimeMin = dto.ReadTimeMin;
+                user.WatchTimeMin = dto.WatchTimeMin;
+                user.BookPoints = dto.BookPoints;
+                user.SeriesPoints = dto.SeriesPoints;
+                user.MoviePoints = dto.MoviePoints;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new AdminUserItemDTO
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Email = user.Email,
+                    Avatar = user.ProfilePic != null ? Convert.ToBase64String(user.ProfilePic) : null,
+                    PermissionLevel = user.PermissionLevel,
+                    Premium = user.Premium,
+                    PremiumExpiresAt = user.PremiumExpiresAt,
+                    Level = user.Level,
+                    Xp = user.Xp,
+                    CountryCode = user.CountryCode,
+                    CreationDate = user.CreationDate,
+                    LastLoginDate = user.LastLoginDate,
+                    DayStreak = user.DayStreak,
+                    ReadTimeMin = user.ReadTimeMin,
+                    WatchTimeMin = user.WatchTimeMin,
+                    BookPoints = user.BookPoints,
+                    SeriesPoints = user.SeriesPoints,
+                    MoviePoints = user.MoviePoints
+                });
             }
             catch (Exception ex)
             {
