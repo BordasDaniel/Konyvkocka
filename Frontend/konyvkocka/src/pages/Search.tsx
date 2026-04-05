@@ -1,16 +1,83 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../components/common/Card.tsx';
 import type { CardData } from '../components/common/Card.tsx';
 import Modal from '../components/common/Modal.tsx';
 import {
 	buildContentKey,
+	getContentAgeRatings,
 	getContentDetail,
+	getContentTags,
 	parseContentKey,
 	searchContent,
 	toContentImageSrc,
 	type ContentDetailResponse,
 	type HomeCardResponse,
 } from '../services/api';
+
+const TYPE_OPTIONS = [
+	{ value: 'book', label: 'Könyv' },
+	{ value: 'movie', label: 'Film' },
+	{ value: 'series', label: 'Sorozat' },
+] as const;
+
+const SORT_OPTIONS = [
+	{ value: 'relevancia', label: 'Relevancia' },
+	{ value: 'ertekeles', label: 'Értékelés' },
+	{ value: 'felkapott', label: 'Felkapott' },
+	{ value: 'megjelenes', label: 'Megjelenés' },
+] as const;
+
+const FALLBACK_AGE_RATINGS = ['Minden', 'Gyerek', '12+', '16+', '18+'];
+
+const FALLBACK_TAGS = [
+	'Akció',
+	'Kaland',
+	'Krimi',
+	'Dráma',
+	'Vígjáték',
+	'Romantikus',
+	'Sci-fi',
+	'Fantasy',
+	'Horror',
+	'Thriller',
+	'Családi',
+	'Történelmi',
+	'Életrajzi',
+	'Dokumentum',
+	'Mese',
+	'Magyar',
+	'Külföldi',
+	'Filmadaptáció',
+	'Képregény alapú',
+	'Animációs',
+	'Feliratos',
+];
+
+type SortValue = (typeof SORT_OPTIONS)[number]['value'];
+
+interface SearchFilters {
+	ageRatings: string[];
+	types: string[];
+	tags: string[];
+	sort: SortValue;
+}
+
+const createDefaultFilters = (): SearchFilters => ({
+	ageRatings: [],
+	types: [],
+	tags: [],
+	sort: 'relevancia',
+});
+
+const cloneFilters = (filters: SearchFilters): SearchFilters => ({
+	ageRatings: [...filters.ageRatings],
+	types: [...filters.types],
+	tags: [...filters.tags],
+	sort: filters.sort,
+});
+
+const toggleListValue = (items: string[], value: string): string[] =>
+	items.includes(value) ? items.filter((item) => item !== value) : [...items, value];
 
 const mapSearchCardToUi = (item: HomeCardResponse): CardData => ({
 	id: buildContentKey(item.type, item.id),
@@ -40,6 +107,10 @@ const mapDetailToCard = (detail: ContentDetailResponse): CardData => ({
 const Search: React.FC = () => {
 	const [query, setQuery] = useState('');
 	const [filterOpen, setFilterOpen] = useState(false);
+	const [appliedFilters, setAppliedFilters] = useState<SearchFilters>(() => createDefaultFilters());
+	const [draftFilters, setDraftFilters] = useState<SearchFilters>(() => createDefaultFilters());
+	const [ageRatingOptions, setAgeRatingOptions] = useState<string[]>(FALLBACK_AGE_RATINGS);
+	const [tagOptions, setTagOptions] = useState<string[]>(FALLBACK_TAGS);
 	const [selectedCard, setSelectedCard] = useState<CardData | null>(null);
 	const [results, setResults] = useState<CardData[]>([]);
 	const [totalResults, setTotalResults] = useState(0);
@@ -47,6 +118,53 @@ const Search: React.FC = () => {
 	const [error, setError] = useState<string | null>(null);
 	const [currentPage, setCurrentPage] = useState(1);
 	const pageSize = 10;
+	const normalizedQuery = query.trim();
+
+	const typeParam = useMemo(
+		() => (appliedFilters.types.length > 0 ? appliedFilters.types.join(',') : undefined),
+		[appliedFilters.types],
+	);
+
+	const ageRatingsParam = useMemo(
+		() => (appliedFilters.ageRatings.length > 0 ? appliedFilters.ageRatings.join(',') : undefined),
+		[appliedFilters.ageRatings],
+	);
+
+	const tagsParam = useMemo(
+		() => (appliedFilters.tags.length > 0 ? appliedFilters.tags.join(',') : undefined),
+		[appliedFilters.tags],
+	);
+
+	useEffect(() => {
+		let isMounted = true;
+
+		const loadFilterOptions = async () => {
+			try {
+				const [ageRatingsResponse, tagsResponse] = await Promise.all([
+					getContentAgeRatings(),
+					getContentTags(),
+				]);
+
+				if (!isMounted) return;
+
+				if (ageRatingsResponse.length > 0) {
+					setAgeRatingOptions(ageRatingsResponse.map((ageRating) => ageRating.name));
+				}
+
+				if (tagsResponse.length > 0) {
+					setTagOptions(tagsResponse.map((tag) => tag.name));
+				}
+			} catch (filterLoadError) {
+				console.error('Filter options loading failed:', filterLoadError);
+			}
+		};
+
+		void loadFilterOptions();
+
+		return () => {
+			isMounted = false;
+		};
+	}, []);
 
 	useEffect(() => {
 		if (filterOpen) {
@@ -66,7 +184,7 @@ const Search: React.FC = () => {
 
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [query]);
+	}, [normalizedQuery, typeParam, ageRatingsParam, tagsParam, appliedFilters.sort]);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -77,7 +195,11 @@ const Search: React.FC = () => {
 
 			try {
 				const response = await searchContent({
-					q: query.trim() || undefined,
+					q: normalizedQuery || undefined,
+					type: typeParam,
+					ageRatings: ageRatingsParam,
+					tags: tagsParam,
+					sort: appliedFilters.sort,
 					limit: pageSize,
 					offset: (currentPage - 1) * pageSize,
 				});
@@ -102,7 +224,7 @@ const Search: React.FC = () => {
 		return () => {
 			isMounted = false;
 		};
-	}, [query, currentPage]);
+	}, [normalizedQuery, currentPage, typeParam, ageRatingsParam, tagsParam, appliedFilters.sort]);
 
 	useEffect(() => {
 		if (currentPage > totalPages) {
@@ -110,11 +232,59 @@ const Search: React.FC = () => {
 		}
 	}, [currentPage, totalPages]);
 
-	const toggleFilter = () => setFilterOpen((v) => !v);
-	const closeFilter = () => setFilterOpen(false);
+	const toggleFilter = () => {
+		setFilterOpen((isOpen) => {
+			if (!isOpen) {
+				setDraftFilters(cloneFilters(appliedFilters));
+			}
+			return !isOpen;
+		});
+	};
+
+	const closeFilter = () => {
+		setDraftFilters(cloneFilters(appliedFilters));
+		setFilterOpen(false);
+	};
+
+	const applyFilters = () => {
+		setAppliedFilters(cloneFilters(draftFilters));
+		setFilterOpen(false);
+	};
+
 	const resetFilters = () => {
-		// Későbbre: ide jön majd a valódi szűrés logika
-		closeFilter();
+		const defaults = createDefaultFilters();
+		setAppliedFilters(defaults);
+		setDraftFilters(cloneFilters(defaults));
+		setCurrentPage(1);
+		setFilterOpen(false);
+	};
+
+	const toggleDraftAgeRating = (value: string) => {
+		setDraftFilters((prev) => ({
+			...prev,
+			ageRatings: toggleListValue(prev.ageRatings, value),
+		}));
+	};
+
+	const toggleDraftType = (value: string) => {
+		setDraftFilters((prev) => ({
+			...prev,
+			types: toggleListValue(prev.types, value),
+		}));
+	};
+
+	const toggleDraftTag = (value: string) => {
+		setDraftFilters((prev) => ({
+			...prev,
+			tags: toggleListValue(prev.tags, value),
+		}));
+	};
+
+	const setDraftSort = (value: SortValue) => {
+		setDraftFilters((prev) => ({
+			...prev,
+			sort: value,
+		}));
 	};
 
 	const handleCardClick = async (card: CardData) => {
@@ -200,9 +370,15 @@ const Search: React.FC = () => {
 										<div className="filter-grid">
 											<div className="filter-group">
 												<h6>Korhatárok</h6>
-												{['Minden', 'Gyerek', '12+', '16+', '18+'].map((label, idx) => (
-													<div className="form-check" key={idx}>
-														<input className="form-check-input" type="checkbox" id={`age_${idx}`} />
+												{ageRatingOptions.map((label, idx) => (
+													<div className="form-check" key={`${label}_${idx}`}>
+														<input
+															className="form-check-input"
+															type="checkbox"
+															id={`age_${idx}`}
+															checked={draftFilters.ageRatings.includes(label)}
+															onChange={() => toggleDraftAgeRating(label)}
+														/>
 														<label className="form-check-label" htmlFor={`age_${idx}`}>{label}</label>
 													</div>
 												))}
@@ -210,49 +386,58 @@ const Search: React.FC = () => {
 
 											<div className="filter-group">
 												<h6>Típusok</h6>
-												{['Könyv', 'Film', 'Sorozat'].map((label, idx) => (
-													<div className="form-check" key={idx}>
-														<input className="form-check-input" type="checkbox" id={`type_${idx}`} />
-														<label className="form-check-label" htmlFor={`type_${idx}`}>{label}</label>
+												{TYPE_OPTIONS.map((option, idx) => (
+													<div className="form-check" key={option.value}>
+														<input
+															className="form-check-input"
+															type="checkbox"
+															id={`type_${idx}`}
+															checked={draftFilters.types.includes(option.value)}
+															onChange={() => toggleDraftType(option.value)}
+														/>
+														<label className="form-check-label" htmlFor={`type_${idx}`}>{option.label}</label>
 													</div>
 												))}
 											</div>
 
 											<div className="filter-group filter-genres">
-												<h6>Műfajok</h6>
+												<h6>Címkék</h6>
 												<div className="genres-columns">
-													{['Akció','Kaland','Krimi','Dráma','Vígjáték','Romantikus','Sci-fi','Fantasy','Horror','Thriller','Családi','Történelmi','Életrajzi','Dokumentum','Mese'].map((label, idx) => (
-														<div className="form-check" key={idx}>
-															<input className="form-check-input" type="checkbox" id={`genre_${idx}`} />
-															<label className="form-check-label" htmlFor={`genre_${idx}`}>{label}</label>
+													{tagOptions.map((label, idx) => (
+														<div className="form-check" key={`${label}_${idx}`}>
+															<input
+																className="form-check-input"
+																type="checkbox"
+																id={`tag_${idx}`}
+																checked={draftFilters.tags.includes(label)}
+																onChange={() => toggleDraftTag(label)}
+															/>
+															<label className="form-check-label" htmlFor={`tag_${idx}`}>{label}</label>
 														</div>
 													))}
 												</div>
 											</div>
 
 											<div className="filter-group">
-												<h6>Egyéb</h6>
-												{['Magyar','Külföldi','Filmadaptáció','Képregény alapú','Animációs','Feliratos'].map((label, idx) => (
-													<div className="form-check" key={idx}>
-														<input className="form-check-input" type="checkbox" id={`extra_${idx}`} />
-														<label className="form-check-label" htmlFor={`extra_${idx}`}>{label}</label>
-													</div>
-												))}
-											</div>
-
-											<div className="filter-group">
 												<h6>Rendezés</h6>
-												{['Relevancia','Értékelés','Felkapott','Megjelenés'].map((label, idx) => (
-													<div className="form-check" key={idx}>
-														<input className="form-check-input" type="checkbox" id={`sort_${idx}`} />
-														<label className="form-check-label" htmlFor={`sort_${idx}`}>{label}</label>
+												{SORT_OPTIONS.map((option, idx) => (
+													<div className="form-check" key={option.value}>
+														<input
+															className="form-check-input"
+															type="radio"
+															name="search-sort"
+															id={`sort_${idx}`}
+															checked={draftFilters.sort === option.value}
+															onChange={() => setDraftSort(option.value)}
+														/>
+														<label className="form-check-label" htmlFor={`sort_${idx}`}>{option.label}</label>
 													</div>
 												))}
 											</div>
 										</div>
 
 										<div className="filter-panel-footer px-3 py-2">
-											<button id="filterApply" className="btn btn-primary btn-sm" onClick={closeFilter}>Alkalmaz</button>
+											<button id="filterApply" className="btn btn-primary btn-sm" onClick={applyFilters}>Alkalmaz</button>
 											<button id="filterReset" className="btn btn-secondary btn-sm reset" onClick={resetFilters}>Alaphelyzet</button>
 										</div>
 									</div>

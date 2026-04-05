@@ -398,6 +398,23 @@ export const getContentDetail = async (
 	id: number,
 ): Promise<ContentDetailResponse> => request<ContentDetailResponse>(`/api/content/${type}/${id}`);
 
+export interface ContentTagResponse {
+	id: number;
+	name: string;
+}
+
+export interface ContentAgeRatingResponse {
+	id: number;
+	name: string;
+	minAge: number;
+}
+
+export const getContentTags = async (): Promise<ContentTagResponse[]> =>
+	request<ContentTagResponse[]>('/api/content/tags');
+
+export const getContentAgeRatings = async (): Promise<ContentAgeRatingResponse[]> =>
+	request<ContentAgeRatingResponse[]>('/api/content/age-ratings');
+
 export interface SearchContentParams {
 	q?: string;
 	type?: string;
