@@ -106,6 +106,11 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.Released).HasColumnType("year(4)");
             entity.Property(e => e.RewardPoints).HasColumnType("int(11)");
             entity.Property(e => e.RewardXp).HasColumnType("int(11)").HasColumnName("RewardXP");
+            entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("'current_timestamp()'")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.Property(e => e.Title).HasMaxLength(128);
             entity.Property(e => e.Type).HasColumnType("enum('BOOK','AUDIOBOOK','EBOOK')");
             entity.HasOne(d => d.AgeRating).WithMany(p => p.Books)
@@ -205,6 +210,11 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.Title).HasMaxLength(128);
             entity.Property(e => e.TrailerUrl).HasMaxLength(2048).HasDefaultValueSql("'NULL'").HasColumnName("TrailerURL");
             entity.Property(e => e.RewardXp).HasColumnType("int(11)").HasColumnName("RewardXP");
+            entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("'current_timestamp()'")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.HasOne(d => d.AgeRating).WithMany(p => p.Movies)
                 .HasForeignKey(d => d.AgeRatingId)
                 .HasConstraintName("movie_age_rating_fk");
@@ -248,6 +258,11 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.Title).HasMaxLength(128);
             entity.Property(e => e.TrailerUrl).HasMaxLength(2048).HasDefaultValueSql("'NULL'").HasColumnName("TrailerURL");
             entity.Property(e => e.RewardXp).HasColumnType("int(11)").HasColumnName("RewardXP");
+            entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("'current_timestamp()'")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.HasOne(d => d.AgeRating).WithMany(p => p.Series)
                 .HasForeignKey(d => d.AgeRatingId)
                 .HasConstraintName("series_age_rating_fk");

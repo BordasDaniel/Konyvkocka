@@ -420,6 +420,621 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
+        // GET /api/admin/content/options
+        // Tartalom szerkesztéshez opciók (tagek)
+        // ================================================================
+        [HttpGet("content/options")]
+        public async Task<IActionResult> GetContentOptions()
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                var tags = await _context.Tags
+                    .OrderBy(t => t.Name)
+                    .Select(t => new AdminContentTagOptionDTO
+                    {
+                        Id = t.Id,
+                        Name = t.Name
+                    })
+                    .ToListAsync();
+
+                var ageRatings = await _context.AgeRatings
+                    .OrderBy(a => a.MinAge)
+                    .ThenBy(a => a.Name)
+                    .Select(a => new AdminAgeRatingOptionDTO
+                    {
+                        Id = a.Id,
+                        Name = a.Name,
+                        MinAge = a.MinAge
+                    })
+                    .ToListAsync();
+
+                return Ok(new AdminContentOptionsDTO
+                {
+                    Tags = tags,
+                    AgeRatings = ageRatings
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // GET /api/admin/content
+        // Tartalmak listázása – admin/moderátor jogosultság szükséges
+        //
+        // Query paraméterek:
+        //   page     – oldalszám (alapértelmezett: 1)
+        //   pageSize – oldal mérete (alapértelmezett: 20, max: 100)
+        //   type     – all|BOOK|MOVIE|SERIES
+        //   q        – keresés cím alapján
+        // ================================================================
+        [HttpGet("content")]
+        public async Task<IActionResult> GetContent(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? type = null,
+            [FromQuery] string? q = null)
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                if (page < 1) page = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 20;
+
+                var normalizedType = string.IsNullOrWhiteSpace(type) ? "ALL" : type.Trim().ToUpperInvariant();
+                var allowedTypes = new[] { "ALL", "BOOK", "MOVIE", "SERIES" };
+                if (!allowedTypes.Contains(normalizedType))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidType",
+                        Message = "Érvénytelen type. Lehetséges: all, BOOK, MOVIE, SERIES"
+                    });
+                }
+
+                var summary = new AdminContentSummaryDTO
+                {
+                    Books = await _context.Books.CountAsync(),
+                    Movies = await _context.Movies.CountAsync(),
+                    Series = await _context.Series.CountAsync()
+                };
+                summary.Total = summary.Books + summary.Movies + summary.Series;
+
+                var contentItems = new List<AdminContentItemDTO>();
+
+                if (normalizedType is "ALL" or "BOOK")
+                {
+                    var books = await _context.Books
+                        .Include(b => b.Tags)
+                        .Select(b => new AdminContentItemDTO
+                        {
+                            Id = b.Id,
+                            ContentType = "BOOK",
+                            Title = b.Title,
+                            Released = b.Released,
+                            Rating = b.Rating,
+                            Description = b.Description,
+                            AgeRatingId = b.AgeRatingId,
+                            TrailerUrl = null,
+                            RewardXP = b.RewardXp,
+                            RewardPoints = b.RewardPoints,
+                            HasSubtitles = false,
+                            IsOriginalLanguage = !string.IsNullOrWhiteSpace(b.OriginalLanguage),
+                            IsOfflineAvailable = b.IsOfflineAvailable,
+                            UpdatedAt = b.UpdatedAt,
+                            CoverOrPosterApiName = b.CoverApiName,
+                            PageNum = b.PageNum,
+                            BookType = b.Type,
+                            PdfUrl = b.PdfUrl,
+                            AudioUrl = b.AudioUrl,
+                            EpubUrl = b.EpubUrl,
+                            AudioLength = b.AudioLength,
+                            NarratorName = b.NarratorName,
+                            OriginalLanguage = b.OriginalLanguage,
+                            StreamUrl = null,
+                            Length = null,
+                            TagIds = b.Tags.Select(t => t.Id).ToList()
+                        })
+                        .ToListAsync();
+
+                    contentItems.AddRange(books);
+                }
+
+                if (normalizedType is "ALL" or "MOVIE")
+                {
+                    var movies = await _context.Movies
+                        .Include(m => m.Tags)
+                        .Select(m => new AdminContentItemDTO
+                        {
+                            Id = m.Id,
+                            ContentType = "MOVIE",
+                            Title = m.Title,
+                            Released = m.Released,
+                            Rating = m.Rating,
+                            Description = m.Description,
+                            AgeRatingId = m.AgeRatingId,
+                            TrailerUrl = m.TrailerUrl,
+                            RewardXP = m.RewardXp,
+                            RewardPoints = m.RewardPoints,
+                            HasSubtitles = m.HasSubtitles,
+                            IsOriginalLanguage = m.IsOriginalLanguage,
+                            IsOfflineAvailable = m.IsOfflineAvailable,
+                            UpdatedAt = m.UpdatedAt,
+                            CoverOrPosterApiName = m.PosterApiName,
+                            PageNum = null,
+                            BookType = null,
+                            PdfUrl = null,
+                            AudioUrl = null,
+                            EpubUrl = null,
+                            AudioLength = null,
+                            NarratorName = null,
+                            OriginalLanguage = null,
+                            StreamUrl = m.StreamUrl,
+                            Length = m.Length,
+                            TagIds = m.Tags.Select(t => t.Id).ToList()
+                        })
+                        .ToListAsync();
+
+                    contentItems.AddRange(movies);
+                }
+
+                if (normalizedType is "ALL" or "SERIES")
+                {
+                    var series = await _context.Series
+                        .Include(s => s.Tags)
+                        .Select(s => new AdminContentItemDTO
+                        {
+                            Id = s.Id,
+                            ContentType = "SERIES",
+                            Title = s.Title,
+                            Released = s.Released,
+                            Rating = s.Rating,
+                            Description = s.Description,
+                            AgeRatingId = s.AgeRatingId,
+                            TrailerUrl = s.TrailerUrl,
+                            RewardXP = s.RewardXp,
+                            RewardPoints = s.RewardPoints,
+                            HasSubtitles = s.HasSubtitles,
+                            IsOriginalLanguage = s.IsOriginalLanguage,
+                            IsOfflineAvailable = s.IsOfflineAvailable,
+                            UpdatedAt = s.UpdatedAt,
+                            CoverOrPosterApiName = s.PosterApiName,
+                            PageNum = null,
+                            BookType = null,
+                            PdfUrl = null,
+                            AudioUrl = null,
+                            EpubUrl = null,
+                            AudioLength = null,
+                            NarratorName = null,
+                            OriginalLanguage = null,
+                            StreamUrl = null,
+                            Length = null,
+                            TagIds = s.Tags.Select(t => t.Id).ToList()
+                        })
+                        .ToListAsync();
+
+                    contentItems.AddRange(series);
+                }
+
+                if (!string.IsNullOrWhiteSpace(q))
+                {
+                    var search = q.Trim().ToLowerInvariant();
+                    contentItems = contentItems
+                        .Where(c => c.Title.ToLowerInvariant().Contains(search))
+                        .ToList();
+                }
+
+                contentItems = contentItems
+                    .OrderByDescending(c => c.Id)
+                    .ToList();
+
+                var total = contentItems.Count;
+                var pagedItems = contentItems
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                return Ok(new { total, page, pageSize, content = pagedItems, summary });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // PUT /api/admin/content/{type}/{id}
+        // Tartalom frissítése – admin/moderátor jogosultság szükséges
+        // ================================================================
+        [HttpPut("content/{type}/{id}")]
+        public async Task<IActionResult> UpdateContent(string type, int id, [FromBody] UpdateAdminContentDTO dto)
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel is not ("ADMIN" or "MODERATOR"))
+                    return Forbid();
+
+                if (dto == null)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidPayload",
+                        Message = "A kérés törzse kötelező"
+                    });
+                }
+
+                var normalizedType = type.Trim().ToLowerInvariant();
+                if (normalizedType is not ("book" or "movie" or "series"))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidType",
+                        Message = "Érvénytelen type. Lehetséges: book, movie, series"
+                    });
+                }
+
+                var normalizedTitle = dto.Title?.Trim() ?? string.Empty;
+                var normalizedDescription = dto.Description?.Trim() ?? string.Empty;
+                var normalizedCover = dto.CoverOrPosterApiName?.Trim() ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(normalizedTitle) || normalizedTitle.Length > 128)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidTitle",
+                        Message = "A cím kötelező, maximum 128 karakter hosszú lehet"
+                    });
+                }
+
+                if (string.IsNullOrWhiteSpace(normalizedDescription))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidDescription",
+                        Message = "A leírás kötelező"
+                    });
+                }
+
+                if (string.IsNullOrWhiteSpace(normalizedCover))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidCover",
+                        Message = "A borító/poster mező kötelező"
+                    });
+                }
+
+                if (dto.Released < 1800 || dto.Released > 2099)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidReleased",
+                        Message = "A kiadás éve 1800 és 2099 között lehet"
+                    });
+                }
+
+                if (dto.Rating < 0 || dto.Rating > 10)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidRating",
+                        Message = "Az értékelés 0 és 10 között lehet"
+                    });
+                }
+
+                if (dto.RewardXP < 0 || dto.RewardPoints < 0)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidReward",
+                        Message = "A jutalom mezők nem lehetnek negatívak"
+                    });
+                }
+
+                if (dto.AgeRatingId.HasValue)
+                {
+                    var ageRatingExists = await _context.AgeRatings.AnyAsync(a => a.Id == dto.AgeRatingId.Value);
+                    if (!ageRatingExists)
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidAgeRating",
+                            Message = "A megadott age rating nem létezik"
+                        });
+                    }
+                }
+
+                var normalizedTagIds = (dto.TagIds ?? new List<int>())
+                    .Where(idValue => idValue > 0)
+                    .Distinct()
+                    .ToList();
+
+                var tags = await _context.Tags
+                    .Where(t => normalizedTagIds.Contains(t.Id))
+                    .ToListAsync();
+
+                if (normalizedTagIds.Count != tags.Count)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidTags",
+                        Message = "Egy vagy több megadott tag nem létezik"
+                    });
+                }
+
+                if (normalizedType == "book")
+                {
+                    var book = await _context.Books
+                        .Include(b => b.Tags)
+                        .FirstOrDefaultAsync(b => b.Id == id);
+
+                    if (book == null)
+                    {
+                        return NotFound(new ErrorResponseDTO
+                        {
+                            Error = "NotFound",
+                            Message = "A könyv nem található"
+                        });
+                    }
+
+                    var normalizedBookType = dto.BookType?.Trim().ToUpperInvariant() ?? string.Empty;
+                    var allowedBookTypes = new[] { "BOOK", "AUDIOBOOK", "EBOOK" };
+                    if (!allowedBookTypes.Contains(normalizedBookType))
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidBookType",
+                            Message = "A book type értéke BOOK, AUDIOBOOK vagy EBOOK lehet"
+                        });
+                    }
+
+                    if (!dto.PageNum.HasValue || dto.PageNum.Value < 1)
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidPageNum",
+                            Message = "Az oldalszám minimum 1 lehet"
+                        });
+                    }
+
+                    if (dto.AudioLength.HasValue && dto.AudioLength.Value < 0)
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidAudioLength",
+                            Message = "Az audio hossz nem lehet negatív"
+                        });
+                    }
+
+                    book.Title = normalizedTitle;
+                    book.Released = dto.Released;
+                    book.Rating = dto.Rating;
+                    book.Description = normalizedDescription;
+                    book.AgeRatingId = dto.AgeRatingId;
+                    book.RewardXp = dto.RewardXP;
+                    book.RewardPoints = dto.RewardPoints;
+                    book.IsOfflineAvailable = dto.IsOfflineAvailable;
+                    book.CoverApiName = normalizedCover;
+                    book.PageNum = dto.PageNum.Value;
+                    book.Type = normalizedBookType;
+                    book.PdfUrl = dto.PdfUrl;
+                    book.AudioUrl = dto.AudioUrl;
+                    book.EpubUrl = dto.EpubUrl;
+                    book.AudioLength = dto.AudioLength;
+                    book.NarratorName = dto.NarratorName;
+                    book.OriginalLanguage = dto.OriginalLanguage;
+
+                    book.Tags.Clear();
+                    foreach (var tag in tags)
+                    {
+                        book.Tags.Add(tag);
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await _context.Entry(book).ReloadAsync();
+
+                    return Ok(new AdminContentItemDTO
+                    {
+                        Id = book.Id,
+                        ContentType = "BOOK",
+                        Title = book.Title,
+                        Released = book.Released,
+                        Rating = book.Rating,
+                        Description = book.Description,
+                        AgeRatingId = book.AgeRatingId,
+                        TrailerUrl = null,
+                        RewardXP = book.RewardXp,
+                        RewardPoints = book.RewardPoints,
+                        HasSubtitles = false,
+                        IsOriginalLanguage = !string.IsNullOrWhiteSpace(book.OriginalLanguage),
+                        IsOfflineAvailable = book.IsOfflineAvailable,
+                        UpdatedAt = book.UpdatedAt,
+                        CoverOrPosterApiName = book.CoverApiName,
+                        PageNum = book.PageNum,
+                        BookType = book.Type,
+                        PdfUrl = book.PdfUrl,
+                        AudioUrl = book.AudioUrl,
+                        EpubUrl = book.EpubUrl,
+                        AudioLength = book.AudioLength,
+                        NarratorName = book.NarratorName,
+                        OriginalLanguage = book.OriginalLanguage,
+                        StreamUrl = null,
+                        Length = null,
+                        TagIds = book.Tags.Select(t => t.Id).ToList()
+                    });
+                }
+
+                if (normalizedType == "movie")
+                {
+                    var movie = await _context.Movies
+                        .Include(m => m.Tags)
+                        .FirstOrDefaultAsync(m => m.Id == id);
+
+                    if (movie == null)
+                    {
+                        return NotFound(new ErrorResponseDTO
+                        {
+                            Error = "NotFound",
+                            Message = "A film nem található"
+                        });
+                    }
+
+                    if (!dto.Length.HasValue || dto.Length.Value < 1)
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidLength",
+                            Message = "A film hossza minimum 1 perc lehet"
+                        });
+                    }
+
+                    var normalizedStream = dto.StreamUrl?.Trim() ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(normalizedStream))
+                    {
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidStreamUrl",
+                            Message = "A stream URL kötelező"
+                        });
+                    }
+
+                    movie.Title = normalizedTitle;
+                    movie.Released = dto.Released;
+                    movie.Rating = dto.Rating;
+                    movie.Description = normalizedDescription;
+                    movie.AgeRatingId = dto.AgeRatingId;
+                    movie.TrailerUrl = dto.TrailerUrl;
+                    movie.RewardXp = dto.RewardXP;
+                    movie.RewardPoints = dto.RewardPoints;
+                    movie.HasSubtitles = dto.HasSubtitles;
+                    movie.IsOriginalLanguage = dto.IsOriginalLanguage;
+                    movie.IsOfflineAvailable = dto.IsOfflineAvailable;
+                    movie.PosterApiName = normalizedCover;
+                    movie.StreamUrl = normalizedStream;
+                    movie.Length = dto.Length.Value;
+
+                    movie.Tags.Clear();
+                    foreach (var tag in tags)
+                    {
+                        movie.Tags.Add(tag);
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await _context.Entry(movie).ReloadAsync();
+
+                    return Ok(new AdminContentItemDTO
+                    {
+                        Id = movie.Id,
+                        ContentType = "MOVIE",
+                        Title = movie.Title,
+                        Released = movie.Released,
+                        Rating = movie.Rating,
+                        Description = movie.Description,
+                        AgeRatingId = movie.AgeRatingId,
+                        TrailerUrl = movie.TrailerUrl,
+                        RewardXP = movie.RewardXp,
+                        RewardPoints = movie.RewardPoints,
+                        HasSubtitles = movie.HasSubtitles,
+                        IsOriginalLanguage = movie.IsOriginalLanguage,
+                        IsOfflineAvailable = movie.IsOfflineAvailable,
+                        UpdatedAt = movie.UpdatedAt,
+                        CoverOrPosterApiName = movie.PosterApiName,
+                        PageNum = null,
+                        BookType = null,
+                        PdfUrl = null,
+                        AudioUrl = null,
+                        EpubUrl = null,
+                        AudioLength = null,
+                        NarratorName = null,
+                        OriginalLanguage = null,
+                        StreamUrl = movie.StreamUrl,
+                        Length = movie.Length,
+                        TagIds = movie.Tags.Select(t => t.Id).ToList()
+                    });
+                }
+
+                var series = await _context.Series
+                    .Include(s => s.Tags)
+                    .FirstOrDefaultAsync(s => s.Id == id);
+
+                if (series == null)
+                {
+                    return NotFound(new ErrorResponseDTO
+                    {
+                        Error = "NotFound",
+                        Message = "A sorozat nem található"
+                    });
+                }
+
+                series.Title = normalizedTitle;
+                series.Released = dto.Released;
+                series.Rating = dto.Rating;
+                series.Description = normalizedDescription;
+                series.AgeRatingId = dto.AgeRatingId;
+                series.TrailerUrl = dto.TrailerUrl;
+                series.RewardXp = dto.RewardXP;
+                series.RewardPoints = dto.RewardPoints;
+                series.HasSubtitles = dto.HasSubtitles;
+                series.IsOriginalLanguage = dto.IsOriginalLanguage;
+                series.IsOfflineAvailable = dto.IsOfflineAvailable;
+                series.PosterApiName = normalizedCover;
+
+                series.Tags.Clear();
+                foreach (var tag in tags)
+                {
+                    series.Tags.Add(tag);
+                }
+
+                await _context.SaveChangesAsync();
+                await _context.Entry(series).ReloadAsync();
+
+                return Ok(new AdminContentItemDTO
+                {
+                    Id = series.Id,
+                    ContentType = "SERIES",
+                    Title = series.Title,
+                    Released = series.Released,
+                    Rating = series.Rating,
+                    Description = series.Description,
+                    AgeRatingId = series.AgeRatingId,
+                    TrailerUrl = series.TrailerUrl,
+                    RewardXP = series.RewardXp,
+                    RewardPoints = series.RewardPoints,
+                    HasSubtitles = series.HasSubtitles,
+                    IsOriginalLanguage = series.IsOriginalLanguage,
+                    IsOfflineAvailable = series.IsOfflineAvailable,
+                    UpdatedAt = series.UpdatedAt,
+                    CoverOrPosterApiName = series.PosterApiName,
+                    PageNum = null,
+                    BookType = null,
+                    PdfUrl = null,
+                    AudioUrl = null,
+                    EpubUrl = null,
+                    AudioLength = null,
+                    NarratorName = null,
+                    OriginalLanguage = null,
+                    StreamUrl = null,
+                    Length = null,
+                    TagIds = series.Tags.Select(t => t.Id).ToList()
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
         // GET /api/admin/users
         // Összes felhasználó listázása – admin/moderátor jogosultság szükséges
         //

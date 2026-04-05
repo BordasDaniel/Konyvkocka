@@ -959,6 +959,92 @@ export interface AdminUsersResponse {
 	};
 }
 
+export interface AdminManagedContentItemResponse {
+	id: number;
+	contentType: 'BOOK' | 'MOVIE' | 'SERIES';
+	title: string;
+	released: number;
+	rating: number;
+	description: string;
+	ageRatingId: number | null;
+	trailerUrl: string | null;
+	rewardXP: number;
+	rewardPoints: number;
+	hasSubtitles: boolean;
+	isOriginalLanguage: boolean;
+	isOfflineAvailable: boolean;
+	updatedAt: string | null;
+	coverOrPosterApiName: string;
+	pageNum: number | null;
+	bookType: 'BOOK' | 'AUDIOBOOK' | 'EBOOK' | null;
+	pdfUrl: string | null;
+	audioUrl: string | null;
+	epubUrl: string | null;
+	audioLength: number | null;
+	narratorName: string | null;
+	originalLanguage: string | null;
+	streamUrl: string | null;
+	length: number | null;
+	tagIds: number[];
+}
+
+export interface AdminContentSummaryResponse {
+	total: number;
+	books: number;
+	series: number;
+	movies: number;
+}
+
+export interface AdminManagedContentResponse {
+	total: number;
+	page: number;
+	pageSize: number;
+	content: AdminManagedContentItemResponse[];
+	summary: AdminContentSummaryResponse;
+}
+
+export interface AdminContentTagOptionResponse {
+	id: number;
+	name: string;
+}
+
+export interface AdminAgeRatingOptionResponse {
+	id: number;
+	name: string;
+	minAge: number;
+}
+
+export interface AdminContentOptionsResponse {
+	tags: AdminContentTagOptionResponse[];
+	ageRatings: AdminAgeRatingOptionResponse[];
+}
+
+export interface UpdateAdminContentPayload {
+	title: string;
+	released: number;
+	rating: number;
+	description: string;
+	ageRatingId: number | null;
+	trailerUrl: string | null;
+	rewardXP: number;
+	rewardPoints: number;
+	hasSubtitles: boolean;
+	isOriginalLanguage: boolean;
+	isOfflineAvailable: boolean;
+	coverOrPosterApiName: string;
+	pageNum: number | null;
+	bookType: 'BOOK' | 'AUDIOBOOK' | 'EBOOK' | null;
+	pdfUrl: string | null;
+	audioUrl: string | null;
+	epubUrl: string | null;
+	audioLength: number | null;
+	narratorName: string | null;
+	originalLanguage: string | null;
+	streamUrl: string | null;
+	length: number | null;
+	tagIds: number[];
+}
+
 export const getAdminUsers = async (params: {
 	page?: number;
 	pageSize?: number;
@@ -973,6 +1059,35 @@ export const getAdminUsers = async (params: {
 
 	return request<AdminUsersResponse>(`/api/admin/users?${searchParams.toString()}`, { auth: true });
 };
+
+export const getAdminContent = async (params: {
+	page?: number;
+	pageSize?: number;
+	type?: 'BOOK' | 'MOVIE' | 'SERIES';
+	q?: string;
+} = {}): Promise<AdminManagedContentResponse> => {
+	const searchParams = new URLSearchParams();
+	searchParams.set('page', String(params.page ?? 1));
+	searchParams.set('pageSize', String(params.pageSize ?? 20));
+	if (params.type) searchParams.set('type', params.type);
+	if (params.q && params.q.trim().length > 0) searchParams.set('q', params.q.trim());
+
+	return request<AdminManagedContentResponse>(`/api/admin/content?${searchParams.toString()}`, { auth: true });
+};
+
+export const getAdminContentOptions = async (): Promise<AdminContentOptionsResponse> =>
+	request<AdminContentOptionsResponse>('/api/admin/content/options', { auth: true });
+
+export const updateAdminContent = async (
+	type: 'BOOK' | 'MOVIE' | 'SERIES',
+	id: number,
+	payload: UpdateAdminContentPayload,
+): Promise<AdminManagedContentItemResponse> =>
+	request<AdminManagedContentItemResponse>(`/api/admin/content/${type.toLowerCase()}/${id}`, {
+		auth: true,
+		method: 'PUT',
+		body: payload,
+	});
 
 export interface UpdateAdminUserPayload {
 	permissionLevel: 'USER' | 'MODERATOR' | 'ADMIN';

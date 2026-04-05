@@ -38,6 +38,8 @@ public partial class Book
 
     public int RewardPoints { get; set; }
 
+    public DateTime? UpdatedAt { get; set; }
+
     public string? NarratorName { get; set; }
 
     public bool IsOfflineAvailable { get; set; }

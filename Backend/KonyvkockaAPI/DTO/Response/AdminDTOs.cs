@@ -59,6 +59,63 @@ namespace KonyvkockaAPI.DTO.Response
         public int MoviePoints { get; set; }
     }
 
+    public class AdminContentItemDTO
+    {
+        public int Id { get; set; }
+        public string ContentType { get; set; } = null!;
+        public string Title { get; set; } = null!;
+        public int Released { get; set; }
+        public decimal Rating { get; set; }
+        public string Description { get; set; } = null!;
+        public int? AgeRatingId { get; set; }
+        public string? TrailerUrl { get; set; }
+        public int RewardXP { get; set; }
+        public int RewardPoints { get; set; }
+        public bool HasSubtitles { get; set; }
+        public bool IsOriginalLanguage { get; set; }
+        public bool IsOfflineAvailable { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public string CoverOrPosterApiName { get; set; } = null!;
+        public int? PageNum { get; set; }
+        public string? BookType { get; set; }
+        public string? PdfUrl { get; set; }
+        public string? AudioUrl { get; set; }
+        public string? EpubUrl { get; set; }
+        public int? AudioLength { get; set; }
+        public string? NarratorName { get; set; }
+        public string? OriginalLanguage { get; set; }
+        public string? StreamUrl { get; set; }
+        public int? Length { get; set; }
+        public List<int> TagIds { get; set; } = new();
+    }
+
+    public class AdminContentSummaryDTO
+    {
+        public int Total { get; set; }
+        public int Books { get; set; }
+        public int Series { get; set; }
+        public int Movies { get; set; }
+    }
+
+    public class AdminContentTagOptionDTO
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = null!;
+    }
+
+    public class AdminAgeRatingOptionDTO
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = null!;
+        public int MinAge { get; set; }
+    }
+
+    public class AdminContentOptionsDTO
+    {
+        public List<AdminContentTagOptionDTO> Tags { get; set; } = new();
+        public List<AdminAgeRatingOptionDTO> AgeRatings { get; set; } = new();
+    }
+
     public class AdminNewsItemDTO
     {
         public int Id { get; set; }

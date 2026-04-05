@@ -1,22 +1,29 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
   ApiHttpError,
   getAdminChallengeOptions,
   getAdminChallenges,
+  getAdminContent,
+  getAdminContentOptions,
   getAdminOverview,
   getAdminNews,
   getAdminPurchases,
   getAdminUsers,
   sendAdminAnnouncement,
   updateAdminChallenge,
+  updateAdminContent,
   updateAdminNews,
   updateAdminUser,
+  applyContentImageFallback,
+  toContentImageSrc,
   toAvatarSrc,
+  type AdminAgeRatingOptionResponse,
   type AdminChallengeBadgeOptionResponse,
   type AdminChallengeItemResponse,
   type AdminChallengeTitleOptionResponse,
+  type AdminManagedContentItemResponse,
   type AdminOverviewResponse,
   type AdminNewsItemResponse,
   type AdminPurchaseItemResponse,
@@ -346,6 +353,14 @@ const MOCK_TAG_OPTIONS: AdminTagOption[] = [
   { id: 8, name: 'Dijazott' },
 ];
 
+const MOCK_AGE_RATING_OPTIONS: AdminAgeRatingOptionResponse[] = [
+  { id: 1, name: 'Korhatar nelkul', minAge: 0 },
+  { id: 2, name: '6+', minAge: 6 },
+  { id: 3, name: '12+', minAge: 12 },
+  { id: 4, name: '16+', minAge: 16 },
+  { id: 5, name: '18+', minAge: 18 },
+];
+
 const MOCK_CHALLENGES: AdminChallenge[] = [
   {
     id: 1,
@@ -458,7 +473,16 @@ const Admin: React.FC = () => {
   });
   const [usersLoading, setUsersLoading] = useState(false);
   const [userSaving, setUserSaving] = useState(false);
-  const [content, setContent] = useState<AdminContent[]>(MOCK_CONTENT);
+  const [content, setContent] = useState<AdminContent[]>([]);
+  const [contentTotalFromApi, setContentTotalFromApi] = useState(0);
+  const [contentSummary, setContentSummary] = useState({
+    total: 0,
+    books: 0,
+    series: 0,
+    movies: 0,
+  });
+  const [contentLoading, setContentLoading] = useState(false);
+  const [contentSaving, setContentSaving] = useState(false);
   const [news, setNews] = useState<AdminNewsItem[]>([]);
   const [newsTotalFromApi, setNewsTotalFromApi] = useState(0);
   const [newsSummary, setNewsSummary] = useState<AdminNewsSummary>({
@@ -482,7 +506,9 @@ const Admin: React.FC = () => {
   const [challengeSaving, setChallengeSaving] = useState(false);
   const [badges, setBadges] = useState<AdminBadgeOption[]>([]);
   const [titles, setTitles] = useState<AdminTitleOption[]>([]);
-  const [tags] = useState<AdminTagOption[]>(MOCK_TAG_OPTIONS);
+  const [ageRatings, setAgeRatings] = useState<AdminAgeRatingOptionResponse[]>([]);
+  const [tags, setTags] = useState<AdminTagOption[]>([]);
+  const [contentTagSearch, setContentTagSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [contentSearch, setContentSearch] = useState('');
   const [newsSearch, setNewsSearch] = useState('');
@@ -496,7 +522,7 @@ const Admin: React.FC = () => {
   const [activeUserDropdown, setActiveUserDropdown] = useState<'permissionLevel' | 'subscription' | null>(null);
   const [selectedContentId, setSelectedContentId] = useState<number | null>(null);
   const [contentDraft, setContentDraft] = useState<AdminContent | null>(null);
-  const [activeContentDropdown, setActiveContentDropdown] = useState<'bookType' | 'tags' | null>(null);
+  const [activeContentDropdown, setActiveContentDropdown] = useState<'bookType' | 'tags' | 'ageRating' | null>(null);
   const [selectedNewsId, setSelectedNewsId] = useState<number | null>(null);
   const [newsDraft, setNewsDraft] = useState<AdminNewsItem | null>(null);
   const [newsTagDropdownOpen, setNewsTagDropdownOpen] = useState(false);
@@ -533,30 +559,15 @@ const Admin: React.FC = () => {
   const selectedContent = contentDraft;
   const selectedNews = newsDraft;
   const selectedChallenge = challengeDraft;
+  const contentTagSearchNormalized = contentTagSearch.trim().toLocaleLowerCase('hu-HU');
+  const availableContentTags = selectedContent
+    ? tags.filter(tag => !selectedContent.tagIds.includes(tag.id))
+    : [];
+  const filteredContentTags = availableContentTags.filter(tag =>
+    tag.name.toLocaleLowerCase('hu-HU').includes(contentTagSearchNormalized),
+  );
 
   const getUserTotalPoints = (user: AdminUser) => user.bookPoints + user.seriesPoints + user.moviePoints;
-
-  const contentSummary = useMemo(() => ({
-    total: content.length,
-    books: content.filter(item => item.contentType === 'BOOK').length,
-    series: content.filter(item => item.contentType === 'SERIES').length,
-    movies: content.filter(item => item.contentType === 'MOVIE').length,
-  }), [content]);
-
-  // Szűrt tartalmak
-  const filteredContent = useMemo(() => {
-    let items = content;
-    if (contentTypeFilter !== 'all') {
-      items = items.filter(c => c.contentType === contentTypeFilter);
-    }
-    if (contentSearch.trim()) {
-      const q = contentSearch.toLowerCase();
-      items = items.filter(c =>
-        c.title.toLowerCase().includes(q)
-      );
-    }
-    return items;
-  }, [content, contentTypeFilter, contentSearch]);
 
   const getPaginationRange = (current: number, total: number): number[] => {
     const delta = 2;
@@ -568,11 +579,8 @@ const Admin: React.FC = () => {
   const totalUserPages = Math.max(1, Math.ceil(usersTotalFromApi / pageSize));
   const pagedUsers = users;
 
-  const totalContentPages = Math.max(1, Math.ceil(filteredContent.length / pageSize));
-  const pagedContent = useMemo(() => {
-    const start = (contentPage - 1) * pageSize;
-    return filteredContent.slice(start, start + pageSize);
-  }, [filteredContent, contentPage]);
+  const totalContentPages = Math.max(1, Math.ceil(contentTotalFromApi / pageSize));
+  const pagedContent = content;
 
   const totalNewsPages = Math.max(1, Math.ceil(newsTotalFromApi / pageSize));
   const pagedNews = news;
@@ -676,6 +684,35 @@ const Admin: React.FC = () => {
     };
   }, []);
 
+  const mapAdminContentItem = useCallback((item: AdminManagedContentItemResponse): AdminContent => ({
+    id: item.id,
+    contentType: item.contentType,
+    title: item.title,
+    released: item.released,
+    rating: item.rating,
+    description: item.description,
+    ageRatingId: item.ageRatingId,
+    trailerUrl: item.trailerUrl,
+    rewardXP: item.rewardXP,
+    rewardPoints: item.rewardPoints,
+    hasSubtitles: item.hasSubtitles,
+    isOriginalLanguage: item.isOriginalLanguage,
+    isOfflineAvailable: item.isOfflineAvailable,
+    updatedAt: item.updatedAt,
+    coverOrPosterApiName: item.coverOrPosterApiName,
+    pageNum: item.pageNum,
+    bookType: item.bookType,
+    pdfUrl: item.pdfUrl,
+    audioUrl: item.audioUrl,
+    epubUrl: item.epubUrl,
+    audioLength: item.audioLength,
+    narratorName: item.narratorName,
+    originalLanguage: item.originalLanguage,
+    streamUrl: item.streamUrl,
+    length: item.length,
+    tagIds: item.tagIds,
+  }), []);
+
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
     try {
@@ -703,6 +740,45 @@ const Admin: React.FC = () => {
       setUsersLoading(false);
     }
   }, [mapAdminUserItem, userSearch, userTypeFilter, usersPage]);
+
+  const loadContent = useCallback(async () => {
+    setContentLoading(true);
+    try {
+      const typeParam = contentTypeFilter === 'all' ? undefined : contentTypeFilter;
+      const data = await getAdminContent({
+        page: contentPage,
+        pageSize,
+        type: typeParam,
+        q: contentSearch,
+      });
+
+      setContent(data.content.map(mapAdminContentItem));
+      setContentTotalFromApi(data.total);
+      setContentSummary(data.summary);
+    } catch {
+      setContent(MOCK_CONTENT);
+      setContentTotalFromApi(MOCK_CONTENT.length);
+      setContentSummary({
+        total: MOCK_CONTENT.length,
+        books: MOCK_CONTENT.filter(item => item.contentType === 'BOOK').length,
+        series: MOCK_CONTENT.filter(item => item.contentType === 'SERIES').length,
+        movies: MOCK_CONTENT.filter(item => item.contentType === 'MOVIE').length,
+      });
+    } finally {
+      setContentLoading(false);
+    }
+  }, [contentPage, contentSearch, contentTypeFilter, mapAdminContentItem]);
+
+  const loadContentOptions = useCallback(async () => {
+    try {
+      const data = await getAdminContentOptions();
+      setTags(data.tags);
+      setAgeRatings(data.ageRatings);
+    } catch {
+      setTags(MOCK_TAG_OPTIONS);
+      setAgeRatings(MOCK_AGE_RATING_OPTIONS);
+    }
+  }, []);
 
   const mapAdminNewsItem = useCallback((item: AdminNewsItemResponse): AdminNewsItem => ({
     id: item.id,
@@ -826,6 +902,18 @@ const Admin: React.FC = () => {
   }, [activeTab, loadUsers]);
 
   useEffect(() => {
+    if (activeTab === 'content') {
+      void loadContent();
+    }
+  }, [activeTab, loadContent]);
+
+  useEffect(() => {
+    if (activeTab === 'content') {
+      void loadContentOptions();
+    }
+  }, [activeTab, loadContentOptions]);
+
+  useEffect(() => {
     if (activeTab === 'challenges') {
       void loadChallenges();
     }
@@ -905,6 +993,7 @@ const Admin: React.FC = () => {
     setSelectedContentId(item.id);
     setContentDraft({ ...item });
     setActiveContentDropdown(null);
+    setContentTagSearch('');
   };
 
   const openNewsModal = (item: AdminNewsItem) => {
@@ -929,6 +1018,7 @@ const Admin: React.FC = () => {
     setSelectedContentId(null);
     setContentDraft(null);
     setActiveContentDropdown(null);
+    setContentTagSearch('');
   };
 
   const closeNewsModal = () => {
@@ -1009,14 +1099,67 @@ const Admin: React.FC = () => {
     }
   };
 
-  const saveContentDraft = () => {
+  const saveContentDraft = async () => {
     if (!contentDraft) return;
 
-    setContent(prev => prev.map(item =>
-      item.id === contentDraft.id ? contentDraft : item
-    ));
+    const title = contentDraft.title.trim();
+    const description = contentDraft.description.trim();
 
-    closeContentModal();
+    if (!title || !description) {
+      setSaveModal({
+        title: 'Hiányzó mező',
+        message: 'A cím és a leírás kitöltése kötelező.',
+      });
+      return;
+    }
+
+    setContentSaving(true);
+
+    try {
+      await updateAdminContent(contentDraft.contentType, contentDraft.id, {
+        title,
+        released: contentDraft.released,
+        rating: contentDraft.rating,
+        description,
+        ageRatingId: contentDraft.ageRatingId,
+        trailerUrl: contentDraft.trailerUrl,
+        rewardXP: contentDraft.rewardXP,
+        rewardPoints: contentDraft.rewardPoints,
+        hasSubtitles: contentDraft.hasSubtitles,
+        isOriginalLanguage: contentDraft.isOriginalLanguage,
+        isOfflineAvailable: contentDraft.isOfflineAvailable,
+        coverOrPosterApiName: contentDraft.coverOrPosterApiName,
+        pageNum: contentDraft.pageNum,
+        bookType: contentDraft.bookType,
+        pdfUrl: contentDraft.pdfUrl,
+        audioUrl: contentDraft.audioUrl,
+        epubUrl: contentDraft.epubUrl,
+        audioLength: contentDraft.audioLength,
+        narratorName: contentDraft.narratorName,
+        originalLanguage: contentDraft.originalLanguage,
+        streamUrl: contentDraft.streamUrl,
+        length: contentDraft.length,
+        tagIds: contentDraft.tagIds,
+      });
+
+      await loadContent();
+      closeContentModal();
+      setSaveModal({
+        title: 'Tartalom frissítve',
+        message: 'A tartalom adatai sikeresen elmentésre kerültek.',
+      });
+    } catch (error) {
+      const messageText = error instanceof ApiHttpError
+        ? error.message
+        : 'A tartalom mentése sikertelen. Kérlek próbáld újra.';
+
+      setSaveModal({
+        title: 'Mentési hiba',
+        message: messageText,
+      });
+    } finally {
+      setContentSaving(false);
+    }
   };
 
   const updateNewsDraft = <K extends keyof AdminNewsItem>(field: K, value: AdminNewsItem[K]) => {
@@ -1178,6 +1321,7 @@ const Admin: React.FC = () => {
       if (!target.closest('.admin-custom-select')) {
         setActiveUserDropdown(null);
         setActiveContentDropdown(null);
+        setContentTagSearch('');
         setNewsTagDropdownOpen(false);
         setActiveChallengeDropdown(null);
       }
@@ -1235,13 +1379,29 @@ const Admin: React.FC = () => {
   const getBadgeById = (id: number | null) => badges.find(b => b.id === id) ?? null;
   const getTitleById = (id: number | null) => titles.find(t => t.id === id) ?? null;
   const getTagById = (id: number) => tags.find(tag => tag.id === id) ?? null;
+  const getAgeRatingById = (id: number | null) => ageRatings.find(item => item.id === id) ?? null;
+  const formatAgeRatingLabel = (option: AdminAgeRatingOptionResponse) => {
+    const normalizedName = option.name.trim();
+    if (!normalizedName) {
+      return option.minAge > 0 ? `${option.minAge}+` : 'Korhatar nelkul';
+    }
 
-  const deleteContent = (id: number) => {
+    if (option.minAge <= 0) {
+      return normalizedName;
+    }
+
+    const minAgeText = String(option.minAge);
+    const loweredName = normalizedName.toLocaleLowerCase('hu-HU');
+    const alreadyContainsAge = loweredName.includes(`${minAgeText}+`) || loweredName.includes(minAgeText);
+    return alreadyContainsAge ? normalizedName : `${normalizedName} (${option.minAge}+)`;
+  };
+
+  const deleteContent = () => {
     if (window.confirm('Biztosan törlöd ezt a tartalmat?')) {
-      setContent(prev => prev.filter(c => c.id !== id));
-      if (selectedContentId === id) {
-        closeContentModal();
-      }
+      setSaveModal({
+        title: 'Művelet nem elérhető',
+        message: 'A tartalom törlés backend endpoint még nincs implementálva.',
+      });
     }
   };
 
@@ -1979,7 +2139,7 @@ const Admin: React.FC = () => {
                   <h3 className="admin-card-title">
                     <i className="bi bi-collection-fill me-2"></i>
                     Tartalmak kezelése
-                    <span className="admin-count">{content.length}</span>
+                    <span className="admin-count">{contentTotalFromApi}</span>
                   </h3>
                   <div className="admin-header-controls">
                     <div className="admin-filter-pills">
@@ -2020,11 +2180,21 @@ const Admin: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {pagedContent.map(item => (
+                      {contentLoading ? (
+                        <tr>
+                          <td colSpan={8} className="text-center text-muted py-4">Tartalmak betöltése...</td>
+                        </tr>
+                      ) : (
+                        pagedContent.map(item => (
                         <tr key={item.id} className="admin-content-row" onClick={() => openContentModal(item)}>
                           <td>
                             <div className="admin-content-cell">
-                              <img src={item.coverOrPosterApiName} alt={item.title} className="admin-content-cover" />
+                              <img
+                                src={toContentImageSrc(item.coverOrPosterApiName)}
+                                onError={(event) => applyContentImageFallback(event.currentTarget)}
+                                alt={item.title}
+                                className="admin-content-cover"
+                              />
                               <div>
                                 <div className="admin-news-title">{item.title}</div>
                                 <small className="admin-content-meta">#{item.id}</small>
@@ -2072,7 +2242,7 @@ const Admin: React.FC = () => {
                                 title="Törlés"
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  deleteContent(item.id);
+                                  deleteContent();
                                 }}
                               >
                                 <i className="bi bi-trash-fill"></i>
@@ -2080,12 +2250,13 @@ const Admin: React.FC = () => {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ))
+                      )}
                     </tbody>
                   </table>
                 </div>
 
-                {filteredContent.length > 0 && totalContentPages > 1 && (
+                {contentTotalFromApi > 0 && totalContentPages > 1 && (
                   <nav className="admin-pagination-wrap" aria-label="Tartalmak lapozása">
                     <ul className="pagination kk-pagination justify-content-center mb-0">
                       <li className={`page-item ${contentPage === 1 ? 'disabled' : ''}`}>
@@ -2165,8 +2336,46 @@ const Admin: React.FC = () => {
                           </label>
 
                           <label className="admin-user-field">
-                            <span>AgeRatingId</span>
-                            <input type="number" min={1} value={selectedContent.ageRatingId ?? ''} onChange={(event) => updateContentDraft('ageRatingId', event.target.value ? Number(event.target.value) : null)} />
+                            <span>Korhatár</span>
+                            <div className="admin-custom-select">
+                              <button
+                                type="button"
+                                className="admin-custom-select-trigger"
+                                aria-expanded={activeContentDropdown === 'ageRating'}
+                                onClick={() => setActiveContentDropdown(prev => prev === 'ageRating' ? null : 'ageRating')}
+                              >
+                                <span>
+                                  {selectedContent.ageRatingId === null
+                                    ? 'Nincs korhatar'
+                                    : (getAgeRatingById(selectedContent.ageRatingId)?.name ?? `AgeRating #${selectedContent.ageRatingId}`)}
+                                </span>
+                              </button>
+                              <div className={`admin-custom-select-menu ${activeContentDropdown === 'ageRating' ? 'show' : ''}`}>
+                                <button
+                                  type="button"
+                                  className={`admin-custom-select-option ${selectedContent.ageRatingId === null ? 'active' : ''}`}
+                                  onClick={() => {
+                                    updateContentDraft('ageRatingId', null);
+                                    setActiveContentDropdown(null);
+                                  }}
+                                >
+                                  Nincs korhatar
+                                </button>
+                                {ageRatings.map(option => (
+                                  <button
+                                    key={option.id}
+                                    type="button"
+                                    className={`admin-custom-select-option ${selectedContent.ageRatingId === option.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                      updateContentDraft('ageRatingId', option.id);
+                                      setActiveContentDropdown(null);
+                                    }}
+                                  >
+                                    {formatAgeRatingLabel(option)}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           </label>
 
                           <label className="admin-user-field">
@@ -2219,19 +2428,40 @@ const Admin: React.FC = () => {
                                   type="button"
                                   className="admin-custom-select-trigger"
                                   aria-expanded={activeContentDropdown === 'tags'}
-                                  onClick={() => setActiveContentDropdown(prev => prev === 'tags' ? null : 'tags')}
+                                  onClick={() => {
+                                    const next = activeContentDropdown === 'tags' ? null : 'tags';
+                                    setActiveContentDropdown(next);
+                                    if (next === 'tags') {
+                                      setContentTagSearch('');
+                                    }
+                                  }}
                                 >
                                   <span>Tag hozzaadása</span>
                                 </button>
                                 <div className={`admin-custom-select-menu ${activeContentDropdown === 'tags' ? 'show' : ''}`}>
-                                  {tags.filter(tag => !selectedContent.tagIds.includes(tag.id)).length === 0 && (
+                                  <div className="admin-custom-select-search">
+                                    <i className="bi bi-search"></i>
+                                    <input
+                                      type="text"
+                                      value={contentTagSearch}
+                                      placeholder="Tag keresese"
+                                      onChange={(event) => setContentTagSearch(event.target.value)}
+                                    />
+                                  </div>
+
+                                  {availableContentTags.length === 0 && (
                                     <button type="button" className="admin-custom-select-option" disabled>
                                       Minden tag hozzarendelve
                                     </button>
                                   )}
-                                  {tags
-                                    .filter(tag => !selectedContent.tagIds.includes(tag.id))
-                                    .map(tag => (
+
+                                  {availableContentTags.length > 0 && filteredContentTags.length === 0 && (
+                                    <button type="button" className="admin-custom-select-option" disabled>
+                                      Nincs talalat
+                                    </button>
+                                  )}
+
+                                  {filteredContentTags.map(tag => (
                                       <button
                                         key={tag.id}
                                         type="button"
@@ -2239,6 +2469,7 @@ const Admin: React.FC = () => {
                                         onClick={() => {
                                           addTagToContentDraft(tag.id);
                                           setActiveContentDropdown(null);
+                                          setContentTagSearch('');
                                         }}
                                       >
                                         {tag.name}
@@ -2360,10 +2591,10 @@ const Admin: React.FC = () => {
                     </div>
 
                     <div className="admin-user-modal-footer">
-                      <button className="admin-user-secondary-btn" onClick={closeContentModal}>Mégse</button>
-                      <button className="admin-send-btn" onClick={saveContentDraft}>
+                      <button className="admin-user-secondary-btn" onClick={closeContentModal} disabled={contentSaving}>Mégse</button>
+                      <button className="admin-send-btn" onClick={saveContentDraft} disabled={contentSaving}>
                         <i className="bi bi-check2-circle me-2"></i>
-                        Tartalom mentése
+                        {contentSaving ? 'Mentés...' : 'Tartalom mentése'}
                       </button>
                     </div>
                   </div>
