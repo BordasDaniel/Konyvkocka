@@ -7,15 +7,17 @@ export interface NewsArticleData {
   date: string;
   tags: string;
   excerpt: string;
+  fullDescription?: string;
   link: string;
   linkText: string;
 }
 
 interface NewsArticleProps {
   article: NewsArticleData;
+  onReadMore?: (article: NewsArticleData) => void;
 }
 
-export default function NewsArticle({ article }: NewsArticleProps) {
+export default function NewsArticle({ article, onReadMore }: NewsArticleProps) {
   return (
     <article className="news-card" data-type={article.type}>
       <div className="news-content">
@@ -32,9 +34,15 @@ export default function NewsArticle({ article }: NewsArticleProps) {
         </div>
         <p className="news-excerpt">{article.excerpt}</p>
         <div className="news-cta">
-          <Link to={article.link} className="btn-read">
-            {article.linkText}
-          </Link>
+          {onReadMore ? (
+            <button type="button" className="btn-read" onClick={() => onReadMore(article)}>
+              {article.linkText}
+            </button>
+          ) : (
+            <Link to={article.link} className="btn-read">
+              {article.linkText}
+            </Link>
+          )}
         </div>
       </div>
     </article>
