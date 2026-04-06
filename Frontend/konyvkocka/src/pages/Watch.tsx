@@ -8,6 +8,7 @@ import {
   type NormalizedContentType,
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import NonPremiumAd from '../components/common/NonPremiumAd';
 import { toEmbedVideoUrl } from '../utils/helpers';
 import '../styles/watch.css';
 
@@ -17,7 +18,7 @@ interface WatchLocationState {
 }
 
 const Watch: React.FC = () => {
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const location = useLocation();
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [title, setTitle] = useState<string>('Videó lejátszása');
@@ -141,12 +142,13 @@ const Watch: React.FC = () => {
   };
 
   return (
-    <main className="mt-5">
-      <div className="container py-5">
-        <h1 className="mb-4 text-center display-6 fw-bold text-decoration-underline">{title}</h1>
-        <div className="row gx-5">
-          <div className="col-md-12">
-            <div className="about-panel">
+    <>
+      <main className="mt-5">
+        <div className="container py-5">
+          <h1 className="mb-4 text-center display-6 fw-bold text-decoration-underline">{title}</h1>
+          <div className="row gx-5">
+            <div className="col-md-12">
+              <div className="about-panel">
               {/* Video player */}
               <div className="video-player-wrapper">
                 <div id="videoPlayerContainer" className="video-player">
@@ -218,8 +220,11 @@ const Watch: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
-    </main>
+        </div>
+      </main>
+
+      <NonPremiumAd enabled={Boolean(isAuthenticated && user && !user.isSubscriber)} surface="watch" />
+    </>
   );
 };
 

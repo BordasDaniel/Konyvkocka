@@ -4,6 +4,7 @@ import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pdfWorker from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { getContentDetail, parseContentKey, recordContentView, SESSION_STORAGE_KEY } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import NonPremiumAd from '../components/common/NonPremiumAd';
 import '../styles/reader.css';
 
 interface Bookmark {
@@ -41,7 +42,7 @@ const toPdfLoadUrl = (rawUrl: string): string => {
 };
 
 const Reader: React.FC = () => {
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const location = useLocation();
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [pdfUrl, setPdfUrl] = useState<string>('');
@@ -687,6 +688,8 @@ const Reader: React.FC = () => {
           </button>
         </div>
       </main>
+
+      <NonPremiumAd enabled={Boolean(isAuthenticated && user && !user.isSubscriber)} surface="reader" />
     </div>
   );
 };
