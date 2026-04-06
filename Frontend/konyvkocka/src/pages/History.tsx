@@ -37,25 +37,31 @@ const formatMinutesAsDuration = (value: number): string => {
 
 const mapHistoryItem = (item: HistoryItemResponse): HistoryItem => {
   const status = item.status?.toUpperCase() ?? '';
-  const rawProgress = item.progress ?? 0;
+  const rawProgress = Math.max(0, Math.floor(item.progress ?? 0));
+
+  const totalUnits = typeof item.totalUnits === 'number' && item.totalUnits > 0
+    ? item.totalUnits
+    : null;
+
+  const percentFromUnits = totalUnits
+    ? Math.round((rawProgress / totalUnits) * 100)
+    : null;
 
   const progress = status === 'COMPLETED'
     ? 100
-    : rawProgress <= 0
-      ? 0
-      : rawProgress <= 100
-        ? Math.max(1, Math.min(99, rawProgress))
-        : Math.max(1, Math.min(99, Math.round(rawProgress / 2)));
+    : percentFromUnits != null
+      ? Math.max(0, Math.min(99, percentFromUnits))
+      : rawProgress <= 0
+        ? 0
+        : rawProgress <= 100
+          ? Math.max(1, Math.min(99, rawProgress))
+          : 99;
 
   const normalizedType: HistoryItem['type'] = item.contentType.toLowerCase() === 'movie'
     ? 'movie'
     : item.contentType.toLowerCase() === 'series'
       ? 'series'
       : 'book';
-
-  const totalUnits = typeof item.totalUnits === 'number' && item.totalUnits > 0
-    ? item.totalUnits
-    : null;
 
   const lastPosition = status === 'COMPLETED'
     ? 'Befejezve'

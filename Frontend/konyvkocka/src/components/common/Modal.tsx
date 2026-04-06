@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CardData } from './Card';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -22,14 +22,16 @@ interface ModalProps {
 
 const STATUS_OPTIONS: Array<{ value: LibraryStatus; label: string }> = [
 	{ value: 'WATCHING', label: 'Folyamatban' },
-	{ value: 'COMPLETED', label: 'Befejezett' },
 	{ value: 'PAUSED', label: 'Szüneteltetett' },
 	{ value: 'DROPPED', label: 'Félbehagyott' },
 	{ value: 'PLANNED', label: 'Tervezett' },
 	{ value: 'ARCHIVED', label: 'Archivált' },
 ];
 
-const STATUS_VALUES = new Set<LibraryStatus>(STATUS_OPTIONS.map((option) => option.value));
+const STATUS_VALUES = new Set<LibraryStatus>([
+	...STATUS_OPTIONS.map((option) => option.value),
+	'COMPLETED',
+]);
 
 const toLibraryStatus = (value: string | null | undefined): LibraryStatus | '' => {
 	if (!value) return '';
@@ -47,6 +49,8 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 	const [isInLibrary, setIsInLibrary] = useState(false);
 	const [isFavorite, setIsFavorite] = useState(false);
 	const [selectedStatus, setSelectedStatus] = useState<LibraryStatus | ''>('');
+	const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+	const statusMenuRef = useRef<HTMLDivElement | null>(null);
 	const wasOpen = React.useRef(false);
 	const lastCard = React.useRef<typeof card>(undefined);
 	if (card) lastCard.current = card;
@@ -111,6 +115,26 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 	const trailerSrc = toEmbedVideoUrl(displayCard?.trailer);
 
 	useEffect(() => {
+		if (!open) {
+			setStatusMenuOpen(false);
+		}
+	}, [open]);
+
+	useEffect(() => {
+		const onDocumentMouseDown = (event: MouseEvent) => {
+			if (!statusMenuRef.current) return;
+			if (!statusMenuRef.current.contains(event.target as Node)) {
+				setStatusMenuOpen(false);
+			}
+		};
+
+		document.addEventListener('mousedown', onDocumentMouseDown);
+		return () => {
+			document.removeEventListener('mousedown', onDocumentMouseDown);
+		};
+	}, []);
+
+	useEffect(() => {
 		let isMounted = true;
 
 		const resetUiState = () => {
@@ -137,6 +161,7 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 				setIsInLibrary(state.exists);
 				setIsFavorite(state.favorite);
 				setSelectedStatus(toLibraryStatus(state.status));
+				setStatusMenuOpen(false);
 			} catch (error) {
 				if (!isMounted) return;
 				console.error('Library state load failed:', error);
@@ -249,9 +274,16 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 		}
 	};
 
-	const handleStatusChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
-		const nextStatus = event.target.value as LibraryStatus | '';
+	const handleStatusSelect = async (nextStatus: LibraryStatus | '') => {
+		if (selectedStatus === 'COMPLETED') {
+			setStatusMenuOpen(false);
+			return;
+		}
+
+		setStatusMenuOpen(false);
+
 		const previousStatus = selectedStatus;
+		if (nextStatus === previousStatus) return;
 		setSelectedStatus(nextStatus);
 
 		if (!isAuthenticated) {
@@ -274,11 +306,23 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 				return;
 			}
 			setSelectedStatus(previousStatus);
-			setLibraryError('Az állapot mentése sikertelen.');
+			if (error instanceof ApiHttpError && error.message) {
+				setLibraryError(error.message);
+			} else {
+				setLibraryError('Az állapot mentése sikertelen.');
+			}
 		} finally {
 			setLibraryActionLoading(false);
 		}
 	};
+
+	const selectedStatusLabel =
+		selectedStatus === 'COMPLETED'
+			? 'Befejezett'
+			: STATUS_OPTIONS.find((option) => option.value === selectedStatus)?.label ?? 'Nincs állapot';
+
+	const statusLocked = selectedStatus === 'COMPLETED';
+	const statusTriggerDisabled = libraryStateLoading || libraryActionLoading || statusLocked;
 
 	return (
 		<>
@@ -318,20 +362,43 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 													>
 														<i className={`bi ${isFavorite ? 'bi-heart-fill' : 'bi-heart'}`}></i>
 													</button>
-													<select
-														className="modal-status-select"
-														value={selectedStatus}
-														onChange={handleStatusChange}
-														disabled={libraryStateLoading || libraryActionLoading}
-														aria-label="Megtekintési állapot"
-													>
-														<option value="">Nincs állapot</option>
-														{STATUS_OPTIONS.map((option) => (
-															<option key={option.value} value={option.value}>
-																{option.label}
-															</option>
-														))}
-													</select>
+													<div className="modal-status-dropdown" ref={statusMenuRef}>
+														<button
+															type="button"
+															className={`modal-status-trigger${statusLocked ? ' is-locked' : ''}`}
+															onClick={() => {
+																if (statusTriggerDisabled) return;
+																setStatusMenuOpen((prev) => !prev);
+															}}
+															disabled={statusTriggerDisabled}
+															aria-expanded={statusMenuOpen}
+															aria-haspopup="listbox"
+															aria-label="Megtekintési állapot"
+															title={statusLocked ? 'Befejezett állapot lezárva' : 'Megtekintési állapot'}
+														>
+															<span>{selectedStatusLabel}</span>
+															<i className={`bi ${statusLocked ? 'bi-lock-fill' : 'bi-chevron-down'}`}></i>
+														</button>
+														<div className={`modal-status-menu${statusMenuOpen ? ' show' : ''}`} role="listbox" aria-label="Állapot lehetőségek">
+															<button
+																type="button"
+																className={`modal-status-option${selectedStatus === '' ? ' active' : ''}`}
+																onClick={() => void handleStatusSelect('')}
+															>
+																Nincs állapot
+															</button>
+															{STATUS_OPTIONS.map((option) => (
+																<button
+																	key={option.value}
+																	type="button"
+																	className={`modal-status-option${selectedStatus === option.value ? ' active' : ''}`}
+																	onClick={() => void handleStatusSelect(option.value)}
+																>
+																	{option.label}
+																</button>
+															))}
+														</div>
+													</div>
 												</div>
 											)}
 										</div>

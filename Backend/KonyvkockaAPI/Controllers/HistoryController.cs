@@ -186,6 +186,79 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
+        // GET /api/history/{contentType}/{contentId}
+        // Egy konkrét előzmény elem lekérése (folytatáshoz)
+        // ================================================================
+        [HttpGet("{contentType}/{contentId}")]
+        public async Task<IActionResult> GetHistoryItem(string contentType, int contentId)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var normalizedType = contentType.Trim().ToLowerInvariant() switch
+                {
+                    "books" => "book",
+                    "movies" => "movie",
+                    _ => contentType.Trim().ToLowerInvariant()
+                };
+
+                switch (normalizedType)
+                {
+                    case "book":
+                    {
+                        var userBook = await _context.UserBooks
+                            .Where(ub => ub.UserId == userId && ub.BookId == contentId)
+                            .Include(ub => ub.Book)
+                            .FirstOrDefaultAsync();
+
+                        if (userBook == null)
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
+
+                        return Ok(MapBook(userBook));
+                    }
+
+                    case "movie":
+                    {
+                        var userMovie = await _context.UserMovies
+                            .Where(um => um.UserId == userId && um.MovieId == contentId)
+                            .Include(um => um.Movie)
+                            .FirstOrDefaultAsync();
+
+                        if (userMovie == null)
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
+
+                        return Ok(MapMovie(userMovie));
+                    }
+
+                    case "series":
+                    {
+                        var userSeries = await _context.UserSeries
+                            .Where(us => us.UserId == userId && us.SeriesId == contentId)
+                            .Include(us => us.Series)
+                            .ThenInclude(s => s.Episodes)
+                            .FirstOrDefaultAsync();
+
+                        if (userSeries == null)
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
+
+                        return Ok(MapSeries(userSeries));
+                    }
+
+                    default:
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidType",
+                            Message = "Érvénytelen tartalom típus. Lehetséges: book, series, movie"
+                        });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
         // POST /api/history/view
         // Automatikus megtekintés/olvasás rögzítése
         //
@@ -412,8 +485,9 @@ namespace KonyvkockaAPI.Controllers
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
                 var validStatuses = new[] { "WATCHING", "COMPLETED", "PAUSED", "DROPPED", "PLANNED", "ARCHIVED" };
+                var normalizedStatus = dto.Status?.Trim().ToUpperInvariant();
 
-                if (!string.IsNullOrEmpty(dto.Status) && !validStatuses.Contains(dto.Status.ToUpper()))
+                if (!string.IsNullOrEmpty(normalizedStatus) && !validStatuses.Contains(normalizedStatus))
                     return BadRequest(new ErrorResponseDTO
                     {
                         Error   = "InvalidStatus",
@@ -425,13 +499,44 @@ namespace KonyvkockaAPI.Controllers
                     case "book":
                     {
                         var userBook = await _context.UserBooks
+                            .Include(ub => ub.Book)
                             .FirstOrDefaultAsync(ub => ub.UserId == userId && ub.BookId == dto.ContentId);
 
                         if (userBook == null)
                             return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
 
-                        if (dto.Progress.HasValue) userBook.CurrentPage = dto.Progress.Value;
-                        if (!string.IsNullOrEmpty(dto.Status)) userBook.Status = dto.Status.ToUpper();
+                        if (dto.Progress.HasValue)
+                        {
+                            var normalizedProgress = Math.Max(0, dto.Progress.Value);
+                            var maxPage = Math.Max(1, userBook.Book.PageNum);
+                            userBook.CurrentPage = Math.Min(normalizedProgress, maxPage);
+                        }
+
+                        var currentPage = Math.Max(0, userBook.CurrentPage ?? 0);
+                        var totalPages = Math.Max(1, userBook.Book.PageNum);
+                        var isAlreadyCompleted = string.Equals(userBook.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase);
+
+                        if (!string.IsNullOrEmpty(normalizedStatus))
+                        {
+                            if (normalizedStatus == "COMPLETED" && currentPage < totalPages)
+                            {
+                                return BadRequest(new ErrorResponseDTO
+                                {
+                                    Error = "InvalidProgress",
+                                    Message = "A könyv csak teljes előrehaladásnál állítható COMPLETED státuszra."
+                                });
+                            }
+
+                            if (!(isAlreadyCompleted && normalizedStatus != "COMPLETED"))
+                            {
+                                userBook.Status = normalizedStatus;
+                            }
+                        }
+                        else if (!isAlreadyCompleted && currentPage >= totalPages)
+                        {
+                            userBook.Status = "COMPLETED";
+                        }
+
                         if (dto.Rating.HasValue)
                         {
                             if (dto.Rating < 0 || dto.Rating > 10)
@@ -451,7 +556,9 @@ namespace KonyvkockaAPI.Controllers
                             return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
 
                         if (dto.Progress.HasValue) userSeries.CurrentEpisode = dto.Progress.Value;
-                        if (!string.IsNullOrEmpty(dto.Status)) userSeries.Status = dto.Status.ToUpper();
+                        var seriesCompleted = string.Equals(userSeries.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase);
+                        if (!string.IsNullOrEmpty(normalizedStatus) && !(seriesCompleted && normalizedStatus != "COMPLETED"))
+                            userSeries.Status = normalizedStatus;
                         if (dto.Rating.HasValue)
                         {
                             if (dto.Rating < 0 || dto.Rating > 10)
@@ -471,7 +578,9 @@ namespace KonyvkockaAPI.Controllers
                             return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
 
                         if (dto.Progress.HasValue) userMovie.CurrentPosition = dto.Progress.Value;
-                        if (!string.IsNullOrEmpty(dto.Status)) userMovie.Status = dto.Status.ToUpper();
+                        var movieCompleted = string.Equals(userMovie.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase);
+                        if (!string.IsNullOrEmpty(normalizedStatus) && !(movieCompleted && normalizedStatus != "COMPLETED"))
+                            userMovie.Status = normalizedStatus;
                         if (dto.Rating.HasValue)
                         {
                             if (dto.Rating < 0 || dto.Rating > 10)
@@ -493,6 +602,15 @@ namespace KonyvkockaAPI.Controllers
                 await _context.SaveChangesAsync();
 
                 return Ok(new MessageResponseDTO { Message = "Az előzmény sikeresen frissítve" });
+            }
+            catch (DbUpdateException ex)
+            {
+                var dbMessage = ex.InnerException?.Message ?? ex.Message;
+                return BadRequest(new ErrorResponseDTO
+                {
+                    Error = "InvalidStateTransition",
+                    Message = dbMessage
+                });
             }
             catch (Exception ex)
             {

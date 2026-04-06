@@ -2,7 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pdfWorker from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
-import { getContentDetail, parseContentKey, recordContentView, SESSION_STORAGE_KEY } from '../services/api';
+import {
+  ApiHttpError,
+  getContentDetail,
+  getHistoryItem,
+  parseContentKey,
+  recordContentView,
+  SESSION_STORAGE_KEY,
+  updateHistory,
+} from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import NonPremiumAd from '../components/common/NonPremiumAd';
 import '../styles/reader.css';
@@ -60,11 +68,15 @@ const Reader: React.FC = () => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [sidebarShow, setSidebarShow] = useState<boolean>(false);
+  const [activeBookId, setActiveBookId] = useState<number | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
   const renderTaskRef = useRef<any>(null);
   const pendingScrollRatio = useRef<number | null>(null);
+  const lastSavedPageRef = useRef<number>(0);
+  const progressReadyRef = useRef<boolean>(false);
+  const completedStatusLockedRef = useRef<boolean>(false);
 
   useEffect(() => {
     // Keyboard shortcuts
@@ -91,6 +103,7 @@ const Reader: React.FC = () => {
         if (isMounted) {
           setPdfUrl('');
           setPdfDoc(null);
+          setActiveBookId(null);
           setLoading(false);
           setError('A tartalom olvasásához be kell jelentkezned.');
         }
@@ -138,6 +151,7 @@ const Reader: React.FC = () => {
           setBookTitle(detail.title || 'Könyv címe');
           setBookCover(detail.img || '');
           setBookAuthor('Szerző ismeretlen');
+          setActiveBookId(resolvedId);
 
           if (dbPdfUrl) {
             setPdfUrl(dbPdfUrl);
@@ -158,6 +172,7 @@ const Reader: React.FC = () => {
 
       if (directPdfParam) {
         if (isMounted) {
+          setActiveBookId(null);
           setPdfUrl(directPdfParam);
         }
         return;
@@ -208,6 +223,50 @@ const Reader: React.FC = () => {
   }
 
   useEffect(() => {
+    if (!isAuthenticated || !activeBookId) {
+      progressReadyRef.current = false;
+      lastSavedPageRef.current = 0;
+      completedStatusLockedRef.current = false;
+      return;
+    }
+
+    let cancelled = false;
+    progressReadyRef.current = false;
+
+    const loadSavedProgress = async () => {
+      try {
+        const item = await getHistoryItem('book', activeBookId);
+        if (cancelled) return;
+
+        const savedPage = Math.max(1, Number(item.progress ?? 1));
+        setPageNum(savedPage);
+        lastSavedPageRef.current = savedPage;
+        completedStatusLockedRef.current = (item.status ?? '').toUpperCase() === 'COMPLETED';
+      } catch (loadError) {
+        if (cancelled) return;
+
+        if (!(loadError instanceof ApiHttpError && loadError.status === 404)) {
+          console.warn('Mentett olvasási előrehaladás lekérése sikertelen:', loadError);
+        }
+
+        setPageNum(1);
+        lastSavedPageRef.current = 1;
+        completedStatusLockedRef.current = false;
+      } finally {
+        if (!cancelled) {
+          progressReadyRef.current = true;
+        }
+      }
+    };
+
+    void loadSavedProgress();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeBookId, isAuthenticated]);
+
+  useEffect(() => {
     if (!pdfUrl) {
       setBookmarks([]);
       return;
@@ -224,10 +283,58 @@ const Reader: React.FC = () => {
   useEffect(() => {
     if (!pdfUrl) return;
     setPdfDoc(null);
-    setPageNum(1);
     setTotalPages(0);
     void loadPDF(toPdfLoadUrl(pdfUrl));
   }, [pdfUrl]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !activeBookId || loading || !!error || totalPages <= 0) return;
+    if (!progressReadyRef.current) return;
+
+    const normalizedPage = Math.max(1, Math.min(totalPages, pageNum));
+    if (lastSavedPageRef.current === normalizedPage) return;
+
+    const timer = window.setTimeout(async () => {
+      const status = completedStatusLockedRef.current || normalizedPage >= totalPages ? 'COMPLETED' : 'WATCHING';
+
+      const persistProgress = async () => {
+        await updateHistory({
+          contentType: 'book',
+          contentId: activeBookId,
+          progress: normalizedPage,
+          status,
+        });
+      };
+
+      try {
+        await persistProgress();
+        lastSavedPageRef.current = normalizedPage;
+        if (status === 'COMPLETED') {
+          completedStatusLockedRef.current = true;
+        }
+      } catch (saveError) {
+        if (saveError instanceof ApiHttpError && saveError.status === 404) {
+          try {
+            await recordContentView({ contentType: 'book', contentId: activeBookId });
+            await persistProgress();
+            lastSavedPageRef.current = normalizedPage;
+            if (status === 'COMPLETED') {
+              completedStatusLockedRef.current = true;
+            }
+          } catch (retryError) {
+            console.warn('Olvasási előrehaladás mentése sikertelen (retry):', retryError);
+          }
+          return;
+        }
+
+        console.warn('Olvasási előrehaladás mentése sikertelen:', saveError);
+      }
+    }, 1200);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [activeBookId, error, isAuthenticated, loading, pageNum, totalPages]);
 
   useEffect(() => {
     if (pdfDoc && canvasRef.current) {

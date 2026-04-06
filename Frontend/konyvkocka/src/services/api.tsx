@@ -597,6 +597,12 @@ export const getHistory = async (params: {
 	return request<HistoryResponse>(`/api/history?${searchParams.toString()}`, { auth: true });
 };
 
+export const getHistoryItem = async (
+	contentType: 'book' | 'movie' | 'series',
+	contentId: number,
+): Promise<HistoryItemResponse> =>
+	request<HistoryItemResponse>(`/api/history/${contentType}/${contentId}`, { auth: true });
+
 export interface RecordContentViewPayload {
 	contentType: 'book' | 'movie' | 'series';
 	contentId: number;

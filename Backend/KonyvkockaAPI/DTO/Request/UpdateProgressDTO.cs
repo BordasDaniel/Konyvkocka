@@ -1,15 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace KonyvkockaAPI.DTO.Request
+﻿namespace KonyvkockaAPI.DTO.Request
 {
     public class UpdateProgressDTO
     {
-        /// <summary>
-        /// Tartalom típusa: "book", "movie", "series"
-        /// </summary>
-        [Required]
-        public string Type { get; set; } = null!;
-
         // --- Könyv előrehaladás ---
 
         /// <summary>
