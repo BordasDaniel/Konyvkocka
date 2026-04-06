@@ -186,6 +186,153 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
+        // POST /api/history/view
+        // Automatikus megtekintés/olvasás rögzítése
+        //
+        // Ha a tartalom még nincs a user könyvtárában/előzményeiben,
+        // létrejön egy rekord WATCHING státusszal.
+        // Ha már létezik, LastSeen frissül és bármely nem-WATCHING
+        // státusz WATCHING-ra vált.
+        // ================================================================
+        [HttpPost("view")]
+        public async Task<IActionResult> RecordView([FromBody] RecordViewDTO dto)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var normalizedType = dto.ContentType.Trim().ToLowerInvariant();
+                var now = DateTime.Now;
+                var created = false;
+
+                switch (normalizedType)
+                {
+                    case "book":
+                    {
+                        if (!await _context.Books.AnyAsync(b => b.Id == dto.ContentId))
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A könyv nem található" });
+
+                        var userBook = await _context.UserBooks
+                            .FirstOrDefaultAsync(ub => ub.UserId == userId && ub.BookId == dto.ContentId);
+
+                        if (userBook == null)
+                        {
+                            _context.UserBooks.Add(new UserBook
+                            {
+                                UserId = userId,
+                                BookId = dto.ContentId,
+                                Status = "WATCHING",
+                                AddedAt = now,
+                                LastSeen = now,
+                                CurrentPage = 0,
+                                CurrentAudioPosition = 0
+                            });
+                            created = true;
+                        }
+                        else
+                        {
+                            userBook.LastSeen = now;
+                            if (!string.Equals(userBook.Status, "WATCHING", StringComparison.OrdinalIgnoreCase))
+                            {
+                                userBook.Status = "WATCHING";
+                            }
+                        }
+
+                        break;
+                    }
+
+                    case "movie":
+                    {
+                        if (!await _context.Movies.AnyAsync(m => m.Id == dto.ContentId))
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A film nem található" });
+
+                        var userMovie = await _context.UserMovies
+                            .FirstOrDefaultAsync(um => um.UserId == userId && um.MovieId == dto.ContentId);
+
+                        if (userMovie == null)
+                        {
+                            _context.UserMovies.Add(new UserMovie
+                            {
+                                UserId = userId,
+                                MovieId = dto.ContentId,
+                                Status = "WATCHING",
+                                AddedAt = now,
+                                LastSeen = now,
+                                CurrentPosition = 0
+                            });
+                            created = true;
+                        }
+                        else
+                        {
+                            userMovie.LastSeen = now;
+                            if (!string.Equals(userMovie.Status, "WATCHING", StringComparison.OrdinalIgnoreCase))
+                            {
+                                userMovie.Status = "WATCHING";
+                            }
+                        }
+
+                        break;
+                    }
+
+                    case "series":
+                    {
+                        if (!await _context.Series.AnyAsync(s => s.Id == dto.ContentId))
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A sorozat nem található" });
+
+                        var userSeries = await _context.UserSeries
+                            .FirstOrDefaultAsync(us => us.UserId == userId && us.SeriesId == dto.ContentId);
+
+                        if (userSeries == null)
+                        {
+                            _context.UserSeries.Add(new UserSeries
+                            {
+                                UserId = userId,
+                                SeriesId = dto.ContentId,
+                                Status = "WATCHING",
+                                AddedAt = now,
+                                LastSeen = now,
+                                CurrentSeason = 1,
+                                CurrentEpisode = 1,
+                                CurrentPosition = 0
+                            });
+                            created = true;
+                        }
+                        else
+                        {
+                            userSeries.LastSeen = now;
+                            if (!string.Equals(userSeries.Status, "WATCHING", StringComparison.OrdinalIgnoreCase))
+                            {
+                                userSeries.Status = "WATCHING";
+                            }
+                        }
+
+                        break;
+                    }
+
+                    default:
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidType",
+                            Message = "Érvénytelen tartalom típus. Lehetséges: book, series, movie"
+                        });
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = created
+                        ? "A tartalom bekerült a könyvtárba és az előzményekbe."
+                        : "A tartalom előzménye frissítve.",
+                    created
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
         // POST /api/history
         // Előzmény frissítése: progress, status, rating
         // Body: UpdateHistoryDTO

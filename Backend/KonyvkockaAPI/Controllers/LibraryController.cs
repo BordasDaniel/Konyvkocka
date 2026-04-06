@@ -250,6 +250,75 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
+        // GET /api/library/{type}/{contentId}/state
+        // Egy tartalom könyvtárbeli állapotának lekérése
+        // ================================================================
+        [HttpGet("{type}/{contentId}/state")]
+        public async Task<IActionResult> GetLibraryItemState(string type, int contentId)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+
+                switch (type.ToLower())
+                {
+                    case "book":
+                        if (!await _context.Books.AnyAsync(b => b.Id == contentId))
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A könyv nem található." });
+
+                        var userBook = await _context.UserBooks
+                            .FirstOrDefaultAsync(ub => ub.UserId == userId && ub.BookId == contentId);
+
+                        return Ok(new
+                        {
+                            exists = userBook != null,
+                            status = userBook?.Status,
+                            favorite = userBook?.Favorite ?? false
+                        });
+
+                    case "movie":
+                        if (!await _context.Movies.AnyAsync(m => m.Id == contentId))
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A film nem található." });
+
+                        var userMovie = await _context.UserMovies
+                            .FirstOrDefaultAsync(um => um.UserId == userId && um.MovieId == contentId);
+
+                        return Ok(new
+                        {
+                            exists = userMovie != null,
+                            status = userMovie?.Status,
+                            favorite = userMovie?.Favorite ?? false
+                        });
+
+                    case "series":
+                        if (!await _context.Series.AnyAsync(s => s.Id == contentId))
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A sorozat nem található." });
+
+                        var userSeries = await _context.UserSeries
+                            .FirstOrDefaultAsync(us => us.UserId == userId && us.SeriesId == contentId);
+
+                        return Ok(new
+                        {
+                            exists = userSeries != null,
+                            status = userSeries?.Status,
+                            favorite = userSeries?.Favorite ?? false
+                        });
+
+                    default:
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidParameter",
+                            Message = "A type értéke csak 'book', 'movie' vagy 'series' lehet."
+                        });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
         // POST /api/library
         // Tartalom hozzáadása a könyvtárhoz
         // Body: AddToLibraryDTO
@@ -269,10 +338,17 @@ namespace KonyvkockaAPI.Controllers
                         Message = "A type értéke csak 'book', 'movie' vagy 'series' lehet."
                     });
 
-                var validStatuses = new[] { "WATCHING", "PLANNED" };
-                var normalizedStatus = dto.Status?.ToUpper() ?? "PLANNED";
-                if (!validStatuses.Contains(normalizedStatus))
-                    normalizedStatus = "PLANNED";
+                var validStatuses = new[] { "WATCHING", "COMPLETED", "PAUSED", "DROPPED", "PLANNED", "ARCHIVED" };
+                var normalizedStatus = string.IsNullOrWhiteSpace(dto.Status)
+                    ? null
+                    : dto.Status.Trim().ToUpperInvariant();
+
+                if (normalizedStatus != null && !validStatuses.Contains(normalizedStatus))
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidParameter",
+                        Message = $"Érvénytelen státusz: '{dto.Status}'. Lehetséges értékek: {string.Join(", ", validStatuses)}"
+                    });
 
                 switch (dto.Type.ToLower())
                 {
@@ -347,13 +423,26 @@ namespace KonyvkockaAPI.Controllers
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
                 var validStatuses = new[] { "WATCHING", "COMPLETED", "PAUSED", "DROPPED", "PLANNED", "ARCHIVED" };
-                var newStatus = dto.Status?.ToUpper();
-                if (newStatus != null && !validStatuses.Contains(newStatus))
-                    return BadRequest(new ErrorResponseDTO
+                var hasStatusUpdate = dto.Status != null;
+                string? newStatus = null;
+
+                if (hasStatusUpdate)
+                {
+                    if (string.IsNullOrWhiteSpace(dto.Status))
                     {
-                        Error = "InvalidParameter",
-                        Message = $"Érvénytelen státusz: '{dto.Status}'. Lehetséges értékek: {string.Join(", ", validStatuses)}"
-                    });
+                        newStatus = null;
+                    }
+                    else
+                    {
+                        newStatus = dto.Status.Trim().ToUpperInvariant();
+                        if (!validStatuses.Contains(newStatus))
+                            return BadRequest(new ErrorResponseDTO
+                            {
+                                Error = "InvalidParameter",
+                                Message = $"Érvénytelen státusz: '{dto.Status}'. Lehetséges értékek: {string.Join(", ", validStatuses)}"
+                            });
+                    }
+                }
 
                 switch (type.ToLower())
                 {
@@ -365,7 +454,7 @@ namespace KonyvkockaAPI.Controllers
 
                         if (dto.CurrentPage.HasValue) ub.CurrentPage = dto.CurrentPage;
                         if (dto.CurrentAudioPosition.HasValue) ub.CurrentAudioPosition = dto.CurrentAudioPosition;
-                        if (newStatus != null) ub.Status = newStatus;
+                        if (hasStatusUpdate) ub.Status = newStatus;
                         break;
 
                     case "movie":
@@ -375,7 +464,7 @@ namespace KonyvkockaAPI.Controllers
                             return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A film nem szerepel a könyvtáradban." });
 
                         if (dto.CurrentPosition.HasValue) um.CurrentPosition = dto.CurrentPosition;
-                        if (newStatus != null) um.Status = newStatus;
+                        if (hasStatusUpdate) um.Status = newStatus;
                         break;
 
                     case "series":
@@ -387,7 +476,7 @@ namespace KonyvkockaAPI.Controllers
                         if (dto.CurrentSeason.HasValue) us.CurrentSeason = dto.CurrentSeason;
                         if (dto.CurrentEpisode.HasValue) us.CurrentEpisode = dto.CurrentEpisode;
                         if (dto.CurrentEpisodePosition.HasValue) us.CurrentPosition = dto.CurrentEpisodePosition;
-                        if (newStatus != null) us.Status = newStatus;
+                        if (hasStatusUpdate) us.Status = newStatus;
                         break;
 
                     default:

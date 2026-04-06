@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pdfWorker from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
-import { getContentDetail, parseContentKey } from '../services/api';
+import { getContentDetail, parseContentKey, recordContentView, SESSION_STORAGE_KEY } from '../services/api';
 import '../styles/reader.css';
 
 interface Bookmark {
@@ -97,6 +97,13 @@ const Reader: React.FC = () => {
         try {
           const detail = await getContentDetail(parsed.type, parsed.id);
           if (!isMounted) return;
+
+          const token = localStorage.getItem(SESSION_STORAGE_KEY);
+          if (token && token.trim().length > 0) {
+            void recordContentView({ contentType: 'book', contentId: parsed.id }).catch((trackError) => {
+              console.warn('View tracking failed on reader page:', trackError);
+            });
+          }
 
           const dbPdfUrl = (detail.watchUrl ?? '').trim();
           setBookTitle(detail.title || 'Könyv címe');

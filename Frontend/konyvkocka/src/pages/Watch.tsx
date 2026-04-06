@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { getContentDetail, parseContentKey, type NormalizedContentType } from '../services/api';
+import {
+  getContentDetail,
+  parseContentKey,
+  recordContentView,
+  SESSION_STORAGE_KEY,
+  type NormalizedContentType,
+} from '../services/api';
 import { toEmbedVideoUrl } from '../utils/helpers';
 import '../styles/watch.css';
 
@@ -38,6 +44,13 @@ const Watch: React.FC = () => {
         if (requestedType && typeof requestedId === 'number') {
           const detail = await getContentDetail(requestedType, requestedId);
           if (!isMounted) return;
+
+          const token = localStorage.getItem(SESSION_STORAGE_KEY);
+          if (token && token.trim().length > 0) {
+            void recordContentView({ contentType: requestedType, contentId: requestedId }).catch((trackError) => {
+              console.warn('View tracking failed on watch page:', trackError);
+            });
+          }
 
           const resolvedVideoUrl = detail.watchUrl ?? detail.episodes?.[0]?.streamUrl ?? '';
           const resolvedEmbedUrl = toEmbedVideoUrl(resolvedVideoUrl);

@@ -1,7 +1,16 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import type { CardData } from './Card';
 import { useAuth } from '../../context/AuthContext';
-import { applyContentImageFallback } from '../../services/api';
+import {
+	addToLibrary,
+	ApiHttpError,
+	applyContentImageFallback,
+	getLibraryItemState,
+	parseContentKey,
+	toggleLibraryFavorite,
+	updateLibraryProgress,
+	type LibraryStatus,
+} from '../../services/api';
 import { toEmbedVideoUrl } from '../../utils/helpers';
 import '../../styles/modal.css';
 
@@ -11,10 +20,33 @@ interface ModalProps {
 	onClose?: () => void;
 }
 
+const STATUS_OPTIONS: Array<{ value: LibraryStatus; label: string }> = [
+	{ value: 'WATCHING', label: 'Folyamatban' },
+	{ value: 'COMPLETED', label: 'Befejezett' },
+	{ value: 'PAUSED', label: 'Szüneteltetett' },
+	{ value: 'DROPPED', label: 'Félbehagyott' },
+	{ value: 'PLANNED', label: 'Tervezett' },
+	{ value: 'ARCHIVED', label: 'Archivált' },
+];
+
+const STATUS_VALUES = new Set<LibraryStatus>(STATUS_OPTIONS.map((option) => option.value));
+
+const toLibraryStatus = (value: string | null | undefined): LibraryStatus | '' => {
+	if (!value) return '';
+	const normalized = value.toUpperCase() as LibraryStatus;
+	return STATUS_VALUES.has(normalized) ? normalized : '';
+};
+
 export default function Modal({ open, card, onClose }: ModalProps) {
 	const { isAuthenticated } = useAuth();
 	const [visible, setVisible] = useState(false);
 	const [closing, setClosing] = useState(false);
+	const [libraryStateLoading, setLibraryStateLoading] = useState(false);
+	const [libraryActionLoading, setLibraryActionLoading] = useState(false);
+	const [libraryError, setLibraryError] = useState<string | null>(null);
+	const [isInLibrary, setIsInLibrary] = useState(false);
+	const [isFavorite, setIsFavorite] = useState(false);
+	const [selectedStatus, setSelectedStatus] = useState<LibraryStatus | ''>('');
 	const wasOpen = React.useRef(false);
 	const lastCard = React.useRef<typeof card>(undefined);
 	if (card) lastCard.current = card;
@@ -74,10 +106,56 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 		return () => document.removeEventListener('keydown', handler);
 	}, [open, onClose]);
 
-	if (!visible) return null;
 	const displayCard = card ?? lastCard.current;
+	const parsedKey = displayCard ? parseContentKey(displayCard.id) : null;
+	const trailerSrc = toEmbedVideoUrl(displayCard?.trailer);
+
+	useEffect(() => {
+		let isMounted = true;
+
+		const resetUiState = () => {
+			setIsInLibrary(false);
+			setIsFavorite(false);
+			setSelectedStatus('');
+			setLibraryError(null);
+		};
+
+		const loadLibraryState = async () => {
+			if (!open || !isAuthenticated || !parsedKey) {
+				resetUiState();
+				setLibraryStateLoading(false);
+				return;
+			}
+
+			setLibraryStateLoading(true);
+			setLibraryError(null);
+
+			try {
+				const state = await getLibraryItemState(parsedKey.type, parsedKey.id);
+				if (!isMounted) return;
+
+				setIsInLibrary(state.exists);
+				setIsFavorite(state.favorite);
+				setSelectedStatus(toLibraryStatus(state.status));
+			} catch (error) {
+				if (!isMounted) return;
+				console.error('Library state load failed:', error);
+				resetUiState();
+			}
+			finally {
+				if (isMounted) setLibraryStateLoading(false);
+			}
+		};
+
+		void loadLibraryState();
+
+		return () => {
+			isMounted = false;
+		};
+	}, [open, isAuthenticated, parsedKey?.id, parsedKey?.type]);
+
+	if (!visible) return null;
 	if (!displayCard) return null;
-	const trailerSrc = toEmbedVideoUrl(displayCard.trailer);
 
 	const ratingStars = (rating: number) => {
 		const r = Number.isFinite(rating) ? rating : 0;
@@ -116,6 +194,92 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 		window.location.href = '#/belepes';
 	};
 
+	const ensureLibraryEntry = async (statusForCreate: LibraryStatus | ''): Promise<boolean> => {
+		if (!parsedKey) return false;
+		if (isInLibrary) return true;
+
+		const payload: {
+			type: typeof parsedKey.type;
+			contentId: number;
+			status?: LibraryStatus;
+		} = {
+			type: parsedKey.type,
+			contentId: parsedKey.id,
+		};
+
+		if (statusForCreate !== '') {
+			payload.status = statusForCreate;
+		}
+
+		try {
+			await addToLibrary(payload);
+		} catch (error) {
+			if (!(error instanceof ApiHttpError) || error.status !== 409) {
+				throw error;
+			}
+		}
+
+		setIsInLibrary(true);
+		return true;
+	};
+
+	const handleFavoriteToggle = async () => {
+		if (!isAuthenticated) {
+			handleLoginRedirect();
+			return;
+		}
+		if (!parsedKey || libraryActionLoading) return;
+
+		setLibraryActionLoading(true);
+		setLibraryError(null);
+
+		try {
+			await ensureLibraryEntry(selectedStatus);
+			const response = await toggleLibraryFavorite(parsedKey.type, parsedKey.id);
+			setIsFavorite(response.favorite);
+		} catch (error) {
+			console.error('Favorite toggle failed:', error);
+			if (error instanceof ApiHttpError && (error.status === 401 || error.status === 403)) {
+				handleLoginRedirect();
+				return;
+			}
+			setLibraryError('A kedvenc állapot mentése sikertelen.');
+		} finally {
+			setLibraryActionLoading(false);
+		}
+	};
+
+	const handleStatusChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+		const nextStatus = event.target.value as LibraryStatus | '';
+		const previousStatus = selectedStatus;
+		setSelectedStatus(nextStatus);
+
+		if (!isAuthenticated) {
+			handleLoginRedirect();
+			setSelectedStatus(previousStatus);
+			return;
+		}
+		if (!parsedKey || libraryActionLoading) return;
+
+		setLibraryActionLoading(true);
+		setLibraryError(null);
+
+		try {
+			await ensureLibraryEntry(nextStatus);
+			await updateLibraryProgress(parsedKey.type, parsedKey.id, { status: nextStatus });
+		} catch (error) {
+			console.error('Status update failed:', error);
+			if (error instanceof ApiHttpError && (error.status === 401 || error.status === 403)) {
+				handleLoginRedirect();
+				return;
+			}
+			setSelectedStatus(previousStatus);
+			setLibraryError('Az állapot mentése sikertelen.');
+		} finally {
+			setLibraryActionLoading(false);
+		}
+	};
+
 	return (
 		<>
 			<div className={`custom-modal-backdrop${closing ? ' closing' : ''}`} style={{ display: 'block' }} onClick={onClose}></div>
@@ -140,7 +304,40 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 									/>
 								</div>
 								<div className="col-md-7">
-										<h4>{displayCard.title}</h4>
+										<div className="modal-header-row">
+											<h4>{displayCard.title}</h4>
+											{isAuthenticated && parsedKey && (
+												<div className="modal-library-actions" aria-label="Könyvtár és előzmény műveletek">
+													<button
+														type="button"
+														className={`modal-favorite-btn${isFavorite ? ' active' : ''}`}
+														onClick={handleFavoriteToggle}
+														disabled={libraryStateLoading || libraryActionLoading}
+														aria-label={isFavorite ? 'Eltávolítás a kedvencek közül' : 'Hozzáadás a kedvencekhez'}
+														title={isFavorite ? 'Kedvenc' : 'Nem kedvenc'}
+													>
+														<i className={`bi ${isFavorite ? 'bi-heart-fill' : 'bi-heart'}`}></i>
+													</button>
+													<select
+														className="modal-status-select"
+														value={selectedStatus}
+														onChange={handleStatusChange}
+														disabled={libraryStateLoading || libraryActionLoading}
+														aria-label="Megtekintési állapot"
+													>
+														<option value="">Nincs állapot</option>
+														{STATUS_OPTIONS.map((option) => (
+															<option key={option.value} value={option.value}>
+																{option.label}
+															</option>
+														))}
+													</select>
+												</div>
+											)}
+										</div>
+										{libraryError && (
+											<div className="modal-library-error">{libraryError}</div>
+										)}
 										{displayCard.ageRating && (
 											<div className="age-rating-row">
 												<span className={`age-rating-badge ${getAgeRatingClassName()}`}>

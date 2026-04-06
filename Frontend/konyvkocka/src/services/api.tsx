@@ -478,6 +478,16 @@ export interface LibraryQueryParams {
 	favorite?: boolean;
 }
 
+export type LibraryContentType = 'book' | 'movie' | 'series';
+
+export type LibraryStatus =
+	| 'WATCHING'
+	| 'COMPLETED'
+	| 'PAUSED'
+	| 'DROPPED'
+	| 'PLANNED'
+	| 'ARCHIVED';
+
 export const getLibrary = async (params: LibraryQueryParams = {}): Promise<LibraryResponse> => {
 	const searchParams = new URLSearchParams();
 	if (params.q) searchParams.set('q', params.q);
@@ -491,6 +501,66 @@ export const getLibrary = async (params: LibraryQueryParams = {}): Promise<Libra
 	const path = query.length > 0 ? `/api/library?${query}` : '/api/library';
 	return request<LibraryResponse>(path, { auth: true });
 };
+
+export interface LibraryItemStateResponse {
+	exists: boolean;
+	status: LibraryStatus | null;
+	favorite: boolean;
+}
+
+export const getLibraryItemState = async (
+	type: LibraryContentType,
+	contentId: number,
+): Promise<LibraryItemStateResponse> =>
+	request<LibraryItemStateResponse>(`/api/library/${type}/${contentId}/state`, { auth: true });
+
+export interface AddToLibraryPayload {
+	type: LibraryContentType;
+	contentId: number;
+	status?: LibraryStatus | '';
+}
+
+export const addToLibrary = async (payload: AddToLibraryPayload): Promise<{ message: string }> =>
+	request<{ message: string }>('/api/library', {
+		auth: true,
+		method: 'POST',
+		body: payload,
+	});
+
+export interface ToggleLibraryFavoriteResponse {
+	message: string;
+	favorite: boolean;
+}
+
+export const toggleLibraryFavorite = async (
+	type: LibraryContentType,
+	contentId: number,
+): Promise<ToggleLibraryFavoriteResponse> =>
+	request<ToggleLibraryFavoriteResponse>(`/api/library/${type}/${contentId}/favorite`, {
+		auth: true,
+		method: 'PATCH',
+	});
+
+export interface UpdateLibraryProgressPayload {
+	status?: LibraryStatus | '';
+	currentPage?: number;
+	currentAudioPosition?: number;
+	currentPosition?: number;
+	currentSeason?: number;
+	currentEpisode?: number;
+	currentEpisodePosition?: number;
+}
+
+export const updateLibraryProgress = async (
+	type: LibraryContentType,
+	contentId: number,
+	payload: UpdateLibraryProgressPayload,
+): Promise<{ message: string }> =>
+	request<{ message: string }>(`/api/library/${type}/${contentId}/progress`, {
+		auth: true,
+		method: 'PATCH',
+		body: payload,
+	});
 
 export interface HistoryItemResponse {
 	contentType: string;
@@ -526,6 +596,25 @@ export const getHistory = async (params: {
 
 	return request<HistoryResponse>(`/api/history?${searchParams.toString()}`, { auth: true });
 };
+
+export interface RecordContentViewPayload {
+	contentType: 'book' | 'movie' | 'series';
+	contentId: number;
+}
+
+export interface RecordContentViewResponse {
+	message: string;
+	created: boolean;
+}
+
+export const recordContentView = async (
+	payload: RecordContentViewPayload,
+): Promise<RecordContentViewResponse> =>
+	request<RecordContentViewResponse>('/api/history/view', {
+		auth: true,
+		method: 'POST',
+		body: payload,
+	});
 
 export interface NewsArticleResponse {
 	id: number;

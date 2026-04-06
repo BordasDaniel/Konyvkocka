@@ -67,6 +67,91 @@
 
     .tags-inline { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
 
+    .modal-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.45rem;
+    }
+
+    .modal-header-row h4 {
+      margin: 0;
+    }
+
+    .modal-library-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-left: auto;
+    }
+
+    .modal-favorite-btn {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.9);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .modal-favorite-btn i {
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .modal-favorite-btn:hover:not(:disabled),
+    .modal-favorite-btn:focus-visible:not(:disabled) {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.26);
+    }
+
+    .modal-favorite-btn.active {
+      background: rgba(239, 68, 68, 0.24);
+      border-color: rgba(239, 68, 68, 0.58);
+      color: #ffb3b3;
+    }
+
+    .modal-favorite-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .modal-status-select {
+      min-width: 10.2rem;
+      height: 2.25rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.06);
+      color: #ffffff;
+      padding: 0 0.7rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .modal-status-select:focus {
+      outline: none;
+      border-color: rgba(194,157,89,0.75);
+      box-shadow: 0 0 0 2px rgba(194,157,89,0.22);
+    }
+
+    .modal-status-select option {
+      color: #111111;
+      background: #ffffff;
+    }
+
+    .modal-library-error {
+      margin-bottom: 0.55rem;
+      color: #ffb3b3;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
     .age-rating-row {
       margin-bottom: 0.6rem;
     }
@@ -134,6 +219,19 @@
       .modal-dialog { max-width: 95%; }
       .modal-body .row { align-items: start; }
       .modal-body .col-md-4 { margin-bottom: 1rem; }
+
+      .modal-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .modal-library-actions {
+        width: 100%;
+      }
+
+      .modal-status-select {
+        flex: 1;
+      }
     }
 
     /* Rating / episodes / comments */
