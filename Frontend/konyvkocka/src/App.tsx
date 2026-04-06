@@ -1,28 +1,39 @@
 import { Routes, Route, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import './App.css'
 import Layout from './components/layout/Layout.tsx'
 import PageTitle from './components/common/PageTitle.tsx'
-import Home from './pages/Home.tsx'
-import About from './pages/About.tsx'
-import Aszf from './pages/Aszf.tsx'
-import Login from './pages/Login.tsx'
-import Search from './pages/Search.tsx'
-import News from './pages/News.tsx'
-import Support from './pages/Support.tsx'
-import Payment from './pages/Payment.tsx'
-import Reader from './pages/Reader.tsx'
-import Watch from './pages/Watch.tsx'
-import User from './pages/User.tsx'
-import ResetPassword from './pages/ResetPassword.tsx'
-import NotFound from './pages/NotFound.tsx'
-import Library from './pages/Library.tsx'
-import History from './pages/History.tsx'
-import Notifications from './pages/Notifications.tsx'
-import Challenges from './pages/Challenges.tsx'
-import Subscription from './pages/Subscription.tsx'
-import Leaderboard from './pages/Leaderboard.tsx'
-import Admin from './pages/Admin.tsx'
+
+const Home = lazy(() => import('./pages/Home.tsx'))
+const About = lazy(() => import('./pages/About.tsx'))
+const Aszf = lazy(() => import('./pages/Aszf.tsx'))
+const Login = lazy(() => import('./pages/Login.tsx'))
+const Search = lazy(() => import('./pages/Search.tsx'))
+const News = lazy(() => import('./pages/News.tsx'))
+const Support = lazy(() => import('./pages/Support.tsx'))
+const Payment = lazy(() => import('./pages/Payment.tsx'))
+const Reader = lazy(() => import('./pages/Reader.tsx'))
+const Watch = lazy(() => import('./pages/Watch.tsx'))
+const User = lazy(() => import('./pages/User.tsx'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword.tsx'))
+const NotFound = lazy(() => import('./pages/NotFound.tsx'))
+const Library = lazy(() => import('./pages/Library.tsx'))
+const History = lazy(() => import('./pages/History.tsx'))
+const Notifications = lazy(() => import('./pages/Notifications.tsx'))
+const Challenges = lazy(() => import('./pages/Challenges.tsx'))
+const Subscription = lazy(() => import('./pages/Subscription.tsx'))
+const Leaderboard = lazy(() => import('./pages/Leaderboard.tsx'))
+const Admin = lazy(() => import('./pages/Admin.tsx'))
+
+const RouteFallback = () => (
+  <main className="container py-5">
+    <div className="about-panel text-center py-5">
+      <div className="spinner-border text-light" role="status">
+        <span className="visually-hidden">Betöltés...</span>
+      </div>
+    </div>
+  </main>
+)
 
 function App() {
   const location = useLocation();
@@ -42,7 +53,6 @@ function App() {
       if (pageContent) pageContent.scrollTop = 0;
     };
 
-    scrollTop();
     const raf = window.requestAnimationFrame(scrollTop);
     return () => window.cancelAnimationFrame(raf);
   }, [location.pathname, location.search, location.hash]);
@@ -50,29 +60,31 @@ function App() {
   return (
     <Layout>
       <PageTitle />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/rolunk" element={<About />} />
-        <Route path="/aszf" element={<Aszf />} />
-        <Route path="/belepes" element={<Login />} />
-        <Route path="/kereses" element={<Search />} />
-        <Route path="/konyvtaram" element={<Library />} />
-        <Route path="/elozmenyeim" element={<History />} />
-        <Route path="/ertesitesek" element={<Notifications />} />
-        <Route path="/kihivasok" element={<Challenges />} />
-        <Route path="/vasarlas" element={<Subscription />} />
-        <Route path="/hirek" element={<News />} />
-        <Route path="/ranglista" element={<Leaderboard />} />
-        <Route path="/tamogatas" element={<Support />} />
-        <Route path="/fizetes" element={<Payment />} />
-        <Route path="/olvaso" element={<Reader />} />
-        <Route path="/nezes" element={<Watch />} />
-        <Route path="/profil" element={<User />} />
-        <Route path="/profil/:userId" element={<User />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/jelszo-visszaallitas" element={<ResetPassword />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/rolunk" element={<About />} />
+          <Route path="/aszf" element={<Aszf />} />
+          <Route path="/belepes" element={<Login />} />
+          <Route path="/kereses" element={<Search />} />
+          <Route path="/konyvtaram" element={<Library />} />
+          <Route path="/elozmenyeim" element={<History />} />
+          <Route path="/ertesitesek" element={<Notifications />} />
+          <Route path="/kihivasok" element={<Challenges />} />
+          <Route path="/vasarlas" element={<Subscription />} />
+          <Route path="/hirek" element={<News />} />
+          <Route path="/ranglista" element={<Leaderboard />} />
+          <Route path="/tamogatas" element={<Support />} />
+          <Route path="/fizetes" element={<Payment />} />
+          <Route path="/olvaso" element={<Reader />} />
+          <Route path="/nezes" element={<Watch />} />
+          <Route path="/profil" element={<User />} />
+          <Route path="/profil/:userId" element={<User />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/jelszo-visszaallitas" element={<ResetPassword />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </Layout>
   )
 }

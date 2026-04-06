@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useState, useRef, useEffect } from "react";
 import { ApiHttpError, getNotifications } from "../../services/api";
+import { prefetchRoute } from "../../utils/routePrefetch";
 
 function Navbar() {
     const { user, isAuthenticated, logout } = useAuth();
@@ -51,6 +52,10 @@ function Navbar() {
     const handleNavigationClick = () => {
         closeMobileProfilePanel();
         closeNavbarCollapse();
+    };
+
+    const handleLinkIntent = (path: string) => {
+      void prefetchRoute(path);
     };
 
     const handleNavbarToggleClick = () => {
@@ -192,6 +197,8 @@ function Navbar() {
                     <NavLink
                       to={item.to}
                       className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+                      onMouseEnter={() => handleLinkIntent(item.to)}
+                      onFocus={() => handleLinkIntent(item.to)}
                       onClick={handleNavigationClick}
                     >
                       <i className={`bi ${item.icon} mobile-main-icon me-2`} aria-hidden="true"></i>
@@ -316,7 +323,14 @@ function Navbar() {
           <ul className="navbar-nav me-auto mb-2 mb-lg-0 d-none d-lg-flex">
             {mainNavItems.map((item) => (
               <li className="nav-item" key={`desktop-${item.to}`}>
-                <NavLink to={item.to} className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>{item.label}</NavLink>
+                <NavLink
+                  to={item.to}
+                  className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+                  onMouseEnter={() => handleLinkIntent(item.to)}
+                  onFocus={() => handleLinkIntent(item.to)}
+                >
+                  {item.label}
+                </NavLink>
               </li>
             ))}
           </ul>
@@ -417,7 +431,12 @@ function Navbar() {
               </li>
             ) : (
               <li className="nav-item">
-                <NavLink className="nav-link" to="/belepes">
+                <NavLink
+                  className="nav-link"
+                  to="/belepes"
+                  onMouseEnter={() => handleLinkIntent('/belepes')}
+                  onFocus={() => handleLinkIntent('/belepes')}
+                >
                   <i className="bi bi-person-circle"></i> Bejelentkezés
                 </NavLink>
               </li>
