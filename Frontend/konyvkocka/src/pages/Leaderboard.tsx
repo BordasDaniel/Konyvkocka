@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import {
 	ApiHttpError,
 	getLeaderboard,
@@ -48,6 +49,7 @@ const mapEntry = (entry: LeaderboardEntryResponse): LeaderboardEntry => ({
 
 export default function Leaderboard() {
 	const { isAuthenticated } = useAuth();
+	const navigate = useNavigate();
 	const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
 	const [locationFilter, setLocationFilter] = useState<LocationFilter>('world');
 	const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
@@ -166,6 +168,10 @@ export default function Leaderboard() {
 		setCurrentPage(Math.min(totalPages, Math.max(1, page)));
 	};
 
+	const openProfile = (userId: number) => {
+		navigate(`/profil/${userId}`);
+	};
+
 	return (
 		<main className="mt-5">
 			<div className="container py-5" style={{ maxWidth: '1400px' }}>
@@ -232,14 +238,18 @@ export default function Leaderboard() {
 							<div className="lb-col lb-player">
 								<img src={currentUser.avatar} alt={currentUser.username} className="player-avatar" />
 								<img src={currentUser.countryFlag} alt={currentUser.countryCode} className="player-flag" />
-								<span className="player-name">
+								<button
+									type="button"
+									className="player-name leaderboard-profile-link"
+									onClick={() => openProfile(currentUser.userId)}
+								>
 									{currentUser.username}
 									{currentUser.isSubscriber && (
 										<svg className="subscriber-crown" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14">
 											<path fill="currentColor" d="M2 17l2-7 4 4 5-9 5 9 4-4 2 7H2z" />
 										</svg>
 									)}
-								</span>
+								</button>
 							</div>
 							<div className="lb-col lb-points"><span className="points-value">{formatNumber(currentUser.points)}</span></div>
 							<div className="lb-col lb-stats"><i className="bi bi-book stat-icon"></i>{formatNumber(currentUser.booksRead)}</div>
@@ -282,14 +292,18 @@ export default function Leaderboard() {
 									<div className="lb-col lb-player">
 										<img src={entry.avatar} alt={entry.username} className="player-avatar" />
 										<img src={entry.countryFlag} alt={entry.countryCode} className="player-flag" />
-										<span className="player-name">
+										<button
+											type="button"
+											className="player-name leaderboard-profile-link"
+											onClick={() => openProfile(entry.userId)}
+										>
 											{entry.username}
 											{entry.isSubscriber && (
 												<svg className="subscriber-crown" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14">
 													<path fill="currentColor" d="M2 17l2-7 4 4 5-9 5 9 4-4 2 7H2z" />
 												</svg>
 											)}
-										</span>
+										</button>
 									</div>
 									<div className="lb-col lb-points"><span className="points-value">{formatNumber(entry.points)}</span></div>
 									<div className="lb-col lb-stats"><i className="bi bi-book stat-icon"></i>{formatNumber(entry.booksRead)}</div>

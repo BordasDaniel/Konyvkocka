@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import '../styles/user.css';
 import {
 	ApiHttpError,
@@ -319,6 +319,12 @@ const mapRecentItemsToBooks = (items: UserRecentFavoriteItemResponse[]): Book[] 
 					: 'partial',
 	}));
 
+	const mapViewTypeToContentType = (viewType: ViewType): 'all' | 'media' | 'books' => {
+		if (viewType === 'book') return 'books';
+		if (viewType === 'media') return 'media';
+		return 'all';
+	};
+
 const mapBadgeCategoryName = (category: string): string => {
 	const normalized = category.toUpperCase();
 	if (normalized === 'EVENT') return 'Események';
@@ -565,18 +571,30 @@ interface LocationState {
 	view?: 'settings';
 }
 
+const parseProfileRouteUserId = (value: string | undefined): number | null => {
+	if (!value) return null;
+	const parsed = Number(value);
+	return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
 interface BadgeOption {
 	id: number;
 	name: string;
 }
 
 const User: React.FC = () => {
+	const { userId: profileRouteParam } = useParams<{ userId?: string }>();
+	const requestedProfileUserId = parseProfileRouteUserId(profileRouteParam);
+	const isReadOnlyProfile = requestedProfileUserId !== null;
 	const location = useLocation();
 	const locationState = location.state as LocationState | null;
 	const [openSelect, setOpenSelect] = useState<OpenSelectId>(null);
 
 	// Állapotok - activeView alapértelmezése a location.state alapján
 	const [activeView, setActiveView] = useState<ViewType>(() => {
+		if (isReadOnlyProfile) {
+			return 'all';
+		}
 		if (locationState?.view === 'settings') {
 			return 'settings';
 		}
@@ -584,7 +602,8 @@ const User: React.FC = () => {
 	});
 	const [profile, setProfile] = useState<UserProfile | null>(null);
 	const [allStats, setAllStats] = useState<Record<string, ViewStats>>({});
-	const [books, setBooks] = useState<Book[]>([]);
+	const [recentBooks, setRecentBooks] = useState<Book[]>([]);
+	const [favoriteBooks, setFavoriteBooks] = useState<Book[]>([]);
 	const [medalGroups, setMedalGroups] = useState<MedalGroup[]>([]);
 	const [badgeOptions, setBadgeOptions] = useState<BadgeOption[]>([]);
 	const [profileUserId, setProfileUserId] = useState<number | null>(null);
@@ -812,10 +831,16 @@ const User: React.FC = () => {
 
 	// Location state változásának figyelése (pl. navigáció a Beállításokhoz)
 	useEffect(() => {
-		if (locationState?.view === 'settings') {
+		if (!isReadOnlyProfile && locationState?.view === 'settings') {
 			setActiveView('settings');
 		}
-	}, [locationState]);
+	}, [isReadOnlyProfile, locationState]);
+
+	useEffect(() => {
+		if (isReadOnlyProfile && activeView === 'settings') {
+			setActiveView('all');
+		}
+	}, [activeView, isReadOnlyProfile]);
 
 	useEffect(() => {
 		setReadBooksOpen(false);
@@ -843,24 +868,34 @@ const User: React.FC = () => {
 			setMedalGroups([]);
 			let serverEmail = '';
 			try {
-				const storedUserId = getStoredUserId();
-				setProfileUserId(storedUserId);
+				const viewerUserId = getStoredUserId();
+				const targetUserId = requestedProfileUserId ?? viewerUserId;
+				setProfileUserId(targetUserId);
 
-				if (storedUserId) {
+				if (targetUserId) {
+					const shouldLoadOwnedTitles = !isReadOnlyProfile && viewerUserId === targetUserId;
 					const [profileResponse, meResponse, recentItems, favoriteItems, ownedTitles] = await Promise.all([
-						getUserProfile(storedUserId),
+						getUserProfile(targetUserId),
 						authMe().catch(() => null),
-						getUserRecent(storedUserId, 'all').catch(() => [] as UserRecentFavoriteItemResponse[]),
-						getUserFavorites(storedUserId, 'all').catch(() => [] as UserRecentFavoriteItemResponse[]),
-						getOwnedUserTitles().catch(() => [] as OwnedUserTitleResponse[]),
+						getUserRecent(targetUserId, 'all').catch(() => [] as UserRecentFavoriteItemResponse[]),
+						getUserFavorites(targetUserId, 'all').catch(() => [] as UserRecentFavoriteItemResponse[]),
+						shouldLoadOwnedTitles
+							? getOwnedUserTitles().catch(() => [] as OwnedUserTitleResponse[])
+							: Promise.resolve([] as OwnedUserTitleResponse[]),
 					]);
 
-					const ownedBadgeOptions = ownedTitles.map((title) => ({ id: title.id, name: title.name }));
+					const ownedBadgeOptions = shouldLoadOwnedTitles
+						? ownedTitles.map((title) => ({ id: title.id, name: title.name }))
+						: [];
 					setBadgeOptions(ownedBadgeOptions);
 
-					const activeBadgesFromOwnedTitles = buildActiveBadgesFromOwnedTitles(ownedTitles);
-					const selectedBadges = activeBadgesFromOwnedTitles.length > 0
-						? activeBadgesFromOwnedTitles
+					const selectedBadges = shouldLoadOwnedTitles
+						? (() => {
+							const activeBadgesFromOwnedTitles = buildActiveBadgesFromOwnedTitles(ownedTitles);
+							return activeBadgesFromOwnedTitles.length > 0
+								? activeBadgesFromOwnedTitles
+								: normalizeActiveBadges(profileResponse.activeTitles);
+						})()
 						: normalizeActiveBadges(profileResponse.activeTitles);
 					const countryCode = (profileResponse.countryCode || 'HU').toUpperCase();
 					const mappedProfile: UserProfile = {
@@ -875,7 +910,7 @@ const User: React.FC = () => {
 						premium: profileResponse.isSubscriber,
 						premiumExpiresAt: formatDateTimeLabel(profileResponse.premiumExpiresAt),
 						permissionLevel: mapPermissionLevel(meResponse?.permissionLevel),
-						email: meResponse?.email ?? profileResponse.email ?? '',
+						email: isReadOnlyProfile ? '' : meResponse?.email ?? profileResponse.email ?? '',
 						creationDate: formatDateLabel(profileResponse.creationDate),
 						lastLoginDate: formatDateLabel(profileResponse.lastLoginDate),
 						xp: profileResponse.xp,
@@ -888,14 +923,10 @@ const User: React.FC = () => {
 					};
 					serverEmail = mappedProfile.email;
 
-					const combinedRecent = [...recentItems, ...favoriteItems];
-					const uniqueContent = Array.from(
-						new Map(combinedRecent.map((item) => [`${item.type}:${item.id}`, item])).values(),
-					).slice(0, RECENT_AND_FAVORITE_LIMIT);
-
 					setProfile(mappedProfile);
 					setAllStats(mapApiStatsToViewStats(profileResponse, selectedBadges));
-					setBooks(mapRecentItemsToBooks(uniqueContent));
+					setRecentBooks(mapRecentItemsToBooks(recentItems.slice(0, RECENT_AND_FAVORITE_LIMIT)));
+					setFavoriteBooks(mapRecentItemsToBooks(favoriteItems.slice(0, RECENT_AND_FAVORITE_LIMIT)));
 
 					setSettings(prev => ({
 						...prev,
@@ -908,27 +939,30 @@ const User: React.FC = () => {
 					setAuthRequired(true);
 					setProfile(null);
 					setAllStats({});
-					setBooks([]);
+					setRecentBooks([]);
+					setFavoriteBooks([]);
 					setMedalGroups([]);
 					return;
 				}
 
 				// Beállítások inicializálása profil adatokból
 				// localStorage beállítások betöltése
-				const savedSettings = localStorage.getItem('kk_profile_settings');
-				if (savedSettings) {
-					const parsed = JSON.parse(savedSettings) as Partial<UserSettings>;
-					const { email: _ignoredEmail, username: _ignoredUsername, ...safeParsed } = parsed;
-					const { selectedBadges: _ignoredSelectedBadges, selectedTitles: _ignoredSelectedTitles, ...safeParsedWithoutBadges } =
-						safeParsed as Partial<UserSettings> & { selectedTitles?: string[] };
-					setSettings(prev => ({
-						...prev,
-						...safeParsedWithoutBadges,
-						avatarDataUrl: null,
-						selectedBadges: prev.selectedBadges,
-						username: prev.username,
-						email: serverEmail || prev.email,
-					}));
+				if (!isReadOnlyProfile) {
+					const savedSettings = localStorage.getItem('kk_profile_settings');
+					if (savedSettings) {
+						const parsed = JSON.parse(savedSettings) as Partial<UserSettings>;
+						const { email: _ignoredEmail, username: _ignoredUsername, ...safeParsed } = parsed;
+						const { selectedBadges: _ignoredSelectedBadges, selectedTitles: _ignoredSelectedTitles, ...safeParsedWithoutBadges } =
+							safeParsed as Partial<UserSettings> & { selectedTitles?: string[] };
+						setSettings(prev => ({
+							...prev,
+							...safeParsedWithoutBadges,
+							avatarDataUrl: null,
+							selectedBadges: prev.selectedBadges,
+							username: prev.username,
+							email: serverEmail || prev.email,
+						}));
+					}
 				}
 			} catch (error) {
 				console.error('Hiba az adatok betöltésekor:', error);
@@ -938,7 +972,38 @@ const User: React.FC = () => {
 		};
 
 		loadData();
-	}, []);
+	}, [isReadOnlyProfile, requestedProfileUserId]);
+
+	useEffect(() => {
+		if (!profileUserId || activeView === 'settings') return;
+
+		let cancelled = false;
+		const contentType = mapViewTypeToContentType(activeView);
+
+		const loadCurrentViewContent = async () => {
+			try {
+				const [recentItems, favoriteItems] = await Promise.all([
+					getUserRecent(profileUserId, contentType).catch(() => [] as UserRecentFavoriteItemResponse[]),
+					getUserFavorites(profileUserId, contentType).catch(() => [] as UserRecentFavoriteItemResponse[]),
+				]);
+
+				if (cancelled) return;
+				setRecentBooks(mapRecentItemsToBooks(recentItems.slice(0, RECENT_AND_FAVORITE_LIMIT)));
+				setFavoriteBooks(mapRecentItemsToBooks(favoriteItems.slice(0, RECENT_AND_FAVORITE_LIMIT)));
+			} catch {
+				if (!cancelled) {
+					setRecentBooks([]);
+					setFavoriteBooks([]);
+				}
+			}
+		};
+
+		loadCurrentViewContent();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [activeView, profileUserId]);
 
 	useEffect(() => {
 		if (!badgesExpanded || badgesLoaded || !profileUserId) return;
@@ -977,6 +1042,15 @@ const User: React.FC = () => {
 
 	// Beállítások mentése
 	const handleSaveSettings = async () => {
+		if (isReadOnlyProfile) {
+			setSaveModal({
+				type: 'error',
+				title: 'Szerkesztés letiltva',
+				message: 'Másik felhasználó profilja csak megtekinthető.',
+			});
+			return;
+		}
+
 		if (settings.newPassword && settings.newPassword !== settings.confirmPassword) {
 			alert('Az új jelszó és megerősítés nem egyezik.');
 			return;
@@ -1096,7 +1170,8 @@ const User: React.FC = () => {
 		const payload = {
 			profile,
 			stats: allStats,
-			books,
+			recentBooks,
+			favoriteBooks,
 		};
 
 		const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -1219,13 +1294,15 @@ const User: React.FC = () => {
 								>
 									<i className="bi bi-film me-1"></i>MÉDIA
 								</button>
-								<button
-									className={`btn btn-action ${activeView === 'settings' ? 'active' : ''}`}
-									type="button"
-									onClick={() => setActiveView('settings')}
-								>
-									<i className="bi bi-gear-fill me-1"></i>BEÁLLÍTÁSOK
-								</button>
+								{!isReadOnlyProfile && (
+									<button
+										className={`btn btn-action ${activeView === 'settings' ? 'active' : ''}`}
+										type="button"
+										onClick={() => setActiveView('settings')}
+									>
+										<i className="bi bi-gear-fill me-1"></i>BEÁLLÍTÁSOK
+									</button>
+								)}
 							</div>
 						</div>
 
@@ -1251,7 +1328,7 @@ const User: React.FC = () => {
 			</div>
 
 			{/* Settings Panel */}
-			{activeView === 'settings' && (
+			{!isReadOnlyProfile && activeView === 'settings' && (
 				<div id="settingsPanel" className="mt-4">
 					{/* Profile Section */}
 					<div className="about-panel p-4 mb-4">
@@ -1952,7 +2029,7 @@ const User: React.FC = () => {
 
 								{readBooksOpen && (
 									<ul className="list-group list-group-flush book-list">
-										{books.map((book) => (
+										{recentBooks.map((book) => (
 											<li key={book.id} className="list-group-item book-item">
 												<div className="d-flex gap-3 align-items-center">
 													<img
@@ -2000,7 +2077,7 @@ const User: React.FC = () => {
 
 								{favBooksOpen && (
 									<ul className="list-group list-group-flush book-list">
-										{books.map((book) => (
+										{favoriteBooks.map((book) => (
 											<li key={book.id} className="list-group-item book-item">
 												<div className="d-flex gap-3 align-items-center">
 													<img

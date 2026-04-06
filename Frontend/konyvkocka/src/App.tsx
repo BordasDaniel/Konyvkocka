@@ -68,6 +68,7 @@ function App() {
         <Route path="/olvaso" element={<Reader />} />
         <Route path="/nezes" element={<Watch />} />
         <Route path="/profil" element={<User />} />
+        <Route path="/profil/:userId" element={<User />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/jelszo-visszaallitas" element={<ResetPassword />} />
         <Route path="*" element={<NotFound />} />

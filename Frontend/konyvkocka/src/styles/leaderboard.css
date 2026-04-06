@@ -386,6 +386,23 @@ main {
   gap: 0.4rem;
 }
 
+.leaderboard-profile-link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.leaderboard-profile-link:hover {
+  color: var(--secondary);
+}
+
+.leaderboard-profile-link:focus-visible {
+  outline: 1px solid rgba(194, 157, 89, 0.7);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
 .subscriber-crown {
   color: var(--secondary);
   flex-shrink: 0;
