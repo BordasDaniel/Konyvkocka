@@ -1,7 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/history.css';
-import { ApiHttpError, applyContentImageFallback, getHistory, toContentImageSrc, type HistoryItemResponse } from '../services/api';
+import {
+  ApiHttpError,
+  applyContentImageFallback,
+  buildContentKey,
+  getHistory,
+  recordContentView,
+  touchHistoryItem,
+  toContentImageSrc,
+  type HistoryItemResponse,
+} from '../services/api';
 
 // Előzmény elem típus
 interface HistoryItem {
@@ -99,7 +108,12 @@ const History: React.FC = () => {
         });
 
         if (!isMounted) return;
-        setHistoryItems(response.history.map(mapHistoryItem));
+
+        const mappedItems = response.history
+          .map(mapHistoryItem)
+          .sort((a, b) => b.viewedAt.getTime() - a.viewedAt.getTime());
+
+        setHistoryItems(mappedItems);
       } catch (loadError) {
         if (!isMounted) return;
 
@@ -238,12 +252,33 @@ const History: React.FC = () => {
   };
 
   // Folytatás kezelése
-  const handleContinue = (item: HistoryItem) => {
-    if (item.type === 'book') {
-      navigate('/olvaso', { state: { bookId: item.id } });
-    } else {
-      navigate('/nezes', { state: { contentId: item.id, contentType: item.type } });
+  const handleContinue = async (item: HistoryItem) => {
+    const contentKey = buildContentKey(item.type, item.id);
+
+    // Only LastSeen frissítése meglévő rekordra; ha hiányzik, fallbackként létrehozzuk/upserteljük.
+    try {
+      await touchHistoryItem({
+        contentType: item.type,
+        contentId: item.id,
+      });
+    } catch (recordError) {
+      if (recordError instanceof ApiHttpError && recordError.status === 404) {
+        try {
+          await recordContentView({ contentType: item.type, contentId: item.id });
+        } catch (fallbackError) {
+          console.warn('History fallback view tracking failed:', fallbackError);
+        }
+      } else {
+        console.warn('History pre-navigation update failed:', recordError);
+      }
     }
+
+    if (item.type === 'book') {
+      navigate(`/olvaso?content=${encodeURIComponent(contentKey)}`);
+      return;
+    }
+
+    navigate(`/nezes?content=${encodeURIComponent(contentKey)}`);
   };
 
   // Folytatásban lévő elemek száma

@@ -11,6 +11,12 @@ interface Bookmark {
   timestamp: string;
 }
 
+interface ReaderLocationState {
+  bookId?: number;
+  contentId?: number;
+  contentType?: string;
+}
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5269').replace(/\/$/, '');
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -82,11 +88,20 @@ const Reader: React.FC = () => {
       const params = new URLSearchParams(location.search);
       const contentParam = params.get('content');
       const directPdfParam = (params.get('pdf') ?? '').trim();
+      const state = (location.state as ReaderLocationState | null) ?? null;
 
-      if (contentParam) {
-        const parsed = parseContentKey(contentParam);
+      const parsedFromQuery = contentParam ? parseContentKey(contentParam) : null;
+      const fallbackBookId = typeof state?.bookId === 'number'
+        ? state.bookId
+        : typeof state?.contentId === 'number' && state?.contentType?.toLowerCase() === 'book'
+          ? state.contentId
+          : null;
 
-        if (!parsed || parsed.type !== 'book') {
+      const resolvedType = parsedFromQuery?.type ?? (fallbackBookId != null ? 'book' : null);
+      const resolvedId = parsedFromQuery?.id ?? fallbackBookId;
+
+      if (resolvedType && typeof resolvedId === 'number') {
+        if (resolvedType !== 'book') {
           if (isMounted) {
             setError('Az olvasó csak könyv típusú tartalomhoz használható.');
             setLoading(false);
@@ -95,12 +110,12 @@ const Reader: React.FC = () => {
         }
 
         try {
-          const detail = await getContentDetail(parsed.type, parsed.id);
+          const detail = await getContentDetail('book', resolvedId);
           if (!isMounted) return;
 
           const token = localStorage.getItem(SESSION_STORAGE_KEY);
           if (token && token.trim().length > 0) {
-            void recordContentView({ contentType: 'book', contentId: parsed.id }).catch((trackError) => {
+            void recordContentView({ contentType: 'book', contentId: resolvedId }).catch((trackError) => {
               console.warn('View tracking failed on reader page:', trackError);
             });
           }

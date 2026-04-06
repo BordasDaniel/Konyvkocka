@@ -46,6 +46,20 @@ const isDirectEmbeddableVideoUrl = (url: URL): boolean => {
 	return /\.(mp4|webm|ogg|m3u8|mpd)$/.test(path);
 };
 
+const isVideaEmbeddableUrl = (url: URL): boolean => {
+	const host = url.hostname.toLowerCase();
+	if (!host.endsWith('videa.hu')) return false;
+
+	const path = url.pathname.toLowerCase();
+	// Typical embed URL format: https://videa.hu/player?v=<id>&...
+	if (path === '/player' || path === '/player/') {
+		const videoId = url.searchParams.get('v');
+		return typeof videoId === 'string' && videoId.trim().length > 0;
+	}
+
+	return false;
+};
+
 export const toEmbedVideoUrl = (rawUrl: string | null | undefined): string => {
 	if (!rawUrl) return '';
 
@@ -78,6 +92,10 @@ export const toEmbedVideoUrl = (rawUrl: string | null | undefined): string => {
 	}
 
 	if (isDirectEmbeddableVideoUrl(parsed)) {
+		return trimmed;
+	}
+
+	if (isVideaEmbeddableUrl(parsed)) {
 		return trimmed;
 	}
 

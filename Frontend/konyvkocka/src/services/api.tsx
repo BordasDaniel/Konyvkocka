@@ -616,6 +616,33 @@ export const recordContentView = async (
 		body: payload,
 	});
 
+export interface UpdateHistoryPayload {
+	contentType: 'book' | 'movie' | 'series';
+	contentId: number;
+	progress?: number;
+	status?: 'WATCHING' | 'COMPLETED' | 'PAUSED' | 'DROPPED' | 'PLANNED' | 'ARCHIVED' | '';
+	rating?: number;
+}
+
+export interface TouchHistoryPayload {
+	contentType: 'book' | 'movie' | 'series';
+	contentId: number;
+}
+
+export const touchHistoryItem = async (payload: TouchHistoryPayload): Promise<{ message: string }> =>
+	request<{ message: string }>('/api/history/touch', {
+		auth: true,
+		method: 'POST',
+		body: payload,
+	});
+
+export const updateHistory = async (payload: UpdateHistoryPayload): Promise<{ message: string }> =>
+	request<{ message: string }>('/api/history', {
+		auth: true,
+		method: 'POST',
+		body: payload,
+	});
+
 export interface NewsArticleResponse {
 	id: number;
 	title: string;

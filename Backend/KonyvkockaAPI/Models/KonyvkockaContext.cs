@@ -422,8 +422,6 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.CompletedAt).HasDefaultValueSql("'NULL'").HasColumnType("datetime");
             entity.Property(e => e.CurrentPosition).HasDefaultValueSql("'0'").HasColumnType("int(11)");
             entity.Property(e => e.LastSeen)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("'current_timestamp()'")
                 .HasColumnType("datetime");
             entity.Property(e => e.Rating).HasPrecision(3, 1).HasDefaultValueSql("'NULL'");
             entity.Property(e => e.Status)
@@ -455,8 +453,6 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.CurrentPosition).HasDefaultValueSql("'0'").HasColumnType("int(11)");
             entity.Property(e => e.CurrentSeason).HasColumnType("int(11)");
             entity.Property(e => e.LastSeen)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("'current_timestamp()'")
                 .HasColumnType("datetime");
             entity.Property(e => e.Rating).HasPrecision(3, 1).HasDefaultValueSql("'NULL'");
             entity.Property(e => e.Status)
