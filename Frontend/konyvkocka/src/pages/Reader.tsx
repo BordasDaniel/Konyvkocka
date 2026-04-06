@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pdfWorker from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { getContentDetail, parseContentKey, recordContentView, SESSION_STORAGE_KEY } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import '../styles/reader.css';
 
 interface Bookmark {
@@ -40,6 +41,7 @@ const toPdfLoadUrl = (rawUrl: string): string => {
 };
 
 const Reader: React.FC = () => {
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const location = useLocation();
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [pdfUrl, setPdfUrl] = useState<string>('');
@@ -83,6 +85,17 @@ const Reader: React.FC = () => {
     let isMounted = true;
 
     const resolveReaderSource = async () => {
+      if (isAuthLoading) return;
+      if (!isAuthenticated) {
+        if (isMounted) {
+          setPdfUrl('');
+          setPdfDoc(null);
+          setLoading(false);
+          setError('A tartalom olvasásához be kell jelentkezned.');
+        }
+        return;
+      }
+
       setError(null);
 
       const params = new URLSearchParams(location.search);
@@ -160,7 +173,38 @@ const Reader: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [location.search]);
+  }, [isAuthenticated, isAuthLoading, location.search, location.state]);
+
+  if (isAuthLoading) {
+    return (
+      <main className="mt-5">
+        <div className="container py-5">
+          <div className="about-panel text-center py-5">
+            <div className="spinner-border text-light" role="status">
+              <span className="visually-hidden">Betöltés...</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <main className="mt-5">
+        <div className="container py-5">
+          <div className="about-panel text-center py-5 px-3">
+            <i className="bi bi-lock" style={{ fontSize: '3rem', color: 'var(--secondary)' }}></i>
+            <h3 className="mt-3 mb-2">Bejelentkezes szukseges</h3>
+            <p className="mb-4" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Olvasashoz jelentkezz be a fiokodba.</p>
+            <Link to="/belepes" className="btn btn-primary">
+              Bejelentkezes
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   useEffect(() => {
     if (!pdfUrl) {

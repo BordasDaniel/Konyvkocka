@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   getContentDetail,
   parseContentKey,
@@ -7,6 +7,7 @@ import {
   SESSION_STORAGE_KEY,
   type NormalizedContentType,
 } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { toEmbedVideoUrl } from '../utils/helpers';
 import '../styles/watch.css';
 
@@ -16,6 +17,7 @@ interface WatchLocationState {
 }
 
 const Watch: React.FC = () => {
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const location = useLocation();
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [title, setTitle] = useState<string>('Videó lejátszása');
@@ -29,6 +31,19 @@ const Watch: React.FC = () => {
     let isMounted = true;
 
     const loadWatchContent = async () => {
+      if (isAuthLoading) return;
+      if (!isAuthenticated) {
+        if (isMounted) {
+          setVideoUrl('');
+          setTitle('Videó lejátszása');
+          setDescription('');
+          setTags([]);
+          setError('A tartalom megtekinteshez be kell jelentkezned.');
+          setLoading(false);
+        }
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
@@ -88,7 +103,38 @@ const Watch: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [location.search, location.state]);
+  }, [isAuthenticated, isAuthLoading, location.search, location.state]);
+
+  if (isAuthLoading) {
+    return (
+      <main className="mt-5">
+        <div className="container py-5">
+          <div className="about-panel text-center py-5">
+            <div className="spinner-border text-light" role="status">
+              <span className="visually-hidden">Betöltés...</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <main className="mt-5">
+        <div className="container py-5">
+          <div className="about-panel text-center py-5 px-3">
+            <i className="bi bi-lock" style={{ fontSize: '3rem', color: 'var(--secondary)' }}></i>
+            <h3 className="mt-3 mb-2">Bejelentkezes szukseges</h3>
+            <p className="mb-4" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Tartalom megtekintesehez jelentkezz be a fiokodba.</p>
+            <Link to="/belepes" className="btn btn-primary">
+              Bejelentkezes
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   const handleRefresh = () => {
     window.location.reload();
