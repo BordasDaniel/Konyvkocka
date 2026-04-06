@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useState, useRef, useEffect } from "react";
-import { ApiHttpError, getNotifications } from "../../services/api";
+import { ApiHttpError, getChallenges, getNotifications } from "../../services/api";
 import { prefetchRoute } from "../../utils/routePrefetch";
 
 function Navbar() {
@@ -11,6 +11,7 @@ function Navbar() {
     const [mobileProfileMenuOpen, setMobileProfileMenuOpen] = useState(false);
     const [mobilePanelHeight, setMobilePanelHeight] = useState<number>(0);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [hasClaimableChallenges, setHasClaimableChallenges] = useState(false);
     const dropdownRef = useRef<HTMLLIElement>(null);
     const mobileMainPanelRef = useRef<HTMLUListElement>(null);
     const mobileProfilePanelRef = useRef<HTMLUListElement>(null);
@@ -94,6 +95,11 @@ function Navbar() {
         setUnreadCount(Math.max(0, value));
       };
 
+      const applyChallengeIndicator = (value: boolean) => {
+        if (!isMounted) return;
+        setHasClaimableChallenges(value);
+      };
+
       const refreshUnreadCount = async () => {
         if (!isAuthenticated) {
           applyUnreadCount(0);
@@ -117,6 +123,30 @@ function Navbar() {
         }
       };
 
+      const refreshChallengeIndicator = async () => {
+        if (!isAuthenticated) {
+          applyChallengeIndicator(false);
+          return;
+        }
+
+        try {
+          const response = await getChallenges({ status: 'completed' });
+          const hasClaimable = response.challenges.some((challenge) => challenge.status === 'COMPLETED');
+          applyChallengeIndicator(hasClaimable);
+        } catch (error) {
+          if (error instanceof ApiHttpError && (error.status === 401 || error.status === 403)) {
+            applyChallengeIndicator(false);
+            return;
+          }
+
+          console.error('Failed to load challenge claim indicator:', error);
+        }
+      };
+
+      const refreshNavbarIndicators = async () => {
+        await Promise.all([refreshUnreadCount(), refreshChallengeIndicator()]);
+      };
+
       const onUnreadCountChanged = (event: Event) => {
         const customEvent = event as CustomEvent<{ unreadCount?: number }>;
         const nextUnreadCount = customEvent.detail?.unreadCount;
@@ -129,22 +159,27 @@ function Navbar() {
         void refreshUnreadCount();
       };
 
+      const onChallengesUpdated = () => {
+        void refreshChallengeIndicator();
+      };
+
       const onWindowFocus = () => {
-        void refreshUnreadCount();
+        void refreshNavbarIndicators();
       };
 
       const onVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
-          void refreshUnreadCount();
+          void refreshNavbarIndicators();
         }
       };
 
       const intervalId = window.setInterval(() => {
-        void refreshUnreadCount();
+        void refreshNavbarIndicators();
       }, 60000);
 
-      void refreshUnreadCount();
+      void refreshNavbarIndicators();
       window.addEventListener('kk_notifications_unread_changed', onUnreadCountChanged as EventListener);
+      window.addEventListener('kk_challenges_updated', onChallengesUpdated as EventListener);
       window.addEventListener('focus', onWindowFocus);
       document.addEventListener('visibilitychange', onVisibilityChange);
 
@@ -152,6 +187,7 @@ function Navbar() {
         isMounted = false;
         window.clearInterval(intervalId);
         window.removeEventListener('kk_notifications_unread_changed', onUnreadCountChanged as EventListener);
+        window.removeEventListener('kk_challenges_updated', onChallengesUpdated as EventListener);
         window.removeEventListener('focus', onWindowFocus);
         document.removeEventListener('visibilitychange', onVisibilityChange);
       };
@@ -273,7 +309,11 @@ function Navbar() {
                     </li>
                     <li className="nav-item">
                       <NavLink to="/kihivasok" className="nav-link" onClick={handleNavigationClick}>
-                        <i className="bi bi-trophy-fill me-2"></i>Kihívások
+                        <span style={{ position: 'relative', display: 'inline-block' }}>
+                          <i className="bi bi-trophy-fill me-2"></i>
+                          {hasClaimableChallenges && <span className="navbar-notification-dot" aria-hidden="true"></span>}
+                        </span>
+                        Kihívások
                       </NavLink>
                     </li>
 
@@ -392,7 +432,11 @@ function Navbar() {
                   </li>
                   <li>
                     <NavLink to="/kihivasok" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
-                      <i className="bi bi-trophy-fill me-2"></i>Kihívások
+                      <span style={{ position: 'relative', display: 'inline-block' }}>
+                        <i className="bi bi-trophy-fill me-2"></i>
+                        {hasClaimableChallenges && <span className="navbar-notification-dot" aria-hidden="true"></span>}
+                      </span>
+                      Kihívások
                     </NavLink>
                   </li>
                   <li><hr className="dropdown-divider" /></li>

@@ -9,9 +9,9 @@ function Footer() {
                   <h4>KönyvKocka</h4>
                   <p>Fedezd fel a könyvek és filmek világát velünk! Nálunk megtalálod a legjobb történeteket kedvező áron.</p>
           <ul className="social-links list-unstyled">
-          <li><a href="#" target="_blank"><i className="bi bi-facebook"></i> Facebook</a></li>
-          <li><a href="#" target="_blank"><i className="bi bi-instagram"></i> Instagram</a></li>
-          <li><a href="#" target="_blank"><i className="bi bi-discord"></i> Discord</a></li>
+                  <li><a href="https://www.facebook.com/" target="_blank" rel="noreferrer"><i className="bi bi-facebook"></i> Facebook</a></li>
+                  <li><a href="https://www.instagram.com/" target="_blank" rel="noreferrer"><i className="bi bi-instagram"></i> Instagram</a></li>
+                  <li><a href="https://discord.com/" target="_blank" rel="noreferrer"><i className="bi bi-discord"></i> Discord</a></li>
           </ul>
               </div>
         <div className="col-md-4 mb-4 px-5">
