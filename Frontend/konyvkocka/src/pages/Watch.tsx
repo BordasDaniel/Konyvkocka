@@ -347,6 +347,38 @@ const Watch: React.FC = () => {
     };
   }, [activeContentId, activeContentType, error, isAuthenticated, isCompletedLocked, loading, seriesProgress]);
 
+  useEffect(() => {
+    if (!isAuthenticated || !activeContentType || !activeContentId || loading || !!error) return;
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+
+      const sendWatchHeartbeat = async () => {
+        try {
+          await touchHistoryItem({ contentType: activeContentType, contentId: activeContentId });
+        } catch (touchError) {
+          if (touchError instanceof ApiHttpError && touchError.status === 404) {
+            try {
+              await recordContentView({ contentType: activeContentType, contentId: activeContentId });
+              await touchHistoryItem({ contentType: activeContentType, contentId: activeContentId });
+            } catch (retryError) {
+              console.warn('Nézési heartbeat mentése sikertelen (retry):', retryError);
+            }
+            return;
+          }
+
+          console.warn('Nézési heartbeat mentése sikertelen:', touchError);
+        }
+      };
+
+      void sendWatchHeartbeat();
+    }, 60000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [activeContentId, activeContentType, error, isAuthenticated, loading]);
+
   const handleEpisodeSelect = (index: number) => {
     if (index < 0 || index >= availableEpisodes.length) return;
 

@@ -9,6 +9,7 @@ import {
   parseContentKey,
   recordContentView,
   SESSION_STORAGE_KEY,
+  touchHistoryItem,
   updateHistory,
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -335,6 +336,38 @@ const Reader: React.FC = () => {
       window.clearTimeout(timer);
     };
   }, [activeBookId, error, isAuthenticated, loading, pageNum, totalPages]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !activeBookId || loading || !!error) return;
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+
+      const sendReaderHeartbeat = async () => {
+        try {
+          await touchHistoryItem({ contentType: 'book', contentId: activeBookId });
+        } catch (touchError) {
+          if (touchError instanceof ApiHttpError && touchError.status === 404) {
+            try {
+              await recordContentView({ contentType: 'book', contentId: activeBookId });
+              await touchHistoryItem({ contentType: 'book', contentId: activeBookId });
+            } catch (retryError) {
+              console.warn('Olvasási heartbeat mentése sikertelen (retry):', retryError);
+            }
+            return;
+          }
+
+          console.warn('Olvasási heartbeat mentése sikertelen:', touchError);
+        }
+      };
+
+      void sendReaderHeartbeat();
+    }, 60000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [activeBookId, error, isAuthenticated, loading]);
 
   useEffect(() => {
     if (pdfDoc && canvasRef.current) {

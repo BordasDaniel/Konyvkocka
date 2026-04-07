@@ -273,6 +273,10 @@ namespace KonyvkockaAPI.Controllers
             try
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                    return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
+
                 var normalizedType = dto.ContentType.Trim().ToLowerInvariant();
                 var now = DateTime.Now;
                 var created = false;
@@ -303,7 +307,9 @@ namespace KonyvkockaAPI.Controllers
                         }
                         else
                         {
-                            userBook.LastSeen = GetNextLastSeen(userBook.LastSeen);
+                            var nextLastSeen = GetNextLastSeen(userBook.LastSeen);
+                            AddReadMinutes(user, userBook.LastSeen, nextLastSeen);
+                            userBook.LastSeen = nextLastSeen;
                             if (!string.Equals(userBook.Status, "WATCHING", StringComparison.OrdinalIgnoreCase))
                             {
                                 userBook.Status = "WATCHING";
@@ -336,7 +342,9 @@ namespace KonyvkockaAPI.Controllers
                         }
                         else
                         {
-                            userMovie.LastSeen = GetNextLastSeen(userMovie.LastSeen);
+                            var nextLastSeen = GetNextLastSeen(userMovie.LastSeen);
+                            AddWatchMinutes(user, userMovie.LastSeen, nextLastSeen);
+                            userMovie.LastSeen = nextLastSeen;
                             if (!string.Equals(userMovie.Status, "WATCHING", StringComparison.OrdinalIgnoreCase))
                             {
                                 userMovie.Status = "WATCHING";
@@ -371,7 +379,9 @@ namespace KonyvkockaAPI.Controllers
                         }
                         else
                         {
-                            userSeries.LastSeen = GetNextLastSeen(userSeries.LastSeen);
+                            var nextLastSeen = GetNextLastSeen(userSeries.LastSeen);
+                            AddWatchMinutes(user, userSeries.LastSeen, nextLastSeen);
+                            userSeries.LastSeen = nextLastSeen;
                             if (!string.Equals(userSeries.Status, "WATCHING", StringComparison.OrdinalIgnoreCase))
                             {
                                 userSeries.Status = "WATCHING";
@@ -415,6 +425,10 @@ namespace KonyvkockaAPI.Controllers
             try
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                    return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
+
                 var normalizedType = dto.ContentType.Trim().ToLowerInvariant();
 
                 switch (normalizedType)
@@ -426,7 +440,9 @@ namespace KonyvkockaAPI.Controllers
                         if (userBook == null)
                             return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
 
-                        userBook.LastSeen = GetNextLastSeen(userBook.LastSeen);
+                        var nextLastSeen = GetNextLastSeen(userBook.LastSeen);
+                        AddReadMinutes(user, userBook.LastSeen, nextLastSeen);
+                        userBook.LastSeen = nextLastSeen;
                         break;
                     }
 
@@ -437,7 +453,9 @@ namespace KonyvkockaAPI.Controllers
                         if (userMovie == null)
                             return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
 
-                        userMovie.LastSeen = GetNextLastSeen(userMovie.LastSeen);
+                        var nextLastSeen = GetNextLastSeen(userMovie.LastSeen);
+                        AddWatchMinutes(user, userMovie.LastSeen, nextLastSeen);
+                        userMovie.LastSeen = nextLastSeen;
                         break;
                     }
 
@@ -448,7 +466,9 @@ namespace KonyvkockaAPI.Controllers
                         if (userSeries == null)
                             return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
 
-                        userSeries.LastSeen = GetNextLastSeen(userSeries.LastSeen);
+                        var nextLastSeen = GetNextLastSeen(userSeries.LastSeen);
+                        AddWatchMinutes(user, userSeries.LastSeen, nextLastSeen);
+                        userSeries.LastSeen = nextLastSeen;
                         break;
                     }
 
@@ -483,6 +503,9 @@ namespace KonyvkockaAPI.Controllers
             try
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                    return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
 
                 var validStatuses = new[] { "WATCHING", "COMPLETED", "PAUSED", "DROPPED", "PLANNED", "ARCHIVED" };
                 var normalizedStatus = dto.Status?.Trim().ToUpperInvariant();
@@ -543,7 +566,9 @@ namespace KonyvkockaAPI.Controllers
                                 return BadRequest(new ErrorResponseDTO { Error = "InvalidRating", Message = "Az értékelés 0 és 10 között kell legyen" });
                             userBook.Rating = dto.Rating.Value;
                         }
-                        userBook.LastSeen = GetNextLastSeen(userBook.LastSeen);
+                        var nextLastSeen = GetNextLastSeen(userBook.LastSeen);
+                        AddReadMinutes(user, userBook.LastSeen, nextLastSeen);
+                        userBook.LastSeen = nextLastSeen;
                         break;
                     }
 
@@ -565,7 +590,9 @@ namespace KonyvkockaAPI.Controllers
                                 return BadRequest(new ErrorResponseDTO { Error = "InvalidRating", Message = "Az értékelés 0 és 10 között kell legyen" });
                             userSeries.Rating = dto.Rating.Value;
                         }
-                        userSeries.LastSeen = GetNextLastSeen(userSeries.LastSeen);
+                        var nextLastSeen = GetNextLastSeen(userSeries.LastSeen);
+                        AddWatchMinutes(user, userSeries.LastSeen, nextLastSeen);
+                        userSeries.LastSeen = nextLastSeen;
                         break;
                     }
 
@@ -587,7 +614,9 @@ namespace KonyvkockaAPI.Controllers
                                 return BadRequest(new ErrorResponseDTO { Error = "InvalidRating", Message = "Az értékelés 0 és 10 között kell legyen" });
                             userMovie.Rating = dto.Rating.Value;
                         }
-                        userMovie.LastSeen = GetNextLastSeen(userMovie.LastSeen);
+                        var nextLastSeen = GetNextLastSeen(userMovie.LastSeen);
+                        AddWatchMinutes(user, userMovie.LastSeen, nextLastSeen);
+                        userMovie.LastSeen = nextLastSeen;
                         break;
                     }
 
@@ -719,6 +748,34 @@ namespace KonyvkockaAPI.Controllers
             // legalább +1 mp-cel biztosan előre léptetjük az értéket.
             var minNext = currentLastSeen.Value.AddSeconds(1);
             return now <= minNext ? minNext : now;
+        }
+
+        private static int CalculateCreditableMinutes(DateTime? previousLastSeen, DateTime nextLastSeen)
+        {
+            if (!previousLastSeen.HasValue)
+                return 0;
+
+            // We cap each increment window to reduce inflated jumps from stale clients.
+            const int maxMinutesPerUpdate = 5;
+            var elapsedMinutes = (int)Math.Floor((nextLastSeen - previousLastSeen.Value).TotalMinutes);
+            if (elapsedMinutes <= 0)
+                return 0;
+
+            return Math.Min(elapsedMinutes, maxMinutesPerUpdate);
+        }
+
+        private static void AddReadMinutes(User user, DateTime? previousLastSeen, DateTime nextLastSeen)
+        {
+            var deltaMinutes = CalculateCreditableMinutes(previousLastSeen, nextLastSeen);
+            if (deltaMinutes > 0)
+                user.ReadTimeMin += deltaMinutes;
+        }
+
+        private static void AddWatchMinutes(User user, DateTime? previousLastSeen, DateTime nextLastSeen)
+        {
+            var deltaMinutes = CalculateCreditableMinutes(previousLastSeen, nextLastSeen);
+            if (deltaMinutes > 0)
+                user.WatchTimeMin += deltaMinutes;
         }
 
         // ================================================================
