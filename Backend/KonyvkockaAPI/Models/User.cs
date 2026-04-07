@@ -11,6 +11,14 @@ public partial class User
 
     public string Email { get; set; } = null!;
 
+    public bool IsEmailVerified { get; set; }
+
+    public string? EmailVerificationTokenHash { get; set; }
+
+    public DateTime? EmailVerificationTokenExpiresAt { get; set; }
+
+    public DateTime? EmailVerifiedAt { get; set; }
+
     public string PasswordHash { get; set; } = null!;
 
     public string PasswordSalt { get; set; } = null!;

@@ -100,9 +100,17 @@ body
     border-radius: 50%;
     display: grid;
     place-items: center;
+    font-size: 1.8rem;
+}
+
+.login-error-modal-icon--error {
     background: rgba(239, 68, 68, 0.12);
     color: #f87171;
-    font-size: 1.8rem;
+}
+
+.login-error-modal-icon--email {
+    background: rgba(194, 157, 89, 0.16);
+    color: #eac886;
 }
 
 .login-error-modal h4 {

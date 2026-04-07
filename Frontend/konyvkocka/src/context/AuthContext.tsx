@@ -17,18 +17,22 @@ import {
 
 type User = UiAuthUser;
 
-type LoginFailureReason = 'suspended' | 'invalid' | 'unknown';
+type LoginFailureReason = 'suspended' | 'invalid' | 'unverified' | 'unknown';
 
 type LoginResult =
 	| { success: true }
 	| { success: false; reason: LoginFailureReason; message: string };
+
+type RegisterResult =
+	| { success: true; message: string }
+	| { success: false; message: string };
 
 interface AuthContextType {
 	user: User | null;
 	isAuthenticated: boolean;
 	isLoading: boolean;
 	login: (email: string, password: string) => Promise<LoginResult>;
-	register: (username: string, email: string, password: string) => Promise<boolean>;
+	register: (username: string, email: string, password: string) => Promise<RegisterResult>;
 	logout: () => void;
 }
 
@@ -222,6 +226,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				const errorCode = typeof payload?.error === 'string' ? payload.error.trim().toUpperCase() : '';
 				const responseMessage = error.message;
 
+				if (errorCode === 'EMAILNOTVERIFIED') {
+					reason = 'unverified';
+					message =
+						typeof responseMessage === 'string' && responseMessage.trim().length > 0
+							? responseMessage
+							: 'A bejelentkezéshez előbb aktiválnod kell a fiókodat az emailben kapott linkkel.';
+					return { success: false, reason, message };
+				}
+
 				const suspendedByCode = errorCode === 'ACCOUNTSUSPENDED';
 				const suspendedByMessage = /felf[üu]ggeszt|suspend|banned|restricted|korl[áa]tozott/i.test(responseMessage);
 
@@ -241,21 +254,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	};
 
 	// Regisztráció
-	const register = async (username: string, email: string, password: string): Promise<boolean> => {
+	const register = async (username: string, email: string, password: string): Promise<RegisterResult> => {
 		try {
 			const response = await authRegister(username, email, password);
-			const mappedUser = mapUserMeToUiUser(response.user);
 
-			localStorage.setItem(SESSION_STORAGE_KEY, response.token);
-			setUser(mappedUser);
-			persistUserSafely(mappedUser);
-			return true;
+			setUser(null);
+			localStorage.removeItem('kk_user');
+			localStorage.removeItem(SESSION_STORAGE_KEY);
+
+			return { success: true, message: response.message };
 		} catch (error) {
 			console.error('Register failed:', error);
 			setUser(null);
 			localStorage.removeItem('kk_user');
 			localStorage.removeItem(SESSION_STORAGE_KEY);
-			return false;
+
+			if (error instanceof ApiHttpError) {
+				const message =
+					typeof error.message === 'string' && error.message.trim().length > 0
+						? error.message
+						: 'Sikertelen regisztráció. Próbáld újra.';
+				return { success: false, message };
+			}
+
+			return { success: false, message: 'Sikertelen regisztráció. Próbáld újra.' };
 		}
 	};
 

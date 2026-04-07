@@ -305,6 +305,16 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.CreationDate).HasColumnType("date");
             entity.Property(e => e.DayStreak).HasColumnType("int(11)");
             entity.Property(e => e.Email).HasMaxLength(128);
+            entity.Property(e => e.EmailVerificationTokenExpiresAt)
+                .HasDefaultValueSql("'NULL'")
+                .HasColumnType("datetime");
+            entity.Property(e => e.EmailVerificationTokenHash).HasMaxLength(128);
+            entity.Property(e => e.EmailVerifiedAt)
+                .HasDefaultValueSql("'NULL'")
+                .HasColumnType("datetime");
+            entity.Property(e => e.IsEmailVerified)
+                .HasDefaultValueSql("'0'")
+                .HasColumnType("tinyint(1)");
             entity.Property(e => e.LastLoginDate).HasColumnType("date");
             entity.Property(e => e.Level)
                 .HasDefaultValueSql("'1'")

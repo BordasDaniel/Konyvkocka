@@ -128,6 +128,11 @@ interface AuthResponse {
 	token: string;
 }
 
+export interface RegisterResponse {
+	message: string;
+	requiresEmailVerification: boolean;
+}
+
 export interface UiAuthUser {
 	id: number;
 	username: string;
@@ -249,11 +254,11 @@ export const authRegister = async (
 	username: string,
 	email: string,
 	plainPassword: string,
-): Promise<AuthResponse> => {
+): Promise<RegisterResponse> => {
 	const passwordHash = await sha256Hex(plainPassword);
 	const passwordSalt = createRandomSalt();
 
-	return request<AuthResponse>('/api/auth/register', {
+	return request<RegisterResponse>('/api/auth/register', {
 		method: 'POST',
 		body: { username, email, passwordHash, passwordSalt },
 	});
