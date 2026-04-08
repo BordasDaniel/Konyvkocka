@@ -32,6 +32,8 @@ public partial class Movie
 
     public int RewardPoints { get; set; }
 
+    public DateTime? UpdatedAt { get; set; }
+
     public bool HasSubtitles { get; set; }
 
     public bool IsOriginalLanguage { get; set; }

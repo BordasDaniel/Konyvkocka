@@ -1,8 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pdfWorker from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
-import { getContentDetail, parseContentKey } from '../services/api';
+import {
+  ApiHttpError,
+  getContentDetail,
+  getHistoryItem,
+  parseContentKey,
+  recordContentView,
+  SESSION_STORAGE_KEY,
+  touchHistoryItem,
+  updateHistory,
+} from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import NonPremiumAd from '../components/common/NonPremiumAd';
 import '../styles/reader.css';
 
 interface Bookmark {
@@ -11,7 +22,14 @@ interface Bookmark {
   timestamp: string;
 }
 
+interface ReaderLocationState {
+  bookId?: number;
+  contentId?: number;
+  contentType?: string;
+}
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5269').replace(/\/$/, '');
+const PAGE_ADVANCE_LOCK_MS = 5000;
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const toPdfLoadUrl = (rawUrl: string): string => {
@@ -34,6 +52,7 @@ const toPdfLoadUrl = (rawUrl: string): string => {
 };
 
 const Reader: React.FC = () => {
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const location = useLocation();
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [pdfUrl, setPdfUrl] = useState<string>('');
@@ -45,48 +64,100 @@ const Reader: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [bookTitle, setBookTitle] = useState<string>('Könyv címe');
-  const [bookAuthor, setBookAuthor] = useState<string>('Szerző neve');
   const [bookCover, setBookCover] = useState<string>('');
   const [totalPages, setTotalPages] = useState<number>(0);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [sidebarShow, setSidebarShow] = useState<boolean>(false);
+  const [activeBookId, setActiveBookId] = useState<number | null>(null);
+  const [maxUnlockedPage, setMaxUnlockedPage] = useState<number>(1);
+  const [nextForwardUnlockAt, setNextForwardUnlockAt] = useState<number>(0);
+  const [forwardLockRemainingSec, setForwardLockRemainingSec] = useState<number>(0);
+  const [navigationGuardMessage, setNavigationGuardMessage] = useState<string>('');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
   const renderTaskRef = useRef<any>(null);
   const pendingScrollRatio = useRef<number | null>(null);
+  const lastSavedPageRef = useRef<number>(0);
+  const progressReadyRef = useRef<boolean>(false);
+  const completedStatusLockedRef = useRef<boolean>(false);
+  const guardMessageTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Keyboard shortcuts
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') prevPage();
-      if (e.key === 'ArrowRight') nextPage();
-      if (e.key === '+' || e.key === '=') zoomIn();
-      if (e.key === '-') zoomOut();
-      if (e.key === 'f') toggleFullscreen();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      if (guardMessageTimerRef.current !== null) {
+        window.clearTimeout(guardMessageTimerRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (nextForwardUnlockAt <= 0) {
+      setForwardLockRemainingSec(0);
+      return;
+    }
+
+    const updateRemaining = () => {
+      const remainingMs = nextForwardUnlockAt - Date.now();
+      if (remainingMs <= 0) {
+        setForwardLockRemainingSec(0);
+        setNextForwardUnlockAt(0);
+        return true;
+      }
+
+      setForwardLockRemainingSec(Math.ceil(remainingMs / 1000));
+      return false;
+    };
+
+    if (updateRemaining()) return;
+
+    const timer = window.setInterval(() => {
+      if (updateRemaining()) {
+        window.clearInterval(timer);
+      }
+    }, 250);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [nextForwardUnlockAt]);
 
   useEffect(() => {
     let isMounted = true;
 
     const resolveReaderSource = async () => {
+      if (isAuthLoading) return;
+      if (!isAuthenticated) {
+        if (isMounted) {
+          setPdfUrl('');
+          setPdfDoc(null);
+          setActiveBookId(null);
+          setLoading(false);
+          setError('A tartalom olvasásához be kell jelentkezned.');
+        }
+        return;
+      }
+
       setError(null);
 
       const params = new URLSearchParams(location.search);
       const contentParam = params.get('content');
       const directPdfParam = (params.get('pdf') ?? '').trim();
+      const state = (location.state as ReaderLocationState | null) ?? null;
 
-      if (contentParam) {
-        const parsed = parseContentKey(contentParam);
+      const parsedFromQuery = contentParam ? parseContentKey(contentParam) : null;
+      const fallbackBookId = typeof state?.bookId === 'number'
+        ? state.bookId
+        : typeof state?.contentId === 'number' && state?.contentType?.toLowerCase() === 'book'
+          ? state.contentId
+          : null;
 
-        if (!parsed || parsed.type !== 'book') {
+      const resolvedType = parsedFromQuery?.type ?? (fallbackBookId != null ? 'book' : null);
+      const resolvedId = parsedFromQuery?.id ?? fallbackBookId;
+
+      if (resolvedType && typeof resolvedId === 'number') {
+        if (resolvedType !== 'book') {
           if (isMounted) {
             setError('Az olvasó csak könyv típusú tartalomhoz használható.');
             setLoading(false);
@@ -95,13 +166,20 @@ const Reader: React.FC = () => {
         }
 
         try {
-          const detail = await getContentDetail(parsed.type, parsed.id);
+          const detail = await getContentDetail('book', resolvedId);
           if (!isMounted) return;
+
+          const token = localStorage.getItem(SESSION_STORAGE_KEY);
+          if (token && token.trim().length > 0) {
+            void recordContentView({ contentType: 'book', contentId: resolvedId }).catch((trackError) => {
+              console.warn('View tracking failed on reader page:', trackError);
+            });
+          }
 
           const dbPdfUrl = (detail.watchUrl ?? '').trim();
           setBookTitle(detail.title || 'Könyv címe');
           setBookCover(detail.img || '');
-          setBookAuthor('Szerző ismeretlen');
+          setActiveBookId(resolvedId);
 
           if (dbPdfUrl) {
             setPdfUrl(dbPdfUrl);
@@ -122,6 +200,7 @@ const Reader: React.FC = () => {
 
       if (directPdfParam) {
         if (isMounted) {
+          setActiveBookId(null);
           setPdfUrl(directPdfParam);
         }
         return;
@@ -138,7 +217,90 @@ const Reader: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [location.search]);
+  }, [isAuthenticated, isAuthLoading, location.search, location.state]);
+
+  if (isAuthLoading) {
+    return (
+      <main className="mt-5">
+        <div className="container py-5">
+          <div className="about-panel text-center py-5">
+            <div className="spinner-border text-light" role="status">
+              <span className="visually-hidden">Betöltés...</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <main className="mt-5">
+        <div className="container py-5">
+          <div className="about-panel text-center py-5 px-3">
+            <i className="bi bi-lock" style={{ fontSize: '3rem', color: 'var(--secondary)' }}></i>
+            <h3 className="mt-3 mb-2">Bejelentkezes szukseges</h3>
+            <p className="mb-4" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Olvasashoz jelentkezz be a fiokodba.</p>
+            <Link to="/belepes" className="btn btn-primary">
+              Bejelentkezes
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  useEffect(() => {
+    if (!isAuthenticated || !activeBookId) {
+      progressReadyRef.current = false;
+      lastSavedPageRef.current = 0;
+      completedStatusLockedRef.current = false;
+      setMaxUnlockedPage(1);
+      setNextForwardUnlockAt(0);
+      setForwardLockRemainingSec(0);
+      setNavigationGuardMessage('');
+      return;
+    }
+
+    let cancelled = false;
+    progressReadyRef.current = false;
+
+    const loadSavedProgress = async () => {
+      try {
+        const item = await getHistoryItem('book', activeBookId);
+        if (cancelled) return;
+
+        const savedPage = Math.max(1, Number(item.progress ?? 1));
+        setPageNum(savedPage);
+        setMaxUnlockedPage(savedPage);
+        setNextForwardUnlockAt(Date.now() + PAGE_ADVANCE_LOCK_MS);
+        lastSavedPageRef.current = savedPage;
+        completedStatusLockedRef.current = (item.status ?? '').toUpperCase() === 'COMPLETED';
+      } catch (loadError) {
+        if (cancelled) return;
+
+        if (!(loadError instanceof ApiHttpError && loadError.status === 404)) {
+          console.warn('Mentett olvasási előrehaladás lekérése sikertelen:', loadError);
+        }
+
+        setPageNum(1);
+        setMaxUnlockedPage(1);
+        setNextForwardUnlockAt(Date.now() + PAGE_ADVANCE_LOCK_MS);
+        lastSavedPageRef.current = 1;
+        completedStatusLockedRef.current = false;
+      } finally {
+        if (!cancelled) {
+          progressReadyRef.current = true;
+        }
+      }
+    };
+
+    void loadSavedProgress();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeBookId, isAuthenticated]);
 
   useEffect(() => {
     if (!pdfUrl) {
@@ -157,10 +319,90 @@ const Reader: React.FC = () => {
   useEffect(() => {
     if (!pdfUrl) return;
     setPdfDoc(null);
-    setPageNum(1);
     setTotalPages(0);
     void loadPDF(toPdfLoadUrl(pdfUrl));
   }, [pdfUrl]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !activeBookId || loading || !!error || totalPages <= 0) return;
+    if (!progressReadyRef.current) return;
+
+    const normalizedPage = Math.max(1, Math.min(totalPages, pageNum));
+    if (lastSavedPageRef.current === normalizedPage) return;
+
+    const timer = window.setTimeout(async () => {
+      const status = completedStatusLockedRef.current || normalizedPage >= totalPages ? 'COMPLETED' : 'WATCHING';
+
+      const persistProgress = async () => {
+        await updateHistory({
+          contentType: 'book',
+          contentId: activeBookId,
+          progress: normalizedPage,
+          status,
+        });
+      };
+
+      try {
+        await persistProgress();
+        lastSavedPageRef.current = normalizedPage;
+        if (status === 'COMPLETED') {
+          completedStatusLockedRef.current = true;
+        }
+      } catch (saveError) {
+        if (saveError instanceof ApiHttpError && saveError.status === 404) {
+          try {
+            await recordContentView({ contentType: 'book', contentId: activeBookId });
+            await persistProgress();
+            lastSavedPageRef.current = normalizedPage;
+            if (status === 'COMPLETED') {
+              completedStatusLockedRef.current = true;
+            }
+          } catch (retryError) {
+            console.warn('Olvasási előrehaladás mentése sikertelen (retry):', retryError);
+          }
+          return;
+        }
+
+        console.warn('Olvasási előrehaladás mentése sikertelen:', saveError);
+      }
+    }, 1200);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [activeBookId, error, isAuthenticated, loading, pageNum, totalPages]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !activeBookId || loading || !!error) return;
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+
+      const sendReaderHeartbeat = async () => {
+        try {
+          await touchHistoryItem({ contentType: 'book', contentId: activeBookId });
+        } catch (touchError) {
+          if (touchError instanceof ApiHttpError && touchError.status === 404) {
+            try {
+              await recordContentView({ contentType: 'book', contentId: activeBookId });
+              await touchHistoryItem({ contentType: 'book', contentId: activeBookId });
+            } catch (retryError) {
+              console.warn('Olvasási heartbeat mentése sikertelen (retry):', retryError);
+            }
+            return;
+          }
+
+          console.warn('Olvasási heartbeat mentése sikertelen:', touchError);
+        }
+      };
+
+      void sendReaderHeartbeat();
+    }, 60000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [activeBookId, error, isAuthenticated, loading]);
 
   useEffect(() => {
     if (pdfDoc && canvasRef.current) {
@@ -264,7 +506,6 @@ const Reader: React.FC = () => {
       const metadata = await pdf.getMetadata();
       if (metadata.info) {
         setBookTitle(metadata.info.Title || 'Ismeretlen cím');
-        setBookAuthor(metadata.info.Author || 'Ismeretlen szerző');
       }
       
       // A borító URL-t a backend fog majd szolgáltatni
@@ -359,20 +600,85 @@ const Reader: React.FC = () => {
     }
   };
 
+  const showNavigationGuardMessage = (message: string) => {
+    setNavigationGuardMessage(message);
+
+    if (guardMessageTimerRef.current !== null) {
+      window.clearTimeout(guardMessageTimerRef.current);
+    }
+
+    guardMessageTimerRef.current = window.setTimeout(() => {
+      setNavigationGuardMessage('');
+      guardMessageTimerRef.current = null;
+    }, 2500);
+  };
+
+  const navigateToPage = (targetPage: number): boolean => {
+    if (!Number.isInteger(targetPage) || targetPage < 1 || targetPage > totalPages) {
+      return false;
+    }
+
+    if (targetPage === pageNum) {
+      return true;
+    }
+
+    if (targetPage < pageNum) {
+      queueRenderPage(targetPage);
+      setNavigationGuardMessage('');
+      return true;
+    }
+
+    if (targetPage <= maxUnlockedPage) {
+      queueRenderPage(targetPage);
+      setNavigationGuardMessage('');
+      return true;
+    }
+
+    if (targetPage > maxUnlockedPage + 1) {
+      showNavigationGuardMessage(`A(z) ${targetPage}. oldal még zárolt. Előbb a következő oldalt nyisd meg.`);
+      return false;
+    }
+
+    if (Date.now() < nextForwardUnlockAt) {
+      const remainingSec = Math.max(1, Math.ceil((nextForwardUnlockAt - Date.now()) / 1000));
+      showNavigationGuardMessage(`A következő oldal ${remainingSec} mp múlva nyílik meg.`);
+      return false;
+    }
+
+    queueRenderPage(targetPage);
+    setMaxUnlockedPage(targetPage);
+    setNextForwardUnlockAt(Date.now() + PAGE_ADVANCE_LOCK_MS);
+    setNavigationGuardMessage('');
+    return true;
+  };
+
   const prevPage = () => {
-    if (pageNum <= 1) return;
-    queueRenderPage(pageNum - 1);
+    void navigateToPage(pageNum - 1);
   };
 
   const nextPage = () => {
-    if (pageNum >= totalPages) return;
-    queueRenderPage(pageNum + 1);
+    void navigateToPage(pageNum + 1);
   };
 
   const goToPage = (num: number) => {
-    if (num < 1 || num > totalPages) return;
-    queueRenderPage(num);
+    void navigateToPage(num);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') prevPage();
+      if (e.key === 'ArrowRight') nextPage();
+      if (e.key === '+' || e.key === '=') zoomIn();
+      if (e.key === '-') zoomOut();
+      if (e.key === 'f') toggleFullscreen();
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [maxUnlockedPage, nextForwardUnlockAt, pageNum, totalPages, scale]);
 
   const updateZoom = (newScale: number) => {
     // Store scroll position
@@ -453,6 +759,11 @@ const Reader: React.FC = () => {
     window.open(pdfUrl, '_blank');
   };
 
+  const isNextUnreadPage = pageNum + 1 > maxUnlockedPage;
+  const isNextPageLocked = isNextUnreadPage && forwardLockRemainingSec > 0;
+  const canGoNext = pageNum < totalPages && !isNextPageLocked;
+  const maxPageInput = Math.max(1, Math.min(totalPages || 1, maxUnlockedPage + 1));
+
   return (
     <div className="reader-container">
       {/* Overlay mobilon amikor a sidebar nyitva van */}
@@ -475,14 +786,13 @@ const Reader: React.FC = () => {
             )}
           </div>
           <h3 className="book-title">{bookTitle}</h3>
-          <p className="book-author">{bookAuthor}</p>
         </div>
 
         <div className="reader-controls">
           <div className="control-group">
             <label className="control-label">Oldal navigáció</label>
             <div className="page-nav">
-              <button className="btn-control" onClick={prevPage} title="Előző oldal">
+              <button className="btn-control" onClick={prevPage} title="Előző oldal" disabled={pageNum <= 1}>
                 <i className="bi bi-chevron-left"></i>
               </button>
               <div className="page-info">
@@ -490,16 +800,27 @@ const Reader: React.FC = () => {
                   type="number" 
                   className="page-input" 
                   min="1" 
-                  max={totalPages}
+                  max={maxPageInput}
                   value={pageNum}
-                  onChange={(e) => goToPage(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const parsed = Number.parseInt(e.target.value, 10);
+                    if (Number.isNaN(parsed)) return;
+                    goToPage(parsed);
+                  }}
+                  disabled={totalPages <= 0}
                 />
                 <span className="page-total">/ <span>{totalPages || '-'}</span></span>
               </div>
-              <button className="btn-control" onClick={nextPage} title="Következő oldal">
+              <button className="btn-control" onClick={nextPage} title="Következő oldal" disabled={!canGoNext}>
                 <i className="bi bi-chevron-right"></i>
               </button>
             </div>
+            {isNextPageLocked && (
+              <p className="reader-page-lock-hint mb-0">Következő oldal elérhető: {forwardLockRemainingSec} mp</p>
+            )}
+            {navigationGuardMessage && (
+              <p className="reader-page-guard-message mb-0">{navigationGuardMessage}</p>
+            )}
           </div>
 
           <div className="control-group">
@@ -610,17 +931,19 @@ const Reader: React.FC = () => {
 
         {/* Bottom navigation bar */}
         <div className="reader-bottom-nav">
-          <button className="btn-nav" onClick={prevPage}>
+          <button className="btn-nav" onClick={prevPage} disabled={pageNum <= 1}>
             <i className="bi bi-chevron-left"></i> Előző
           </button>
           <div className="page-indicator">
             <span>{pageNum}</span> / <span>{totalPages || '-'}</span>
           </div>
-          <button className="btn-nav" onClick={nextPage}>
+          <button className="btn-nav" onClick={nextPage} disabled={!canGoNext}>
             Következő <i className="bi bi-chevron-right"></i>
           </button>
         </div>
       </main>
+
+      <NonPremiumAd enabled={Boolean(isAuthenticated && user && !user.isSubscriber)} surface="reader" />
     </div>
   );
 };

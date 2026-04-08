@@ -1,6 +1,8 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useState, useRef, useEffect } from "react";
+import { ApiHttpError, getChallenges, getNotifications } from "../../services/api";
+import { prefetchRoute } from "../../utils/routePrefetch";
 
 function Navbar() {
     const { user, isAuthenticated, logout } = useAuth();
@@ -8,11 +10,14 @@ function Navbar() {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [mobileProfileMenuOpen, setMobileProfileMenuOpen] = useState(false);
     const [mobilePanelHeight, setMobilePanelHeight] = useState<number>(0);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [hasClaimableChallenges, setHasClaimableChallenges] = useState(false);
     const dropdownRef = useRef<HTMLLIElement>(null);
     const mobileMainPanelRef = useRef<HTMLUListElement>(null);
     const mobileProfilePanelRef = useRef<HTMLUListElement>(null);
     const navbarCollapseRef = useRef<HTMLDivElement>(null);
     const navbarTogglerRef = useRef<HTMLButtonElement>(null);
+    const hasAdminAccess = Boolean(user && (user.isAdmin || user.isModerator));
 
     const mainNavItems = [
         { to: '/', label: 'Kezdőlap', icon: 'bi-house-door' },
@@ -50,6 +55,10 @@ function Navbar() {
         closeNavbarCollapse();
     };
 
+    const handleLinkIntent = (path: string) => {
+      void prefetchRoute(path);
+    };
+
     const handleNavbarToggleClick = () => {
       // Bootstrap collapse animation changes layout asynchronously, so re-measure on next frames.
       requestAnimationFrame(() => {
@@ -76,7 +85,113 @@ function Navbar() {
         window.addEventListener('resize', syncMobilePanelHeight);
 
         return () => window.removeEventListener('resize', syncMobilePanelHeight);
-    }, [mobileProfileMenuOpen, isAuthenticated, user?.isAdmin, user?.username]);
+    }, [mobileProfileMenuOpen, isAuthenticated, user?.isAdmin, user?.isModerator, user?.username]);
+
+    useEffect(() => {
+      let isMounted = true;
+
+      const applyUnreadCount = (value: number) => {
+        if (!isMounted) return;
+        setUnreadCount(Math.max(0, value));
+      };
+
+      const applyChallengeIndicator = (value: boolean) => {
+        if (!isMounted) return;
+        setHasClaimableChallenges(value);
+      };
+
+      const refreshUnreadCount = async () => {
+        if (!isAuthenticated) {
+          applyUnreadCount(0);
+          return;
+        }
+
+        try {
+          const response = await getNotifications({
+            unread: true,
+            page: 1,
+            pageSize: 1,
+          });
+          applyUnreadCount(response.unreadCount);
+        } catch (error) {
+          if (error instanceof ApiHttpError && (error.status === 401 || error.status === 403)) {
+            applyUnreadCount(0);
+            return;
+          }
+
+          console.error('Failed to load unread notification count:', error);
+        }
+      };
+
+      const refreshChallengeIndicator = async () => {
+        if (!isAuthenticated) {
+          applyChallengeIndicator(false);
+          return;
+        }
+
+        try {
+          const response = await getChallenges({ status: 'completed' });
+          const hasClaimable = response.challenges.some((challenge) => challenge.status === 'COMPLETED');
+          applyChallengeIndicator(hasClaimable);
+        } catch (error) {
+          if (error instanceof ApiHttpError && (error.status === 401 || error.status === 403)) {
+            applyChallengeIndicator(false);
+            return;
+          }
+
+          console.error('Failed to load challenge claim indicator:', error);
+        }
+      };
+
+      const refreshNavbarIndicators = async () => {
+        await Promise.all([refreshUnreadCount(), refreshChallengeIndicator()]);
+      };
+
+      const onUnreadCountChanged = (event: Event) => {
+        const customEvent = event as CustomEvent<{ unreadCount?: number }>;
+        const nextUnreadCount = customEvent.detail?.unreadCount;
+
+        if (typeof nextUnreadCount === 'number') {
+          applyUnreadCount(nextUnreadCount);
+          return;
+        }
+
+        void refreshUnreadCount();
+      };
+
+      const onChallengesUpdated = () => {
+        void refreshChallengeIndicator();
+      };
+
+      const onWindowFocus = () => {
+        void refreshNavbarIndicators();
+      };
+
+      const onVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          void refreshNavbarIndicators();
+        }
+      };
+
+      const intervalId = window.setInterval(() => {
+        void refreshNavbarIndicators();
+      }, 60000);
+
+      void refreshNavbarIndicators();
+      window.addEventListener('kk_notifications_unread_changed', onUnreadCountChanged as EventListener);
+      window.addEventListener('kk_challenges_updated', onChallengesUpdated as EventListener);
+      window.addEventListener('focus', onWindowFocus);
+      document.addEventListener('visibilitychange', onVisibilityChange);
+
+      return () => {
+        isMounted = false;
+        window.clearInterval(intervalId);
+        window.removeEventListener('kk_notifications_unread_changed', onUnreadCountChanged as EventListener);
+        window.removeEventListener('kk_challenges_updated', onChallengesUpdated as EventListener);
+        window.removeEventListener('focus', onWindowFocus);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+      };
+    }, [isAuthenticated]);
 
     const handleLogout = () => {
         logout();
@@ -118,6 +233,8 @@ function Navbar() {
                     <NavLink
                       to={item.to}
                       className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+                      onMouseEnter={() => handleLinkIntent(item.to)}
+                      onFocus={() => handleLinkIntent(item.to)}
                       onClick={handleNavigationClick}
                     >
                       <i className={`bi ${item.icon} mobile-main-icon me-2`} aria-hidden="true"></i>
@@ -185,14 +302,18 @@ function Navbar() {
                       <NavLink to="/ertesitesek" className="nav-link" onClick={handleNavigationClick}>
                         <span style={{ position: 'relative', display: 'inline-block' }}>
                           <i className="bi bi-bell-fill me-2"></i>
-                          <span className="navbar-notification-dot"></span>
+                          {unreadCount > 0 && <span className="navbar-notification-dot" aria-hidden="true"></span>}
                         </span>
                         Értesítések
                       </NavLink>
                     </li>
                     <li className="nav-item">
                       <NavLink to="/kihivasok" className="nav-link" onClick={handleNavigationClick}>
-                        <i className="bi bi-trophy-fill me-2"></i>Kihívások
+                        <span style={{ position: 'relative', display: 'inline-block' }}>
+                          <i className="bi bi-trophy-fill me-2"></i>
+                          {hasClaimableChallenges && <span className="navbar-notification-dot" aria-hidden="true"></span>}
+                        </span>
+                        Kihívások
                       </NavLink>
                     </li>
 
@@ -214,7 +335,7 @@ function Navbar() {
                       </NavLink>
                     </li>
 
-                    {user.isAdmin && (
+                    {hasAdminAccess && (
                       <>
                         <li><hr className="dropdown-divider" /></li>
                         <li className="nav-item">
@@ -242,7 +363,14 @@ function Navbar() {
           <ul className="navbar-nav me-auto mb-2 mb-lg-0 d-none d-lg-flex">
             {mainNavItems.map((item) => (
               <li className="nav-item" key={`desktop-${item.to}`}>
-                <NavLink to={item.to} className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>{item.label}</NavLink>
+                <NavLink
+                  to={item.to}
+                  className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+                  onMouseEnter={() => handleLinkIntent(item.to)}
+                  onFocus={() => handleLinkIntent(item.to)}
+                >
+                  {item.label}
+                </NavLink>
               </li>
             ))}
           </ul>
@@ -297,14 +425,18 @@ function Navbar() {
                     <NavLink to="/ertesitesek" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                       <span style={{ position: 'relative', display: 'inline-block' }}>
                         <i className="bi bi-bell-fill me-2"></i>
-                        <span className="navbar-notification-dot"></span>
+                        {unreadCount > 0 && <span className="navbar-notification-dot" aria-hidden="true"></span>}
                       </span>
                       Értesítések
                     </NavLink>
                   </li>
                   <li>
                     <NavLink to="/kihivasok" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
-                      <i className="bi bi-trophy-fill me-2"></i>Kihívások
+                      <span style={{ position: 'relative', display: 'inline-block' }}>
+                        <i className="bi bi-trophy-fill me-2"></i>
+                        {hasClaimableChallenges && <span className="navbar-notification-dot" aria-hidden="true"></span>}
+                      </span>
+                      Kihívások
                     </NavLink>
                   </li>
                   <li><hr className="dropdown-divider" /></li>
@@ -323,7 +455,7 @@ function Navbar() {
                       <i className="bi bi-bag-check me-2"></i>Vásárlások
                     </NavLink>
                   </li>
-                  {user.isAdmin && (
+                  {hasAdminAccess && (
                     <>
                       <li><hr className="dropdown-divider" /></li>
                       <li>
@@ -343,7 +475,12 @@ function Navbar() {
               </li>
             ) : (
               <li className="nav-item">
-                <NavLink className="nav-link" to="/belepes">
+                <NavLink
+                  className="nav-link"
+                  to="/belepes"
+                  onMouseEnter={() => handleLinkIntent('/belepes')}
+                  onFocus={() => handleLinkIntent('/belepes')}
+                >
                   <i className="bi bi-person-circle"></i> Bejelentkezés
                 </NavLink>
               </li>

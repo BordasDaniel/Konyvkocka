@@ -11,11 +11,19 @@ public partial class User
 
     public string Email { get; set; } = null!;
 
+    public bool IsEmailVerified { get; set; }
+
+    public string? EmailVerificationTokenHash { get; set; }
+
+    public DateTime? EmailVerificationTokenExpiresAt { get; set; }
+
+    public DateTime? EmailVerifiedAt { get; set; }
+
     public string PasswordHash { get; set; } = null!;
 
     public string PasswordSalt { get; set; } = null!;
 
-    public string CountryCode { get; set; } = null!;
+    public string? CountryCode { get; set; }
 
     public byte[]? ProfilePic { get; set; }
 
@@ -48,7 +56,7 @@ public partial class User
     public int WatchTimeMin { get; set; }
 
     /// <summary>
-    /// Jogosultsági szint: "USER" | "MODERATOR" | "ADMIN"
+    /// Jogosultsági szint: "USER" | "MODERATOR" | "ADMIN" | "BANNED"
     /// </summary>
     public string PermissionLevel { get; set; } = "USER";
 

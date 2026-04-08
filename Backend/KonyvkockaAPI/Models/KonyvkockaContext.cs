@@ -106,6 +106,11 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.Released).HasColumnType("year(4)");
             entity.Property(e => e.RewardPoints).HasColumnType("int(11)");
             entity.Property(e => e.RewardXp).HasColumnType("int(11)").HasColumnName("RewardXP");
+            entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("'current_timestamp()'")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.Property(e => e.Title).HasMaxLength(128);
             entity.Property(e => e.Type).HasColumnType("enum('BOOK','AUDIOBOOK','EBOOK')");
             entity.HasOne(d => d.AgeRating).WithMany(p => p.Books)
@@ -205,6 +210,11 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.Title).HasMaxLength(128);
             entity.Property(e => e.TrailerUrl).HasMaxLength(2048).HasDefaultValueSql("'NULL'").HasColumnName("TrailerURL");
             entity.Property(e => e.RewardXp).HasColumnType("int(11)").HasColumnName("RewardXP");
+            entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("'current_timestamp()'")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.HasOne(d => d.AgeRating).WithMany(p => p.Movies)
                 .HasForeignKey(d => d.AgeRatingId)
                 .HasConstraintName("movie_age_rating_fk");
@@ -227,6 +237,11 @@ public partial class KonyvkockaContext : DbContext
                 .HasColumnType("enum('ONE_M','QUARTER_Y','FULL_Y')");
             entity.Property(e => e.PurchaseDate).HasDefaultValueSql("'NULL'").HasColumnType("date");
             entity.Property(e => e.PurchaseStatus).HasMaxLength(128).HasDefaultValueSql("'NULL'");
+            entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("'current_timestamp()'")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.Property(e => e.UserId).HasColumnType("int(11)");
             entity.HasOne(d => d.User).WithMany(p => p.Purchases)
                 .HasForeignKey(d => d.UserId)
@@ -248,6 +263,11 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.Title).HasMaxLength(128);
             entity.Property(e => e.TrailerUrl).HasMaxLength(2048).HasDefaultValueSql("'NULL'").HasColumnName("TrailerURL");
             entity.Property(e => e.RewardXp).HasColumnType("int(11)").HasColumnName("RewardXP");
+            entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("'current_timestamp()'")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.HasOne(d => d.AgeRating).WithMany(p => p.Series)
                 .HasForeignKey(d => d.AgeRatingId)
                 .HasConstraintName("series_age_rating_fk");
@@ -290,6 +310,16 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.CreationDate).HasColumnType("date");
             entity.Property(e => e.DayStreak).HasColumnType("int(11)");
             entity.Property(e => e.Email).HasMaxLength(128);
+            entity.Property(e => e.EmailVerificationTokenExpiresAt)
+                .HasDefaultValueSql("'NULL'")
+                .HasColumnType("datetime");
+            entity.Property(e => e.EmailVerificationTokenHash).HasMaxLength(128);
+            entity.Property(e => e.EmailVerifiedAt)
+                .HasDefaultValueSql("'NULL'")
+                .HasColumnType("datetime");
+            entity.Property(e => e.IsEmailVerified)
+                .HasDefaultValueSql("'0'")
+                .HasColumnType("tinyint(1)");
             entity.Property(e => e.LastLoginDate).HasColumnType("date");
             entity.Property(e => e.Level)
                 .HasDefaultValueSql("'1'")
@@ -307,7 +337,7 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.MoviePoints).HasColumnType("int(11)");
             entity.Property(e => e.PasswordHash).HasColumnType("text");
             entity.Property(e => e.PasswordSalt).HasColumnType("text");
-            entity.Property(e => e.ProfilePic).HasColumnType("blob");
+            entity.Property(e => e.ProfilePic).HasColumnType("mediumblob");
             entity.Property(e => e.ReadTimeMin).HasColumnType("int(11)");
             entity.Property(e => e.SeriesPoints).HasColumnType("int(11)");
             entity.Property(e => e.Username).HasMaxLength(128);
@@ -348,6 +378,7 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.CurrentAudioPosition).HasColumnType("int(11)");
             entity.Property(e => e.CurrentPage).HasColumnType("int(11)");
             entity.Property(e => e.LastSeen).HasColumnType("datetime");
+            entity.Property(e => e.RemainingCompletions).HasDefaultValueSql("'3'").HasColumnType("int(11)");
             entity.Property(e => e.Rating).HasPrecision(3, 1);
             entity.Property(e => e.Status)
                 .HasColumnType("enum('WATCHING','COMPLETED','PAUSED','DROPPED','PLANNED','ARCHIVED')");
@@ -407,9 +438,8 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.CompletedAt).HasDefaultValueSql("'NULL'").HasColumnType("datetime");
             entity.Property(e => e.CurrentPosition).HasDefaultValueSql("'0'").HasColumnType("int(11)");
             entity.Property(e => e.LastSeen)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("'current_timestamp()'")
                 .HasColumnType("datetime");
+            entity.Property(e => e.RemainingCompletions).HasDefaultValueSql("'3'").HasColumnType("int(11)");
             entity.Property(e => e.Rating).HasPrecision(3, 1).HasDefaultValueSql("'NULL'");
             entity.Property(e => e.Status)
                 .HasDefaultValueSql("'NULL'")
@@ -440,9 +470,8 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.CurrentPosition).HasDefaultValueSql("'0'").HasColumnType("int(11)");
             entity.Property(e => e.CurrentSeason).HasColumnType("int(11)");
             entity.Property(e => e.LastSeen)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("'current_timestamp()'")
                 .HasColumnType("datetime");
+            entity.Property(e => e.RemainingCompletions).HasDefaultValueSql("'3'").HasColumnType("int(11)");
             entity.Property(e => e.Rating).HasPrecision(3, 1).HasDefaultValueSql("'NULL'");
             entity.Property(e => e.Status)
                 .HasDefaultValueSql("'NULL'")
@@ -483,7 +512,7 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.PasswordHash).HasColumnType("text");
             entity.Property(e => e.PasswordSalt).HasColumnType("text");
             entity.Property(e => e.CountryCode).HasMaxLength(2).IsFixedLength();
-            entity.Property(e => e.ProfilePic).HasColumnType("blob");
+            entity.Property(e => e.ProfilePic).HasColumnType("mediumblob");
             entity.Property(e => e.PremiumExpiresAt).HasDefaultValueSql("'NULL'").HasColumnType("datetime");
             entity.Property(e => e.PermissionLevel)
                 .HasColumnType("enum('USER','MODERATOR','ADMIN')");

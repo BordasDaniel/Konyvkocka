@@ -8,11 +8,18 @@ namespace KonyvkockaAPI.DTO.Response
         public int Id { get; set; }
         public string Username { get; set; } = null!;
         public string? Avatar { get; set; }
-        public string CountryCode { get; set; } = null!;
+        public string? CountryCode { get; set; }
+        public string? Email { get; set; }
         public bool IsSubscriber { get; set; }
+        public DateTime? PremiumExpiresAt { get; set; }
+        public DateTime CreationDate { get; set; }
+        public DateTime LastLoginDate { get; set; }
         public int Xp { get; set; }
         public int Level { get; set; }
         public int DayStreak { get; set; }
+        public int BookPoints { get; set; }
+        public int SeriesPoints { get; set; }
+        public int MoviePoints { get; set; }
 
         /// <summary>
         /// Jelenleg aktív rangcímek (null ha nincs beállítva)

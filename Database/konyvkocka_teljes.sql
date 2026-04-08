@@ -1,9 +1,9 @@
-  -- phpMyAdmin SQL Dump
+-- phpMyAdmin SQL Dump
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 05, 2026 at 08:53 PM
+-- Generation Time: Apr 08, 2026 at 04:20 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,8 +20,7 @@ SET time_zone = "+00:00";
 --
 -- Database: `konyvkocka`
 --
-CREATE DATABASE IF NOT EXISTS `konyvkocka` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_hungarian_ci;
-USE `konyvkocka`;
+
 -- --------------------------------------------------------
 
 --
@@ -66,7 +65,7 @@ CREATE TABLE `article` (
 
 INSERT INTO `article` (`Id`, `Title`, `Content`, `EventTag`, `CreatedAt`, `updated_at`) VALUES
 (1, 'Üdvözlünk a KönyvKockán!', 'Örömmel üdvözlünk platformunkon! Fedezd fel a könyvek, filmek és sorozatok világát.', 'ANNOUNCEMENT', '2026-01-01 10:00:00', '2026-02-05 10:40:53'),
-(2, 'Új funkció: Hangoskönyvek', 'Mostantól hangoskönyveket is hallgathatsz a platformon!', 'FUNCTION', '2026-01-15 14:30:00', '2026-02-05 10:41:00'),
+(2, 'Új funkció: Hangoskönyvek', 'Mostantól hangoskönyveket is hallgathatsz a platformon!', 'FUNCTION', '2026-01-15 14:30:00', '2026-04-04 21:17:53'),
 (3, 'Rendszerkarbantartás', 'Január 20-án 02:00-04:00 között karbantartást végzünk.', 'ANNOUNCEMENT', '2026-01-18 09:00:00', '2026-02-05 10:41:13'),
 (4, 'Heti toplista frissítve', 'Nézd meg a hét legnépszerűbb tartalmait!', 'UPDATE', '2026-01-28 12:00:00', '2026-02-05 10:41:30'),
 (5, 'Új magyar tartalmak érkeztek', 'Bővült a magyar nyelvű könyvek és filmek kínálata!', 'UPDATE', '2026-01-29 16:00:00', '2026-02-05 10:41:37'),
@@ -141,14 +140,14 @@ CREATE TABLE `book` (
 INSERT INTO `book` (`Id`, `Title`, `Released`, `PageNum`, `Rating`, `Description`, `CoverApiName`, `AgeRatingId`, `Type`, `PdfURL`, `AudioURL`, `EpubURL`, `AudioLength`, `RewardXP`, `RewardPoints`, `NarratorName`, `IsOfflineAvailable`, `OriginalLanguage`, `updated_at`) VALUES
 (1, 'Egri csillagok', '1901', 584, 9.2, 'Gárdonyi Géza monumentális történelmi regénye az egri vár 1552-es ostromáról.', 'egri_csillagok.jpg', 3, 'BOOK', NULL, NULL, 'egri_csillagok.epub', NULL, 200, 100, NULL, 1, 'Magyar', '2026-02-05 20:46:10'),
 (2, 'A Pál utcai fiúk', '1906', 232, 8.9, 'Molnár Ferenc ifjúsági regénye a Grund-ról és a pesti utcai csatározásokról.', 'pal_utcai_fiuk.jpg', 2, 'BOOK', NULL, NULL, NULL, NULL, 120, 60, NULL, 0, 'Magyar', '2026-02-05 20:46:10'),
-(3, 'Abigél', '1970', 368, 9.5, 'Szabó Magda regénye egy lányról, aki egy bentlakásos iskolába kerül a háború idején.', 'abigel.jpg', 3, 'EBOOK', NULL, NULL, 'abigel.epub', NULL, 150, 75, NULL, 1, 'Magyar', '2026-02-05 20:46:10'),
+(3, 'Abigél', '1970', 166, 9.5, 'Szabó Magda regénye egy lányról, aki egy bentlakásos iskolába kerül a háború idején.', 'https://covers.openlibrary.org/b/id/14756391-L.jpg', 3, 'EBOOK', 'http://inlap.jate.u-szeged.hu/bemutat/konyvtar/konyvek/szabo_magda_abigel.pdf', NULL, 'http://inlap.jate.u-szeged.hu/bemutat/konyvtar/konyvek/szabo_magda_abigel.pdf', NULL, 150, 75, NULL, 1, 'Magyar', '2026-04-06 17:17:18'),
 (4, 'Psycho Cute', '2020', 312, 8.1, 'Karalyos Gábor krimisorozatának első része, amely bűnügyi nyomozó és popkulturális elemeket vegyít.', 'psycho_cute.jpg', 5, 'BOOK', NULL, NULL, NULL, NULL, 130, 65, NULL, 0, 'Magyar', '2026-02-05 20:46:10'),
 (5, 'A rém', '2012', 424, 8.7, 'Krasznahorkai László különleges hangvételű regénye apokaliptikus hangulattal.', 'a_rem.jpg', 4, 'BOOK', NULL, NULL, NULL, NULL, 180, 90, NULL, 0, 'Magyar', '2026-02-05 20:46:10'),
 (6, '1984', '1949', 328, 9.4, 'George Orwell disztópiája a totalitárius rendszerről és a gondolatrendőrségről.', '1984.jpg', 4, 'BOOK', NULL, NULL, '1984.epub', NULL, 140, 70, NULL, 1, 'Angol', '2026-02-05 20:46:10'),
 (7, 'Harry Potter és a bölcsek köve', '1997', 336, 9.6, 'J.K. Rowling varázslatos világa, ahol egy fiatal varázsló felfedezi származását.', 'harry_potter_1.jpg', 2, 'BOOK', NULL, NULL, NULL, NULL, 150, 75, NULL, 0, 'Angol', '2026-02-05 20:46:10'),
 (8, 'A Gyűrűk Ura: A gyűrű szövetsége', '1954', 423, 9.8, 'J.R.R. Tolkien fantasy eposzának első része Középfölde megmentéséről.', 'lotr_1.jpg', 3, 'BOOK', NULL, NULL, 'lotr_1.epub', NULL, 250, 125, NULL, 1, 'Angol', '2026-02-05 20:46:10'),
 (9, 'Sapiens', '2011', 443, 9.1, 'Yuval Noah Harari könyve az emberiség történetéről és fejlődéséről.', 'sapiens.jpg', 3, 'AUDIOBOOK', NULL, 'sapiens.mp3', NULL, 900, 180, 90, 'Kiss János', 1, 'Héber', '2026-02-05 20:46:10'),
-(10, 'A kis herceg', '1943', 96, 9.3, 'Antoine de Saint-Exupéry mesés története egy idegen bolygóról érkező hercegről.', 'kis_herceg.jpg', 1, 'AUDIOBOOK', NULL, 'kis_herceg.mp3', NULL, 120, 100, 50, 'Nagy Péter', 1, 'Francia', '2026-02-05 20:46:10'),
+(10, 'A kis herceg', '1943', 96, 9.3, 'Antoine de Saint-Exupéry mesés története egy idegen bolygóról érkező hercegről.', 'kis_herceg.jpg', 1, 'EBOOK', 'https://almabooks.com/wp-content/uploads/2016/10/Little-Prince-final-text.pdf', '', 'https://almabooks.com/wp-content/uploads/2016/10/Little-Prince-final-text.pdf', 120, 100, 50, 'Nagy Péter', 1, 'Francia', '2026-03-26 21:27:39'),
 (11, 'Steve Jobs', '2011', 656, 8.8, 'Walter Isaacson életrajza az Apple alapítójáról.', 'steve_jobs.jpg', 3, 'EBOOK', NULL, NULL, 'steve_jobs.epub', NULL, 200, 100, NULL, 1, 'Angol', '2026-02-05 20:46:10'),
 (12, 'Tűzből vár', '2014', 288, 8.4, 'Nádas Péter regénye családi történetekről és társadalmi változásokról.', 'tuzbol_var.jpg', 4, 'EBOOK', NULL, NULL, 'tuzbol_var.epub', NULL, 130, 65, NULL, 0, 'Magyar', '2026-02-05 20:46:10'),
 (13, 'Dűne', '1965', 688, 9.5, 'Frank Herbert sci-fi remekműve egy sivatagi bolygóról és az ottani hatalmi harcokról.', 'dune.jpg', 4, 'BOOK', NULL, NULL, 'dune.epub', NULL, 300, 150, NULL, 1, 'Angol', '2026-02-05 20:46:10'),
@@ -208,6 +207,7 @@ INSERT INTO `book_tag` (`BookId`, `TagId`) VALUES
 (3, 15),
 (3, 17),
 (3, 27),
+(3, 29),
 (3, 32),
 (4, 7),
 (4, 9),
@@ -263,6 +263,7 @@ INSERT INTO `book_tag` (`BookId`, `TagId`) VALUES
 (15, 7),
 (15, 16),
 (15, 23),
+(15, 29),
 (15, 33),
 (16, 7),
 (16, 9),
@@ -317,7 +318,7 @@ INSERT INTO `challenge` (`Id`, `Title`, `Description`, `IconURL`, `Type`, `Targe
 (4, 'Olvasó bajnok', 'Tölts el 1000 percet olvasással.', NULL, 'DEDICATION', 1000, 1000, NULL, 1, 'HARD', 1, 0, '2026-01-14 07:22:12'),
 (5, 'Hétvégi maraton', 'Nézz 300 perc tartalmat.', NULL, 'DEDICATION', 300, 400, NULL, NULL, 'MEDIUM', 1, 0, '2026-01-14 07:22:12'),
 (6, 'Kitartás', 'Érj el 7 napos sorozatot.', NULL, 'DEDICATION', 7, 350, 5, NULL, 'MEDIUM', 1, 0, '2026-01-14 07:22:12'),
-(7, '30 napos kihívás', 'Érj el 30 napos sorozatot.', NULL, 'DEDICATION', 30, 2000, 6, 2, 'EPIC', 1, 0, '2026-01-14 07:22:12');
+(7, '30 napos kihívás', 'Érj el 30 napos sorozatot.', NULL, 'DEDICATION', 30, 2000, 6, 2, 'EASY', 1, 0, '2026-01-14 07:22:12');
 
 -- --------------------------------------------------------
 
@@ -331,11 +332,11 @@ CREATE TABLE `deleted_user` (
   `Email` varchar(128) NOT NULL,
   `PasswordHash` text NOT NULL,
   `PasswordSalt` text NOT NULL,
-  `CountryCode` char(2) NOT NULL,
-  `ProfilePic` varchar(512) NOT NULL,
+  `CountryCode` char(2) DEFAULT NULL,
+  `ProfilePic` mediumblob NOT NULL,
   `Premium` tinyint(1) NOT NULL DEFAULT 0,
   `PremiumExpiresAt` datetime DEFAULT NULL,
-  `PermissionLevel` enum('USER','MODERATOR','ADMIN') NOT NULL DEFAULT 'USER',
+  `PermissionLevel` enum('USER','MODERATOR','ADMIN','BANNED') NOT NULL DEFAULT 'USER',
   `CreationDate` date NOT NULL,
   `LastLoginDate` date NOT NULL,
   `Level` int(11) NOT NULL DEFAULT 1,
@@ -353,9 +354,10 @@ CREATE TABLE `deleted_user` (
 --
 
 INSERT INTO `deleted_user` (`Id`, `Username`, `Email`, `PasswordHash`, `PasswordSalt`, `CountryCode`, `ProfilePic`, `Premium`, `PremiumExpiresAt`, `PermissionLevel`, `CreationDate`, `LastLoginDate`, `Level`, `XP`, `BookPoints`, `SeriesPoints`, `MoviePoints`, `DayStreak`, `ReadTimeMin`, `WatchTimeMin`) VALUES
-(100, 'DeletedUser1', 'deleted_100@anon.local', '', '', 'HU', 'default.png', 0, NULL, 'USER', '2024-03-10', '2025-08-15', 3, 200, 800, 400, 300, 0, 900, 600),
-(101, 'FormerPremium', 'deleted_101@anon.local', '', '', 'US', 'default.png', 1, '2025-12-31 00:00:00', 'USER', '2023-06-20', '2025-11-10', 7, 500, 3500, 2000, 1500, 0, 3000, 2500),
-(102, 'GDPR_Removed', 'deleted_102@anon.local', '', '', 'DE', 'default.png', 0, NULL, 'USER', '2025-01-01', '2025-12-20', 2, 50, 200, 100, 80, 0, 250, 150);
+(20, 'fadopoc537', 'deleted_20@anon.local', '', '', 'ZZ', 0x64656661756c742e706e67, 1, '2026-07-08 12:31:09', 'USER', '2026-04-08', '2026-04-08', 1, 0, 0, 0, 0, 0, 0, 0),
+(100, 'DeletedUser1', 'deleted_100@anon.local', '', '', 'HU', 0x64656661756c742e706e67, 0, NULL, 'USER', '2024-03-10', '2025-08-15', 3, 200, 800, 400, 300, 0, 900, 600),
+(101, 'FormerPremium', 'deleted_101@anon.local', '', '', 'US', 0x64656661756c742e706e67, 1, '2025-12-31 00:00:00', 'USER', '2023-06-20', '2025-11-10', 7, 500, 3500, 2000, 1500, 0, 3000, 2500),
+(102, 'GDPR_Removed', 'deleted_102@anon.local', '', '', 'DE', 0x64656661756c742e706e67, 0, NULL, 'USER', '2025-01-01', '2025-12-20', 2, 50, 200, 100, 80, 0, 250, 150);
 
 -- --------------------------------------------------------
 
@@ -462,19 +464,43 @@ INSERT INTO `mail` (`Id`, `ReceiverId`, `SenderId`, `Type`, `Subject`, `Message`
 (10, 5, 1, 'PURCHASE', 'Prémium aktiválva!', 'Gratulálunk! A prémium tagságod aktív 2026-04-15-ig.', 1, '2025-10-15 11:00:00', '2026-02-05 20:46:10'),
 (11, 6, 1, 'PURCHASE', 'Prémium aktiválva!', 'Gratulálunk! A prémium tagságod aktív 2026-05-01-ig.', 1, '2025-11-01 10:00:00', '2026-02-05 20:46:10'),
 (12, 13, 1, 'PURCHASE', 'Prémium aktiválva!', 'Gratulálunk! A prémium tagságod aktív 2026-08-01-ig.', 1, '2025-11-01 09:00:00', '2026-02-05 20:46:10'),
-(13, 4, 1, 'CHALLENGE', 'Kihívás teljesítve!', 'Gratulálunk! Teljesítetted az \"Első lépések\" kihívást. Ne felejtsd el átvenni a jutalmat!', 0, '2025-10-20 19:05:00', '2026-02-05 20:46:10'),
+(13, 4, 1, 'CHALLENGE', 'Kihívás teljesítve!', 'Gratulálunk! Teljesítetted az \"Első lépések\" kihívást. Ne felejtsd el átvenni a jutalmat!', 1, '2025-10-20 19:05:00', '2026-04-05 20:11:27'),
 (14, 5, 1, 'CHALLENGE', 'Kihívás teljesítve!', 'Gratulálunk! Teljesítetted a \"Hétvégi maraton\" kihívást. Ne felejtsd el átvenni a jutalmat!', 0, '2025-11-17 21:05:00', '2026-02-05 20:46:10'),
-(15, 6, 1, 'CHALLENGE', 'Kihívás teljesítve!', 'Gratulálunk! Teljesítetted a \"Sorozat guru\" kihívást. Ne felejtsd el átvenni a jutalmat!', 0, '2025-11-05 22:05:00', '2026-02-05 20:46:10'),
-(16, 6, 1, 'CHALLENGE', 'Kihívás teljesítve!', 'Gratulálunk! Teljesítetted a \"Kitartás\" kihívást. Ne felejtsd el átvenni a jutalmat!', 0, '2025-08-07 23:59:59', '2026-02-05 20:46:10'),
+(15, 6, 1, 'CHALLENGE', 'Kihívás teljesítve!', 'Gratulálunk! Teljesítetted a \"Sorozat guru\" kihívást. Ne felejtsd el átvenni a jutalmat!', 1, '2025-11-05 22:05:00', '2026-04-06 17:18:40'),
+(16, 6, 1, 'CHALLENGE', 'Kihívás teljesítve!', 'Gratulálunk! Teljesítetted a \"Kitartás\" kihívást. Ne felejtsd el átvenni a jutalmat!', 1, '2025-08-07 23:59:59', '2026-04-06 17:18:40'),
 (17, 13, 1, 'CHALLENGE', 'Kihívás teljesítve!', 'Gratulálunk! Teljesítetted a \"Kitartás\" kihívást. Ne felejtsd el átvenni a jutalmat!', 0, '2025-10-07 23:59:59', '2026-02-05 20:46:10'),
 (18, 4, 6, 'FRIEND', 'Szia!', 'Hello BookLover! Láttam, hogy te is szereted a fantasy könyveket. Olvastad már a Dűnét?', 1, '2025-11-01 14:00:00', '2026-02-05 20:46:10'),
 (19, 6, 4, 'FRIEND', 'RE: Szia!', 'Igen, imádtam! Épp a folytatást tervezem elkezdeni. Te is olvastad?', 1, '2025-11-01 15:30:00', '2026-02-05 20:46:10'),
 (20, 4, 6, 'FRIEND', 'RE: RE: Szia!', 'Még nem, de most felkerült a listámra! Köszi a tippet!', 1, '2025-11-01 16:00:00', '2026-02-05 20:46:10'),
 (21, 5, 8, 'FRIEND', 'Film ajánló', 'Hey MovieNight! Láttad már az Interstellar-t? Szerintem tetszeni fog!', 1, '2025-12-01 18:00:00', '2026-02-05 20:46:10'),
 (22, 8, 5, 'FRIEND', 'RE: Film ajánló', 'Még nem, de hozzáadtam a listához! Köszi!', 0, '2025-12-01 20:00:00', '2026-02-05 20:46:10'),
-(23, 16, 2, 'SYSTEM', 'Gratulálunk a teljesítményhez!', 'PowerUser, te vagy az egyik legaktívabb tagunk! Köszönjük, hogy velünk vagy!', 1, '2025-06-01 10:00:00', '2026-02-05 20:46:10'),
+(23, 16, 2, 'SYSTEM', 'Gratulálunk a teljesítményhez!', 'PowerUser, te vagy az egyik legaktívabb tagunk! Köszönjük, hogy velünk vagy!', 1, '2025-06-01 10:00:00', '2026-04-03 10:44:05'),
 (24, 7, 1, 'SYSTEM', 'Új könyvek érkeztek!', 'Nézd meg a legújabb magyar könyveket a platformon!', 0, '2026-02-04 09:00:00', '2026-02-05 20:46:10'),
-(25, 8, 1, 'SYSTEM', 'Hétvégi film maraton!', 'Ne maradj le a hétvégi akciókról! Dupla pont minden filmért!', 0, '2026-02-05 08:00:00', '2026-02-05 20:46:10');
+(25, 8, 1, 'SYSTEM', 'Hétvégi film maraton!', 'Ne maradj le a hétvégi akciókról! Dupla pont minden filmért!', 0, '2026-02-05 08:00:00', '2026-02-05 20:46:10'),
+(26, 4, 3, 'SYSTEM', 'Rendszerbejelentés', 'Szia', 1, '2026-04-04 20:32:00', '2026-04-05 20:11:27'),
+(27, 3, 3, 'SYSTEM', 'Rendszerbejelentés', 'Én vagyok az', 1, '2026-04-04 20:32:41', '2026-04-08 11:28:43'),
+(28, 2, 3, 'SYSTEM', 'Rendszerbejelentés', 'Tessék?', 0, '2026-04-04 20:33:25', '2026-04-04 22:33:25'),
+(29, 3, 3, 'SYSTEM', 'Rendszerbejelentés', 'Tessék?', 1, '2026-04-04 20:33:25', '2026-04-08 11:28:43'),
+(30, 4, 3, 'SYSTEM', 'Rendszerbejelentés', 'Tessék?', 1, '2026-04-04 20:33:25', '2026-04-05 20:11:27'),
+(31, 5, 3, 'SYSTEM', 'Rendszerbejelentés', 'Tessék?', 0, '2026-04-04 20:33:25', '2026-04-04 22:33:25'),
+(32, 6, 3, 'SYSTEM', 'Rendszerbejelentés', 'Tessék?', 1, '2026-04-04 20:33:25', '2026-04-06 17:18:40'),
+(33, 13, 3, 'SYSTEM', 'Rendszerbejelentés', 'Tessék?', 0, '2026-04-04 20:33:25', '2026-04-04 22:33:25'),
+(34, 16, 3, 'SYSTEM', 'Rendszerbejelentés', 'Tessék?', 0, '2026-04-04 20:33:25', '2026-04-04 22:33:25'),
+(35, 1, 3, 'SYSTEM', 'Rendszerbejelentés', 'test', 0, '2026-04-04 20:33:45', '2026-04-04 22:33:45'),
+(36, 7, 3, 'SYSTEM', 'Rendszerbejelentés', 'test', 0, '2026-04-04 20:33:45', '2026-04-04 22:33:45'),
+(37, 8, 3, 'SYSTEM', 'Rendszerbejelentés', 'test', 0, '2026-04-04 20:33:45', '2026-04-04 22:33:45'),
+(38, 9, 3, 'SYSTEM', 'Rendszerbejelentés', 'test', 0, '2026-04-04 20:33:45', '2026-04-04 22:33:45'),
+(39, 10, 3, 'SYSTEM', 'Rendszerbejelentés', 'test', 0, '2026-04-04 20:33:45', '2026-04-04 22:33:45'),
+(40, 11, 3, 'SYSTEM', 'Rendszerbejelentés', 'test', 0, '2026-04-04 20:33:45', '2026-04-04 22:33:45'),
+(41, 12, 3, 'SYSTEM', 'Rendszerbejelentés', 'test', 0, '2026-04-04 20:33:45', '2026-04-04 22:33:45'),
+(42, 14, 3, 'SYSTEM', 'Rendszerbejelentés', 'test', 0, '2026-04-04 20:33:45', '2026-04-04 22:33:45'),
+(43, 15, 3, 'SYSTEM', 'Rendszerbejelentés', 'test', 0, '2026-04-04 20:33:45', '2026-04-04 22:33:45'),
+(44, 17, 3, 'SYSTEM', 'Rendszerbejelentés', 'test', 0, '2026-04-04 20:33:45', '2026-04-04 22:33:45'),
+(45, 1, 7, 'SYSTEM', 'Felhasználói jelentés • Spam / hirdetés', 'Jelentett felhasználó: PowerUser (ID: 16)\nBejelentő: CasualReader (ID: 7)\nOk: Spam / hirdetés\n\nRészletes indoklás:\nButa volt szegény', 0, '2026-04-08 09:16:26', '2026-04-08 11:16:26'),
+(46, 2, 7, 'SYSTEM', 'Felhasználói jelentés • Spam / hirdetés', 'Jelentett felhasználó: PowerUser (ID: 16)\nBejelentő: CasualReader (ID: 7)\nOk: Spam / hirdetés\n\nRészletes indoklás:\nButa volt szegény', 0, '2026-04-08 09:16:26', '2026-04-08 11:16:26'),
+(47, 3, 7, 'SYSTEM', 'Felhasználói jelentés • Spam / hirdetés', 'Jelentett felhasználó: PowerUser (ID: 16)\nBejelentő: CasualReader (ID: 7)\nOk: Spam / hirdetés\n\nRészletes indoklás:\nButa volt szegény', 1, '2026-04-08 09:16:26', '2026-04-08 11:28:43'),
+(48, 1, 3, 'SYSTEM', 'Felhasználói jelentés • Egyéb', 'Jelentett felhasználó: PowerUser (ID: 16)\nBejelentő: ModeratorAnna (ID: 3)\nOk: Egyéb\n\nRészletes indoklás:\nA KURVA ANYÁDAT TE', 0, '2026-04-08 09:28:30', '2026-04-08 11:28:30'),
+(49, 2, 3, 'SYSTEM', 'Felhasználói jelentés • Egyéb', 'Jelentett felhasználó: PowerUser (ID: 16)\nBejelentő: ModeratorAnna (ID: 3)\nOk: Egyéb\n\nRészletes indoklás:\nA KURVA ANYÁDAT TE', 0, '2026-04-08 09:28:30', '2026-04-08 11:28:30');
 
 -- --------------------------------------------------------
 
@@ -516,7 +542,7 @@ INSERT INTO `movie` (`Id`, `Title`, `Released`, `Length`, `Rating`, `Description
 (8, 'Interstellar', '2014', 169, 8.6, 'Christopher Nolan epikus űrutazása az emberiség megmentéséért.', 'stream/interstellar.mp4', 'interstellar.jpg', 3, 'https://youtube.com/trailer8', 90, 45, 1, 0, 1, '2026-02-05 20:46:10'),
 (9, 'The Matrix', '1999', 136, 8.7, 'Wachowski testvérek kultikus sci-fi-je a valóság természetéről.', 'stream/matrix.mp4', 'matrix.jpg', 4, 'https://youtube.com/trailer9', 80, 40, 1, 0, 1, '2026-02-05 20:46:10'),
 (10, 'Spirited Away', '2001', 125, 8.6, 'Hayao Miyazaki anime remekműve egy lány kalandjairól a szellemek világában.', 'stream/spirited_away.mp4', 'spirited_away.jpg', 2, 'https://youtube.com/trailer10', 75, 37, 1, 0, 1, '2026-02-05 20:46:10'),
-(11, 'Toy Story', '1995', 81, 8.3, 'Pixar első nagyjátékfilmje játékok titkos életéről.', 'stream/toy_story.mp4', 'toy_story.jpg', 1, 'https://youtube.com/trailer11', 60, 30, 1, 0, 1, '2026-02-05 20:46:10'),
+(11, 'Toy Story', '1995', 81, 8.3, 'Pixar első nagyjátékfilmje játékok titkos életéről.', 'https://videa.hu/player?v=4589MF2aMJm2reT9&autoplay=1&enableJsApi=1&apiKey=PKeut6dEjAJYKYRp', 'https://image.tmdb.org/t/p/original/4rbcp3ng8n1MKHjpeqW0L7Fnpzz.jpg', 1, 'https://youtu.be/xNWSGRD5CzU', 60, 30, 1, 0, 1, '2026-03-26 20:36:12'),
 (12, 'The Shining', '1980', 146, 8.4, 'Stanley Kubrick horror-klasszikusa egy elszigetelt szállodában.', 'stream/shining.mp4', 'shining.jpg', 5, 'https://youtube.com/trailer12', 80, 40, 1, 0, 0, '2026-02-05 20:46:10'),
 (13, 'Kontroll', '2003', 105, 7.6, 'Antal Nimród thrillere a budapesti metróban.', 'stream/kontroll.mp4', 'kontroll.jpg', 4, 'https://youtube.com/trailer13', 70, 35, 0, 1, 1, '2026-02-05 20:46:10'),
 (14, 'Taxidermia', '2006', 91, 7.0, 'Pálfi György szürreális filmje három generációról.', 'stream/taxidermia.mp4', 'taxidermia.jpg', 5, 'https://youtube.com/trailer14', 65, 32, 0, 1, 0, '2026-02-05 20:46:10'),
@@ -557,6 +583,7 @@ INSERT INTO `movie_tag` (`MovieId`, `TagId`) VALUES
 (5, 13),
 (5, 17),
 (5, 20),
+(5, 24),
 (5, 27),
 (6, 2),
 (6, 21),
@@ -579,6 +606,7 @@ INSERT INTO `movie_tag` (`MovieId`, `TagId`) VALUES
 (11, 5),
 (11, 11),
 (11, 18),
+(11, 24),
 (11, 27),
 (11, 34),
 (12, 3),
@@ -631,7 +659,13 @@ INSERT INTO `purchase` (`Id`, `UserId`, `Price`, `Tier`, `PurchaseStatus`, `Purc
 (10, 8, 2990, 'QUARTER_Y', 'FAILED', '2025-11-10', '2026-02-05 20:46:10'),
 (11, 10, 990, 'ONE_M', 'REFUNDED', '2025-08-01', '2026-02-05 20:46:10'),
 (12, 9, 990, 'ONE_M', 'PENDING', '2026-02-05', '2026-02-05 20:46:10'),
-(13, 12, 2990, 'QUARTER_Y', 'PENDING', '2026-02-04', '2026-02-05 20:46:10');
+(13, 12, 2990, 'QUARTER_Y', 'PENDING', '2026-02-04', '2026-02-05 20:46:10'),
+(14, 8, 2990, 'ONE_M', 'SUCCESS', '2026-04-08', '2026-04-08 14:09:00'),
+(15, 7, 2990, 'ONE_M', 'SUCCESS', '2026-04-08', '2026-04-08 14:12:18'),
+(16, 4, 7490, 'QUARTER_Y', 'SUCCESS', '2026-04-08', '2026-04-08 14:13:33'),
+(17, 9, 2990, 'ONE_M', 'SUCCESS', '2026-04-08', '2026-04-08 14:19:17'),
+(18, 10, 2990, 'ONE_M', 'SUCCESS', '2026-04-08', '2026-04-08 14:20:28'),
+(20, 11, 2990, 'ONE_M', 'SUCCESS', '2026-04-08', '2026-04-08 14:37:39');
 
 -- --------------------------------------------------------
 
@@ -666,7 +700,17 @@ INSERT INTO `security_audit_log` (`Id`, `UserId`, `Action`, `Status`, `Details`,
 (11, 10, 'PREMIUM_UPGRADE', 'SUSPICIOUS', 'Prémium státusz engedélyezve vásárlás nélkül. Szint: 2, Lejár: NULL', '2025-07-15 14:30:00'),
 (12, NULL, 'PREMIUM_UPGRADE', 'SUSPICIOUS', 'Ismeretlen user próbált prémiumot aktiválni API-n keresztül.', '2025-09-20 02:15:00'),
 (13, 16, 'PREMIUM_UPGRADE', 'VERIFIED', 'Admin által jóváhagyott extra prémium idő (+30 nap kompenzáció).', '2025-06-01 10:00:00'),
-(14, 10, 'PREMIUM_EXPIRED', 'VERIFIED', 'Prémium lejárt. Utolsó lejárati dátum: 2025-09-01 00:00:00', '2025-09-01 03:00:00');
+(14, 10, 'PREMIUM_EXPIRED', 'VERIFIED', 'Prémium lejárt. Utolsó lejárati dátum: 2025-09-01 00:00:00', '2025-09-01 03:00:00'),
+(15, 17, 'PREMIUM_UPGRADE', 'SUSPICIOUS', 'Prémium státusz engedélyezve vásárlás nélkül. Szint: 2, Lejár: NULL', '2026-04-05 18:49:01'),
+(16, 17, 'PREMIUM_EXPIRED', 'VERIFIED', 'Prémium lejárt. Utolsó lejárati dátum: NULL', '2026-04-05 18:49:24'),
+(17, 4, 'PREMIUM_EXPIRED', 'VERIFIED', 'Prémium lejárt. Utolsó lejárati dátum: 2026-03-10 00:00:00', '2026-04-08 13:58:37'),
+(18, 8, 'PREMIUM_UPGRADE', 'SUSPICIOUS', 'Prémium státusz engedélyezve vásárlás nélkül. Szint: 3, Lejár: 2026-05-08 12:09:00', '2026-04-08 14:09:00'),
+(19, 7, 'PREMIUM_UPGRADE', 'SUSPICIOUS', 'Prémium státusz engedélyezve vásárlás nélkül. Szint: 4, Lejár: 2026-05-08 12:12:18', '2026-04-08 14:12:18'),
+(20, 4, 'PREMIUM_UPGRADE', 'SUSPICIOUS', 'Prémium státusz engedélyezve vásárlás nélkül. Szint: 9, Lejár: 2026-07-08 12:13:33', '2026-04-08 14:13:33'),
+(21, 9, 'PREMIUM_UPGRADE', 'SUSPICIOUS', 'Prémium státusz engedélyezve vásárlás nélkül. Szint: 1, Lejár: 2026-05-08 12:19:17', '2026-04-08 14:19:17'),
+(22, 10, 'PREMIUM_UPGRADE', 'SUSPICIOUS', 'Prémium státusz engedélyezve vásárlás nélkül. Szint: 2, Lejár: 2026-05-08 12:20:28', '2026-04-08 14:20:28'),
+(23, NULL, 'PREMIUM_UPGRADE', 'SUSPICIOUS', 'Prémium státusz engedélyezve vásárlás nélkül. Szint: 1, Lejár: 2026-07-08 12:31:09', '2026-04-08 14:31:09'),
+(24, 11, 'PREMIUM_UPGRADE', 'SUSPICIOUS', 'Prémium státusz engedélyezve vásárlás nélkül. Szint: 1, Lejár: 2026-05-08 12:37:39', '2026-04-08 14:37:39');
 
 -- --------------------------------------------------------
 
@@ -725,6 +769,7 @@ INSERT INTO `series_tag` (`SeriesId`, `TagId`) VALUES
 (1, 13),
 (1, 21),
 (1, 23),
+(1, 24),
 (1, 27),
 (2, 1),
 (2, 13),
@@ -848,13 +893,17 @@ CREATE TABLE `user` (
   `Id` int(11) NOT NULL,
   `Username` varchar(128) NOT NULL,
   `Email` varchar(128) NOT NULL,
+  `IsEmailVerified` tinyint(1) NOT NULL DEFAULT 0,
+  `EmailVerificationTokenHash` varchar(128) DEFAULT NULL,
+  `EmailVerificationTokenExpiresAt` datetime DEFAULT NULL,
+  `EmailVerifiedAt` datetime DEFAULT NULL,
   `PasswordHash` text NOT NULL,
   `PasswordSalt` text NOT NULL,
-  `CountryCode` char(2) NOT NULL,
-  `ProfilePic` varchar(512) NOT NULL,
+  `CountryCode` char(2) DEFAULT NULL,
+  `ProfilePic` mediumblob DEFAULT NULL,
   `Premium` tinyint(1) NOT NULL DEFAULT 0,
   `PremiumExpiresAt` datetime DEFAULT NULL,
-  `PermissionLevel` enum('USER','MODERATOR','ADMIN') NOT NULL DEFAULT 'USER',
+  `PermissionLevel` enum('USER','MODERATOR','ADMIN','BANNED') NOT NULL DEFAULT 'USER',
   `CreationDate` date NOT NULL,
   `LastLoginDate` date NOT NULL,
   `Level` int(11) NOT NULL DEFAULT 1,
@@ -872,23 +921,26 @@ CREATE TABLE `user` (
 -- Dumping data for table `user`
 --
 
-INSERT INTO `user` (`Id`, `Username`, `Email`, `PasswordHash`, `PasswordSalt`, `CountryCode`, `ProfilePic`, `Premium`, `PremiumExpiresAt`, `PermissionLevel`, `CreationDate`, `LastLoginDate`, `Level`, `XP`, `BookPoints`, `SeriesPoints`, `MoviePoints`, `DayStreak`, `ReadTimeMin`, `WatchTimeMin`, `updated_at`) VALUES
-(1, 'System', 'system@konyvkocka.local', '4b8e2f9c1d3a5e7b0c2d4f6a8e0b2c4d6f8a0c2e4b6d8f0a2c4e6b8d0f2a4c6e', 'a1b2c3d4e5f6789012345678abcdef00', 'HU', 'system_avatar.png', 0, NULL, 'ADMIN', '2026-02-05', '2026-02-05', 1, 0, 0, 0, 0, 0, 0, 0, '2026-02-05 20:46:10'),
-(2, 'Admin', 'admin@konyvkocka.local', '7c9f3e2d1b4a6c8e0f2d4b6a8c0e2f4d6b8a0c2e4f6d8b0a2c4e6f8d0b2a4c6', '1a2b3c4d5e6f7890abcdef1234567890', 'HU', 'admin.png', 1, '2027-01-01 00:00:00', 'ADMIN', '2025-01-01', '2026-02-05', 10, 500, 5000, 3000, 2000, 150, 5000, 3000, '2026-02-05 20:46:10'),
-(3, 'ModeratorAnna', 'anna@konyvkocka.local', '8d0a4f3e2c5b7d9f1e3a5c7b9d1f3e5a7c9b1d3f5e7a9c1b3d5f7e9a1c3b5d7', '2b3c4d5e6f7890ab1234cdef56789012', 'HU', 'anna.png', 1, '2026-06-01 00:00:00', 'MODERATOR', '2025-03-15', '2026-02-05', 5, 800, 2500, 1500, 1000, 45, 2000, 1500, '2026-02-05 20:46:10'),
-(4, 'BookLover123', 'booklover@gmail.com', '9e1b5a4f3d6c8e0a2f4b6d8c0e2a4f6b8d0c2e4a6f8b0d2c4e6a8f0b2d4c6e8', '3c4d5e6f7890ab12cdef345678901234', 'HU', 'booklover.png', 1, '2026-03-10 00:00:00', 'USER', '2025-06-10', '2026-02-05', 8, 300, 4200, 1800, 1500, 90, 4000, 2200, '2026-02-05 20:46:10'),
-(5, 'FilmFan88', 'filmfan@gmail.com', '0f2c6b5a4e7d9f1b3a5c7d9e1f3b5a7c9d1e3f5b7a9c1d3e5f7b9a1c3d5e7f9', '4d5e6f7890ab1234def4567890123456', 'US', 'filmfan.png', 1, '2026-04-15 00:00:00', 'USER', '2025-07-20', '2026-02-04', 6, 650, 1800, 2500, 3200, 60, 1500, 4000, '2026-02-05 20:46:10'),
-(6, 'SeriesAddict', 'series@yahoo.com', '1a3d7c6b5f8e0a2c4b6d8e0f2a4c6b8d0e2f4a6c8b0d2e4f6a8c0b2d4e6f8a0', '5e6f7890ab123456ef56789012345678', 'GB', 'series.png', 1, '2026-05-01 00:00:00', 'USER', '2025-08-05', '2026-02-03', 7, 200, 2100, 3800, 2900, 75, 2000, 5000, '2026-02-05 20:46:10'),
-(7, 'CasualReader', 'casual@outlook.com', '4d6a0f9e8c1b3d5f7e9a1b3c5d7f9e1a3b5c7d9f1e3a5b7c9d1f3e5a7b9c1d3', '890ab1234567890178901234567890ef', 'HU', 'casual.png', 0, NULL, 'USER', '2025-09-12', '2026-02-05', 4, 450, 1500, 800, 600, 30, 1200, 900, '2026-02-05 20:46:10'),
-(8, 'MovieNight', 'movie@gmail.com', '5e7b1a0f9d2c4e6a8f0b2c4d6e8a0f2b4c6d8e0a2f4b6c8d0e2a4f6b8c0d2e4', '90ab12345678901289012345678901ab', 'DE', 'movie.png', 0, NULL, 'USER', '2025-10-01', '2026-02-04', 3, 720, 600, 1200, 1500, 20, 500, 2000, '2026-02-05 20:46:10'),
-(9, 'NewUser2026', 'newuser@gmail.com', '6f8c2b1a0e3d5f7b9a1c3d5e7f9b1a3c5d7e9f1b3a5c7d9e1f3b5a7c9d1e3f5', '0ab123456789012390123456789012cd', 'FR', 'newuser.png', 0, NULL, 'USER', '2026-01-15', '2026-02-05', 1, 50, 100, 50, 30, 3, 100, 50, '2026-02-05 20:46:10'),
-(10, 'OldUser', 'olduser@gmail.com', '7a9d3c2b1f4e6a8c0b2d4e6f8a0c2b4d6e8f0a2c4b6d8e0f2a4c6b8d0e2f4a6', 'ab1234567890123401234567890123ef', 'HU', 'olduser.png', 0, NULL, 'USER', '2024-05-10', '2026-01-20', 2, 150, 300, 200, 150, 0, 400, 300, '2026-02-05 20:46:10'),
-(11, 'LazyReader', 'lazy@gmail.com', '8b0e4d3c2a5f7b9d1c3e5f7a9b1d3c5e7f9a1b3d5c7e9f1a3b5d7c9e1f3a5b7', 'b12345678901234512345678901234ab', 'IT', 'lazy.png', 0, NULL, 'USER', '2025-11-20', '2026-01-25', 1, 20, 50, 30, 20, 0, 80, 40, '2026-02-05 20:46:10'),
-(12, 'PolishFan', 'polish@gmail.com', '9c1f5e4d3b6a8c0e2d4f6a8b0c2e4d6f8a0b2c4e6d8f0a2b4c6e8d0f2a4b6c8', 'c1234567890123456234567890123cd', 'PL', 'polish.png', 0, NULL, 'USER', '2025-12-01', '2026-02-02', 2, 300, 500, 300, 200, 15, 600, 400, '2026-02-05 20:46:10'),
-(13, 'SpanishReader', 'spanish@gmail.com', '2b4e8d7c6a9f1b3d5c7e9f1a3b5d7c9e1f3a5b7d9c1e3f5a7b9d1c3e5f7a9b1', '6f7890ab12345678f6789012345678ab', 'ES', 'spanish.png', 1, '2026-08-01 00:00:00', 'USER', '2025-04-20', '2026-02-05', 5, 100, 2000, 1000, 800, 50, 1800, 1200, '2026-02-05 20:46:10'),
-(14, 'AussieViewer', 'aussie@gmail.com', '0d2a6f5e4c7b9d1f3e5a7b9c1d3f5e7a9b1c3d5f7e9a1b3c5d7f9e1a3b5c7d9', 'd23456789012345673456789012345ef', 'AU', 'aussie.png', 0, NULL, 'USER', '2025-07-10', '2026-01-30', 3, 500, 800, 1500, 1200, 10, 700, 2000, '2026-02-05 20:46:10'),
-(15, 'NoActivity', 'noactivity@gmail.com', '1e3b7a6f5d8c0e2a4f6b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0', 'e345678901234567845678901234567ab', 'HU', 'noactivity.png', 0, NULL, 'USER', '2025-01-05', '2025-01-05', 1, 0, 0, 0, 0, 0, 0, 0, '2026-02-05 20:46:10'),
-(16, 'PowerUser', 'poweruser@gmail.com', '3c5f9e8d7b0a2c4e6d8f0a2b4c6e8d0f2a4b6c8e0d2f4a6b8c0e2d4f6a8b0c2', '7890ab123456789067890123456789cd', 'HU', 'poweruser.png', 1, '2027-12-31 23:59:59', 'USER', '2024-01-01', '2026-02-05', 15, 999, 10000, 8000, 7000, 365, 15000, 12000, '2026-02-05 20:46:10');
+INSERT INTO `user` (`Id`, `Username`, `Email`, `IsEmailVerified`, `EmailVerificationTokenHash`, `EmailVerificationTokenExpiresAt`, `EmailVerifiedAt`, `PasswordHash`, `PasswordSalt`, `CountryCode`, `ProfilePic`, `Premium`, `PremiumExpiresAt`, `PermissionLevel`, `CreationDate`, `LastLoginDate`, `Level`, `XP`, `BookPoints`, `SeriesPoints`, `MoviePoints`, `DayStreak`, `ReadTimeMin`, `WatchTimeMin`, `updated_at`) VALUES
+(1, 'System', 'system@konyvkocka.local', 1, NULL, NULL, '2026-04-07 15:34:57', 'b6cece4a7e64997e1e0bcf2d5a8bd5e1f9ca6903dbeb4ec806c477773a6bee0d', 'a1b2c3d4e5f6789012345678abcdef00', 'HU', NULL, 0, NULL, 'ADMIN', '2026-02-05', '2026-03-01', 1, 0, 0, 0, 0, 0, 0, 0, '2026-04-08 12:57:17'),
+(2, 'Admin', 'admin@konyvkocka.local', 1, NULL, NULL, '2026-04-07 15:34:57', '4214c9e1815525ef2d72353b9b6f3e03c5fa47c15114f2905bbb93b2173ebea1', '1a2b3c4d5e6f7890abcdef1234567890', 'HU', NULL, 1, '2027-01-01 00:00:00', 'ADMIN', '2025-01-01', '2026-04-08', 10, 500, 5000, 3000, 2000, 151, 5000, 3000, '2026-04-08 16:02:01'),
+(3, 'ModeratorAnna', 'anna@konyvkocka.local', 1, NULL, NULL, '2026-04-07 15:34:57', '1fafbc13da806cbcdc111d421cf2d84cf3f3219350fedcfc458a28e68be42bf1', 'vt5XKpPihnFP7EosvqcwAqCSDI1zNOfMbBD1Qiu273urDb1aeLg5xKwNUphqf7Yu', 'HU', NULL, 1, '2026-06-01 00:00:00', 'MODERATOR', '2025-03-15', '2026-04-08', 5, 800, 2500, 1500, 1000, 45, 2023, 1500, '2026-04-08 16:19:50'),
+(4, 'BookLover123', 'booklover@gmail.com', 1, NULL, NULL, '2026-04-07 15:34:57', '6621061ffcd85587c8eb41b058605c9d20f28cd168437aff6c3829f9c8f5a063', '3c4d5e6f7890ab12cdef345678901234', 'HU', NULL, 1, '2026-07-08 12:13:33', 'USER', '2025-06-10', '2026-04-08', 9, 550, 4200, 1800, 1500, 91, 4020, 2200, '2026-04-08 15:21:25'),
+(5, 'FilmFan88', 'filmfan@gmail.com', 1, NULL, NULL, '2026-04-07 15:34:57', '0468060223a2423c52bcec93589841021d713427eae1e91234d143ab891aa954', '4d5e6f7890ab1234def4567890123456', 'HU', NULL, 1, '2026-04-15 00:00:00', 'USER', '2025-07-20', '2026-04-01', 6, 650, 1800, 2500, 3200, 60, 1500, 4000, '2026-04-07 15:34:57'),
+(6, 'SeriesAddict', 'series@yahoo.com', 1, NULL, NULL, '2026-04-07 15:34:57', 'ca2c4bfea4d2fefac949e8124fd8b1a9e7437a75a1792c6ac71cc0a502db0107', '5e6f7890ab123456ef56789012345678', 'GB', NULL, 1, '2026-05-01 00:00:00', 'USER', '2025-08-05', '2026-04-06', 8, 450, 2175, 3800, 2900, 75, 2006, 5000, '2026-04-08 12:57:17'),
+(7, 'CasualReader', 'casual@outlook.com', 1, NULL, NULL, '2026-04-07 15:34:57', '9498ac81de8954cc7f65f71e417318d228a573b7a1fdf7496d4e036593439d9d', '890ab1234567890178901234567890ef', 'HU', NULL, 1, '2026-05-08 12:12:18', 'USER', '2025-09-12', '2026-04-08', 4, 450, 1500, 800, 600, 30, 1200, 900, '2026-04-08 14:12:18'),
+(8, 'MovieNight', 'movie@gmail.com', 1, NULL, NULL, '2026-04-07 15:34:57', '0bb0751fa05c5c90a78e28230876fc8cb51db304e2d05af889c0abae3b96fda2', '90ab12345678901289012345678901ab', 'DE', NULL, 1, '2026-05-08 12:09:00', 'USER', '2025-10-01', '2026-04-08', 3, 720, 600, 1200, 1500, 21, 500, 2000, '2026-04-08 14:09:00'),
+(9, 'NewUser2026', 'newuser@gmail.com', 1, NULL, NULL, '2026-04-07 15:34:57', '7faf416b88661bafba14953f02b07b0cea376c0c408e9f5a3d5aab3d1b96f973', '0ab123456789012390123456789012cd', 'FR', NULL, 1, '2026-05-08 12:19:17', 'USER', '2026-01-15', '2026-04-08', 1, 50, 100, 50, 30, 4, 100, 50, '2026-04-08 14:19:17'),
+(10, 'OldUser', 'olduser@gmail.com', 1, NULL, NULL, '2026-04-07 15:34:57', '6026b582ff3ed87f5ef12be2d2d608fe4057f8362b17630b8936b9b8812d5f93', 'ab1234567890123401234567890123ef', 'HU', NULL, 1, '2026-05-08 12:20:28', 'USER', '2024-05-10', '2026-04-08', 2, 150, 300, 200, 150, 1, 400, 300, '2026-04-08 14:20:28'),
+(11, 'LazyReader', 'lazy@gmail.com', 1, '143bf5f58bc2fbc9f274463f4b1c562753efc46c660b6f580ed67bd58a115434', '2026-04-08 13:16:35', '2026-04-07 15:34:57', 'b05eb68e4148667e1f6a904f2324967b696809b29b969c9ab57d54dc06a77edf', 'b12345678901234512345678901234ab', 'HU', NULL, 1, '2026-05-08 12:37:39', 'USER', '2025-11-20', '2026-04-08', 1, 20, 50, 30, 20, 1, 80, 40, '2026-04-08 14:46:35'),
+(12, 'PolishFan', 'polish@gmail.com', 1, NULL, NULL, '2026-04-07 15:34:57', '498dc93b12a942338ec40009cd44b2c25135b352f4acacecc789e3596c57d973', 'c1234567890123456234567890123cd', 'PL', NULL, 0, NULL, 'USER', '2025-12-01', '2026-02-02', 2, 300, 500, 300, 200, 15, 600, 400, '2026-04-08 12:57:17'),
+(13, 'SpanishReader', 'spanish@gmail.com', 1, NULL, NULL, '2026-04-07 15:34:57', 'ed65190cd6fd74946839691e2e118669955382b18751dc21c96ee36b45cba157', '6f7890ab12345678f6789012345678ab', 'ES', NULL, 1, '2026-08-01 00:00:00', 'USER', '2025-04-20', '2026-02-05', 5, 100, 2000, 1000, 800, 50, 1800, 1200, '2026-04-08 12:57:17'),
+(14, 'AussieViewer', 'aussie@gmail.com', 1, NULL, NULL, '2026-04-07 15:34:57', '7489e92e56b229e1abf6410a38d56ee8fda564cf362dca6f27e1ec82053deabc', 'd23456789012345673456789012345ef', 'AU', NULL, 0, NULL, 'USER', '2025-07-10', '2026-01-30', 3, 500, 800, 1500, 1200, 10, 700, 2000, '2026-04-08 12:57:17'),
+(15, 'NoActivity', 'noactivity@gmail.com', 1, NULL, NULL, '2026-04-07 15:34:57', 'ad413c9a15af9c7fa559d833685aa8a4295270295c80ff79e69372808411a76a', 'e345678901234567845678901234567ab', 'HU', NULL, 0, NULL, 'USER', '2025-01-05', '2025-01-05', 1, 0, 0, 0, 0, 0, 0, 0, '2026-04-08 12:57:17'),
+(16, 'PowerUser', 'poweruser@gmail.com', 1, NULL, NULL, '2026-04-07 15:34:57', 'ab14d07881b0bbc4ca71983b6c96e27501763f6644c82177b70731c21470bb22', '7890ab123456789067890123456789cd', 'HU', NULL, 1, '2027-12-31 23:59:59', 'BANNED', '2024-01-01', '2026-04-03', 15, 999, 10000, 8000, 7000, 365, 15000, 12000, '2026-04-08 12:57:17'),
+(17, 'tts', 'tts@tts.com', 1, NULL, NULL, '2026-04-07 15:34:57', 'aaaf37aebd92d869f3751ae16488dfac309743d583e730e4e5ded90d6cd1f9f3', 'AglxÓŰtsj4jláVóT039dűbcőUSÜrŐzaAOaúSsÜ05CJK3EWlqDXmIDxuQWóvt2OtC', NULL, NULL, 0, NULL, 'BANNED', '2026-03-01', '2026-03-01', 1, 0, 0, 0, 0, 0, 0, 0, '2026-04-08 12:57:17'),
+(18, 'kisaxev', 'test@stm.co', 1, NULL, NULL, '2026-04-07 15:36:19', '0aaef4a5d173d9955949f40c7d20e1b7976ff438f60de0e667720a4a262a9a4f', '3dBOWQ64CnXpRvHXCnla2u89byHwgK04bG7XevzgmSNjEWYVpASm2AqNA7O8jK7y', NULL, NULL, 0, NULL, 'USER', '2026-04-07', '2026-04-07', 1, 0, 0, 0, 0, 0, 0, 0, '2026-04-08 12:19:28'),
+(19, 'vayimal', 'vayimal514@bpotogo.com', 1, NULL, NULL, '2026-04-07 15:45:29', '8081e369b60da468af1e9c27327bba1e5ebc0b71d1bb898867e1b6552574cdb7', 'eUul1WosYmCCrTSaCLLGEVw6tjpfyG2LYFZM8Y8zikBaS2xTcW4IazFiJwGjsjRW', NULL, NULL, 0, NULL, 'USER', '2026-04-07', '2026-04-08', 1, 150, 75, 0, 0, 0, 5, 0, '2026-04-08 13:34:45');
 
 --
 -- Triggers `user`
@@ -980,35 +1032,57 @@ END
 $$
 DELIMITER ;
 DELIMITER $$
+CREATE TRIGGER `before_user_delete_mail_sender_fix` BEFORE DELETE ON `user` FOR EACH ROW BEGIN
+IF OLD.Id <> 1 AND EXISTS (SELECT 1 FROM user WHERE Id = 1) THEN
+UPDATE mail
+SET SenderId = 1
+WHERE SenderId = OLD.Id;
+ELSE
+DELETE FROM mail
+WHERE SenderId = OLD.Id;
+END IF;
+END
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `deleting_user` AFTER DELETE ON `user` FOR EACH ROW BEGIN
-    INSERT INTO deleted_user (
-        Id, Username, Email, PasswordHash, PasswordSalt, 
-        CountryCode, ProfilePic, Premium, PremiumExpiresAt, PermissionLevel, 
-        CreationDate, LastLoginDate, Level, XP, BookPoints, 
-        SeriesPoints, MoviePoints, DayStreak, ReadTimeMin, WatchTimeMin
-    )
-    VALUES (
-        OLD.Id, 
-        OLD.Username,
-        CONCAT('deleted_', OLD.Id, '@anon.local'),
-        '',
-        '',
-        OLD.CountryCode, 
-        OLD.ProfilePic, 
-        OLD.Premium,
-        OLD.PremiumExpiresAt,
-        OLD.PermissionLevel,
-        OLD.CreationDate, 
-        OLD.LastLoginDate, 
-        OLD.Level,
-        OLD.XP,
-        OLD.BookPoints, 
-        OLD.SeriesPoints, 
-        OLD.MoviePoints, 
-        OLD.DayStreak, 
-        OLD.ReadTimeMin, 
-        OLD.WatchTimeMin
-    );
+INSERT INTO deleted_user (
+Id, Username, Email, PasswordHash, PasswordSalt,
+CountryCode, ProfilePic, Premium, PremiumExpiresAt, PermissionLevel,
+CreationDate, LastLoginDate, Level, XP, BookPoints,
+SeriesPoints, MoviePoints, DayStreak, ReadTimeMin, WatchTimeMin
+)
+VALUES (
+OLD.Id,
+OLD.Username,
+CONCAT('deleted_', OLD.Id, '@anon.local'),
+'',
+'',
+COALESCE(OLD.CountryCode, 'ZZ'),
+IFNULL(OLD.ProfilePic, 0x64656661756c742e706e67),
+OLD.Premium,
+OLD.PremiumExpiresAt,
+OLD.PermissionLevel,
+OLD.CreationDate,
+OLD.LastLoginDate,
+OLD.Level,
+OLD.XP,
+OLD.BookPoints,
+OLD.SeriesPoints,
+OLD.MoviePoints,
+OLD.DayStreak,
+OLD.ReadTimeMin,
+OLD.WatchTimeMin
+);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `trg_user_daily_streak_on_login` BEFORE UPDATE ON `user` FOR EACH ROW BEGIN
+    IF NEW.LastLoginDate = CURDATE()
+       AND (OLD.LastLoginDate IS NULL OR OLD.LastLoginDate < CURDATE()) THEN
+        SET NEW.DayStreak = OLD.DayStreak + 1;
+    END IF;
 END
 $$
 DELIMITER ;
@@ -1039,7 +1113,7 @@ INSERT INTO `user_badge` (`UserId`, `BadgeId`, `EarnedAt`) VALUES
 (4, 9, '2025-07-15 18:30:00'),
 (5, 5, '2025-08-07 12:00:00'),
 (5, 9, '2025-10-15 20:00:00'),
-(6, 5, '2025-08-08 12:00:00'),
+(6, 5, '2026-04-06 16:24:44'),
 (6, 6, '2025-09-06 00:00:00'),
 (6, 11, '2025-08-20 22:00:00'),
 (7, 4, '2025-11-01 08:00:00'),
@@ -1083,17 +1157,21 @@ INSERT INTO `user_book` (`UserId`, `BookId`, `Status`, `Favorite`, `Rating`, `Ad
 (2, 1, 'COMPLETED', 1, 9.0, '2025-02-01 10:00:00', '2025-02-10 18:00:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 584, 0),
 (2, 6, 'COMPLETED', 1, 9.5, '2025-03-01 09:00:00', '2025-03-08 20:00:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 328, 0),
 (2, 9, 'WATCHING', 0, NULL, '2025-11-01 14:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 0, 5400),
-(3, 3, 'COMPLETED', 1, 9.0, '2025-05-01 10:00:00', '2025-05-10 19:00:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 368, 0),
+(3, 3, 'WATCHING', 1, 9.0, '2025-05-01 10:00:00', '2025-05-10 19:00:00', 2, '2026-04-08 15:59:21', '2026-04-08 15:59:20', 0, 0),
 (3, 17, 'WATCHING', 1, NULL, '2025-12-01 11:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 200, 0),
 (4, 1, 'COMPLETED', 1, 9.5, '2025-07-01 10:00:00', '2025-07-15 18:30:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 584, 0),
-(4, 6, 'COMPLETED', 1, 9.0, '2025-08-01 09:00:00', '2025-08-10 20:15:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 328, 0),
+(4, 3, 'WATCHING', 0, NULL, '2026-04-06 14:30:40', NULL, 0, '2026-04-08 15:22:23', '2026-04-08 15:22:23', 5, 0),
+(4, 6, 'WATCHING', 1, 9.0, '2025-08-01 09:00:00', '2025-08-10 20:15:00', 2, '2026-04-06 15:03:30', '2026-04-06 15:03:30', 328, 0),
 (4, 8, 'WATCHING', 0, NULL, '2025-09-01 14:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 234, 0),
-(4, 13, 'PLANNED', 0, NULL, '2026-01-05 12:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 0, 0),
+(4, 13, 'WATCHING', 1, NULL, '2026-01-05 12:00:00', NULL, 3, '2026-04-06 15:13:59', '2026-04-06 15:13:58', 0, 0),
 (4, 17, 'COMPLETED', 1, 8.5, '2025-10-01 11:00:00', '2025-10-20 19:00:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 432, 0),
 (5, 11, 'COMPLETED', 0, 8.5, '2025-10-01 09:00:00', '2025-10-15 20:00:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 656, 0),
+(6, 3, 'COMPLETED', 0, NULL, '2026-04-06 16:45:52', '2026-04-06 17:45:03', 2, '2026-04-07 15:18:06', '2026-04-07 15:18:06', 166, 0),
+(6, 4, 'PLANNED', 0, NULL, '2026-04-06 17:09:49', NULL, 0, '2026-04-06 17:16:11', '2026-04-06 17:16:11', NULL, NULL),
 (6, 7, 'WATCHING', 1, NULL, '2026-01-10 15:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 120, 0),
 (6, 18, 'PLANNED', 0, NULL, '2026-02-01 09:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 0, 0),
 (7, 2, 'COMPLETED', 0, 8.0, '2025-10-15 13:00:00', '2025-10-18 16:00:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 232, 0),
+(7, 3, 'WATCHING', 0, NULL, '2026-04-06 16:15:42', NULL, 0, '2026-04-06 16:15:42', '2026-04-06 16:15:42', 0, 0),
 (7, 7, 'WATCHING', 1, NULL, '2025-11-01 10:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 150, 0),
 (7, 10, 'COMPLETED', 0, 9.0, '2025-12-01 08:00:00', '2025-12-01 12:00:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 96, 7200),
 (8, 14, 'WATCHING', 0, NULL, '2025-12-20 11:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 95, 0),
@@ -1113,41 +1191,52 @@ INSERT INTO `user_book` (`UserId`, `BookId`, `Status`, `Favorite`, `Rating`, `Ad
 (16, 5, 'COMPLETED', 0, 8.5, '2024-06-01 10:00:00', '2024-06-10 20:00:00', 1, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 424, 0),
 (16, 6, 'COMPLETED', 1, 9.5, '2024-07-01 08:00:00', '2024-07-08 17:00:00', 0, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 328, 0),
 (16, 8, 'COMPLETED', 1, 10.0, '2024-08-01 09:00:00', '2024-08-15 22:00:00', 0, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 423, 0),
-(16, 13, 'COMPLETED', 1, 9.0, '2024-09-01 10:00:00', '2024-09-20 19:00:00', 0, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 688, 0);
+(16, 13, 'COMPLETED', 1, 9.0, '2024-09-01 10:00:00', '2024-09-20 19:00:00', 0, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 688, 0),
+(19, 3, 'COMPLETED', 0, NULL, '2026-04-08 13:25:11', '2026-04-08 13:34:45', 2, '2026-04-08 13:34:45', '2026-04-08 13:34:45', 166, 0);
 
 --
 -- Triggers `user_book`
 --
 DELIMITER $$
 CREATE TRIGGER `after_user_book_complete` BEFORE UPDATE ON `user_book` FOR EACH ROW BEGIN
-    DECLARE book_xp INT;
-    DECLARE book_points INT;
-    
-    -- ✅ Ha Status COMPLETED-re változik ÉS van még hátralévő befejezés
-    IF OLD.Status != 'COMPLETED' 
-       AND NEW.Status = 'COMPLETED' 
-       AND NEW.RemainingCompletions > 0 THEN
-        
-        -- ✅ CompletedAt beállítása CSAK HA MÉG NULL (első befejezés!)
+    DECLARE book_xp INT DEFAULT 0;
+    DECLARE book_points INT DEFAULT 0;
+    DECLARE book_total_pages INT DEFAULT 0;
+
+    -- Once completed, do not allow downgrade through normal flow
+    IF IFNULL(OLD.Status, '') = 'COMPLETED'
+       AND IFNULL(NEW.Status, '') <> 'COMPLETED' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A COMPLETED statusz nem allithato vissza.';
+    END IF;
+
+    -- Completion requires full reading progress
+    IF IFNULL(OLD.Status, '') <> 'COMPLETED'
+       AND IFNULL(NEW.Status, '') = 'COMPLETED' THEN
+
+        SELECT PageNum, RewardXP, RewardPoints
+          INTO book_total_pages, book_xp, book_points
+          FROM book
+         WHERE Id = NEW.BookId;
+
+        IF IFNULL(NEW.CurrentPage, 0) < IFNULL(book_total_pages, 0) THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Konyv csak teljes elorehaladas eseten jelolheto COMPLETED-re.';
+        END IF;
+
         IF OLD.CompletedAt IS NULL THEN
             SET NEW.CompletedAt = NOW();
+
+            IF NEW.RemainingCompletions > 0 THEN
+                SET NEW.RemainingCompletions = NEW.RemainingCompletions - 1;
+
+                UPDATE user
+                SET
+                    XP = XP + book_xp,
+                    BookPoints = BookPoints + book_points
+                WHERE Id = NEW.UserId;
+            END IF;
         END IF;
-        
-        -- ✅ RemainingCompletions csökkentése
-        SET NEW.RemainingCompletions = NEW.RemainingCompletions - 1;
-        
-        -- Könyv jutalmainak lekérése
-        SELECT RewardXP, RewardPoints INTO book_xp, book_points
-        FROM book
-        WHERE Id = NEW.BookId;
-        
-        -- User pontjainak frissítése
-        UPDATE user
-        SET 
-            XP = XP + book_xp,
-            BookPoints = BookPoints + book_points
-        WHERE Id = NEW.UserId;
-        
     END IF;
 END
 $$
@@ -1180,25 +1269,56 @@ INSERT INTO `user_challenge` (`Id`, `UserId`, `ChallengeId`, `CurrentValue`, `St
 (2, 16, 2, 10, 'CLAIMED', '2024-02-01 10:00:00', '2024-02-20 20:00:00', '2024-02-20 20:10:00', '2026-02-05 20:46:10'),
 (3, 16, 3, 3, 'CLAIMED', '2024-03-01 10:00:00', '2024-03-25 22:00:00', '2024-03-25 22:15:00', '2026-02-05 20:46:10'),
 (4, 16, 7, 30, 'CLAIMED', '2024-01-01 00:00:00', '2024-01-30 23:59:59', '2024-01-31 10:00:00', '2026-02-05 20:46:10'),
-(5, 4, 1, 5, 'COMPLETED', '2025-07-01 10:00:00', '2025-10-20 19:00:00', NULL, '2026-02-05 20:46:10'),
-(6, 4, 4, 850, 'IN_PROGRESS', '2025-06-01 09:00:00', NULL, NULL, '2026-02-05 20:46:10'),
+(5, 4, 1, 5, 'CLAIMED', '2025-07-01 10:00:00', '2025-10-20 19:00:00', '2026-03-05 10:31:02', '2026-03-05 10:31:02'),
+(6, 4, 4, 1000, 'CLAIMED', '2025-06-01 09:00:00', '2026-04-08 13:45:57', '2026-04-08 13:46:53', '2026-04-08 13:46:53'),
 (7, 5, 2, 8, 'IN_PROGRESS', '2025-08-01 10:00:00', NULL, NULL, '2026-02-05 20:46:10'),
 (8, 5, 5, 320, 'COMPLETED', '2025-11-15 18:00:00', '2025-11-17 21:00:00', NULL, '2026-02-05 20:46:10'),
-(9, 6, 3, 3, 'COMPLETED', '2025-08-01 10:00:00', '2025-11-05 22:00:00', NULL, '2026-02-05 20:46:10'),
-(10, 6, 6, 7, 'COMPLETED', '2025-08-01 00:00:00', '2025-08-07 23:59:59', NULL, '2026-02-05 20:46:10'),
+(9, 6, 3, 3, 'CLAIMED', '2025-08-01 10:00:00', '2025-11-05 22:00:00', '2026-04-05 19:39:06', '2026-04-05 19:39:06'),
+(10, 6, 6, 7, 'CLAIMED', '2025-08-01 00:00:00', '2025-08-07 23:59:59', '2026-04-06 16:24:44', '2026-04-06 16:24:44'),
 (11, 7, 1, 2, 'IN_PROGRESS', '2025-10-15 10:00:00', NULL, NULL, '2026-02-05 20:46:10'),
-(12, 8, 2, 5, 'IN_PROGRESS', '2025-11-01 10:00:00', NULL, NULL, '2026-02-05 20:46:10'),
+(12, 8, 2, 3, 'IN_PROGRESS', '2025-11-01 10:00:00', NULL, NULL, '2026-04-08 14:09:00'),
 (13, 2, 1, 5, 'CLAIMED', '2025-02-01 10:00:00', '2025-02-15 18:00:00', '2025-02-15 18:10:00', '2026-02-05 20:46:10'),
 (14, 2, 6, 7, 'CLAIMED', '2025-03-01 00:00:00', '2025-03-07 23:59:59', '2025-03-08 09:00:00', '2026-02-05 20:46:10'),
-(15, 3, 1, 3, 'IN_PROGRESS', '2025-05-01 10:00:00', NULL, NULL, '2026-02-05 20:46:10'),
-(16, 3, 5, 150, 'IN_PROGRESS', '2025-11-01 18:00:00', NULL, NULL, '2026-02-05 20:46:10'),
+(15, 3, 1, 0, 'NOT_STARTED', '2025-05-01 10:00:00', NULL, NULL, '2026-04-08 15:59:20'),
+(16, 3, 5, 300, 'COMPLETED', '2025-11-01 18:00:00', '2026-04-08 15:22:50', NULL, '2026-04-08 15:22:50'),
 (17, 13, 1, 4, 'IN_PROGRESS', '2025-06-01 10:00:00', NULL, NULL, '2026-02-05 20:46:10'),
 (18, 13, 6, 7, 'COMPLETED', '2025-10-01 00:00:00', '2025-10-07 23:59:59', NULL, '2026-02-05 20:46:10'),
 (19, 14, 2, 6, 'IN_PROGRESS', '2025-09-15 10:00:00', NULL, NULL, '2026-02-05 20:46:10'),
 (20, 14, 5, 200, 'IN_PROGRESS', '2025-12-01 18:00:00', NULL, NULL, '2026-02-05 20:46:10'),
 (21, 9, 1, 0, 'NOT_STARTED', NULL, NULL, NULL, '2026-02-05 20:46:10'),
 (22, 10, 1, 1, 'IN_PROGRESS', '2024-08-01 10:00:00', NULL, NULL, '2026-02-05 20:46:10'),
-(23, 12, 1, 2, 'IN_PROGRESS', '2025-12-01 10:00:00', NULL, NULL, '2026-02-05 20:46:10');
+(23, 12, 1, 2, 'IN_PROGRESS', '2025-12-01 10:00:00', NULL, NULL, '2026-02-05 20:46:10'),
+(24, 19, 4, 5, 'IN_PROGRESS', '2026-04-08 13:11:15', NULL, NULL, '2026-04-08 13:29:13'),
+(25, 19, 1, 1, 'IN_PROGRESS', '2026-04-08 13:18:35', NULL, NULL, '2026-04-08 13:34:45'),
+(26, 4, 5, 300, 'COMPLETED', '2026-04-08 13:45:57', '2026-04-08 13:45:57', NULL, '2026-04-08 13:45:57'),
+(27, 4, 6, 7, 'COMPLETED', '2026-04-08 13:45:57', '2026-04-08 13:45:57', NULL, '2026-04-08 13:45:57'),
+(28, 4, 7, 30, 'COMPLETED', '2026-04-08 13:45:57', '2026-04-08 13:45:57', NULL, '2026-04-08 13:45:57'),
+(29, 8, 4, 500, 'IN_PROGRESS', '2026-04-08 14:09:00', NULL, NULL, '2026-04-08 14:09:00'),
+(30, 8, 5, 300, 'COMPLETED', '2026-04-08 14:09:00', '2026-04-08 14:09:00', NULL, '2026-04-08 14:09:00'),
+(31, 8, 6, 7, 'COMPLETED', '2026-04-08 14:09:00', '2026-04-08 14:09:00', NULL, '2026-04-08 14:09:00'),
+(32, 8, 7, 20, 'IN_PROGRESS', '2026-04-08 14:09:00', NULL, NULL, '2026-04-08 14:09:00'),
+(33, 7, 4, 1000, 'COMPLETED', '2026-04-08 14:12:18', '2026-04-08 14:12:18', NULL, '2026-04-08 14:12:18'),
+(34, 7, 5, 300, 'COMPLETED', '2026-04-08 14:12:18', '2026-04-08 14:12:18', NULL, '2026-04-08 14:12:18'),
+(35, 7, 6, 7, 'COMPLETED', '2026-04-08 14:12:18', '2026-04-08 14:12:18', NULL, '2026-04-08 14:12:18'),
+(36, 7, 7, 30, 'COMPLETED', '2026-04-08 14:12:18', '2026-04-08 14:12:18', NULL, '2026-04-08 14:12:18'),
+(37, 9, 4, 100, 'IN_PROGRESS', '2026-04-08 14:19:16', NULL, NULL, '2026-04-08 14:19:16'),
+(38, 9, 5, 50, 'IN_PROGRESS', '2026-04-08 14:19:16', NULL, NULL, '2026-04-08 14:19:16'),
+(39, 9, 6, 3, 'IN_PROGRESS', '2026-04-08 14:19:16', NULL, NULL, '2026-04-08 14:19:16'),
+(40, 9, 7, 3, 'IN_PROGRESS', '2026-04-08 14:19:16', NULL, NULL, '2026-04-08 14:19:16'),
+(41, 10, 4, 400, 'IN_PROGRESS', '2026-04-08 14:20:28', NULL, NULL, '2026-04-08 14:20:28'),
+(42, 10, 5, 300, 'COMPLETED', '2026-04-08 14:20:28', '2026-04-08 14:20:28', NULL, '2026-04-08 14:20:28'),
+(43, 11, 4, 80, 'IN_PROGRESS', '2026-04-08 14:36:43', NULL, NULL, '2026-04-08 14:36:43'),
+(44, 11, 5, 40, 'IN_PROGRESS', '2026-04-08 14:36:43', NULL, NULL, '2026-04-08 14:36:43'),
+(45, 11, 6, 1, 'IN_PROGRESS', '2026-04-08 14:37:39', NULL, NULL, '2026-04-08 14:37:39'),
+(46, 11, 7, 1, 'IN_PROGRESS', '2026-04-08 14:37:39', NULL, NULL, '2026-04-08 14:37:39'),
+(47, 3, 4, 1000, 'COMPLETED', '2026-04-08 15:22:50', '2026-04-08 15:22:50', NULL, '2026-04-08 15:22:50'),
+(48, 3, 6, 7, 'COMPLETED', '2026-04-08 15:22:50', '2026-04-08 15:22:50', NULL, '2026-04-08 15:22:50'),
+(49, 3, 7, 30, 'COMPLETED', '2026-04-08 15:22:50', '2026-04-08 15:22:50', NULL, '2026-04-08 15:22:50'),
+(50, 2, 2, 2, 'IN_PROGRESS', '2026-04-08 16:02:01', NULL, NULL, '2026-04-08 16:02:01'),
+(51, 2, 3, 1, 'IN_PROGRESS', '2026-04-08 16:02:01', NULL, NULL, '2026-04-08 16:02:01'),
+(52, 2, 4, 1000, 'COMPLETED', '2026-04-08 16:02:01', '2026-04-08 16:02:01', NULL, '2026-04-08 16:02:01'),
+(53, 2, 5, 300, 'COMPLETED', '2026-04-08 16:02:01', '2026-04-08 16:02:01', NULL, '2026-04-08 16:02:01'),
+(54, 2, 7, 30, 'COMPLETED', '2026-04-08 16:02:01', '2026-04-08 16:02:01', NULL, '2026-04-08 16:02:01');
 
 --
 -- Triggers `user_challenge`
@@ -1281,14 +1401,15 @@ CREATE TABLE `user_movie` (
 INSERT INTO `user_movie` (`UserId`, `MovieId`, `Status`, `Favorite`, `Rating`, `AddedAt`, `CompletedAt`, `RemainingCompletions`, `LastSeen`, `updated_at`, `CurrentPosition`) VALUES
 (2, 1, 'COMPLETED', 1, 9.0, '2025-04-01 19:00:00', '2025-04-01 21:35:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 9120),
 (2, 13, 'COMPLETED', 1, 8.0, '2025-06-15 20:00:00', '2025-06-15 21:50:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 6300),
-(4, 10, 'COMPLETED', 1, 9.0, '2025-12-20 18:00:00', '2025-12-20 20:10:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 7500),
+(4, 10, 'WATCHING', 1, 9.0, '2025-12-20 18:00:00', '2025-12-20 20:10:00', 2, '2026-04-06 15:16:07', '2026-04-06 15:16:06', 7500),
+(4, 11, 'WATCHING', 0, NULL, '2026-04-06 15:03:22', NULL, 0, '2026-04-06 15:16:10', '2026-04-06 15:16:09', 0),
 (5, 1, 'COMPLETED', 1, 9.5, '2025-08-01 19:00:00', '2025-08-01 21:35:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 9120),
 (5, 2, 'COMPLETED', 1, 9.0, '2025-08-05 20:00:00', '2025-08-05 22:30:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 8880),
 (5, 4, 'WATCHING', 0, NULL, '2026-01-15 20:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 4800),
 (5, 8, 'COMPLETED', 1, 9.0, '2025-09-01 18:00:00', '2025-09-01 21:00:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 10140),
 (5, 9, 'COMPLETED', 1, 8.5, '2025-09-10 19:00:00', '2025-09-10 21:20:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 8160),
-(6, 5, 'COMPLETED', 0, 8.0, '2025-10-10 19:00:00', '2025-10-10 21:25:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 8520),
-(7, 11, 'COMPLETED', 1, 8.0, '2025-12-05 17:00:00', '2025-12-05 18:25:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 4860),
+(6, 5, 'COMPLETED', 1, 8.0, '2025-10-10 19:00:00', '2025-10-10 21:25:00', 2, '2026-04-06 17:16:27', '2026-04-06 17:16:27', 8520),
+(7, 11, 'WATCHING', 1, 8.0, '2025-12-05 17:00:00', '2025-12-05 18:25:00', 2, '2026-04-06 16:16:39', '2026-04-06 16:16:39', 4860),
 (8, 3, 'COMPLETED', 0, 8.0, '2025-11-05 19:30:00', '2025-11-05 21:30:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 7200),
 (8, 6, 'COMPLETED', 1, 8.5, '2025-11-20 18:00:00', '2025-11-20 19:45:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 5940),
 (8, 11, 'COMPLETED', 0, 7.5, '2025-12-10 17:00:00', '2025-12-10 18:25:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 4860),
@@ -1364,22 +1485,25 @@ CREATE TABLE `user_rank_cache` (
 --
 
 INSERT INTO `user_rank_cache` (`UserId`, `TotalPoints`, `BookPoints`, `MediaPoints`, `GlobalRank_Total`, `CountryRank_Total`, `GlobalRank_Book`, `CountryRank_Book`, `GlobalRank_Media`, `CountryRank_Media`, `LastUpdated`) VALUES
-(1, 0, 0, 0, 15, 7, 15, 7, 15, 7, '2026-02-05 20:46:10'),
-(2, 10000, 5000, 5000, 2, 2, 2, 2, 4, 2, '2026-02-05 20:46:10'),
-(3, 5000, 2500, 2500, 6, 4, 4, 4, 8, 4, '2026-02-05 20:46:10'),
-(4, 7500, 4200, 3300, 4, 3, 3, 3, 5, 3, '2026-02-05 20:46:10'),
-(5, 7500, 1800, 5700, 5, 1, 7, 1, 3, 1, '2026-02-05 20:46:10'),
-(6, 8800, 2100, 6700, 3, 1, 5, 1, 2, 1, '2026-02-05 20:46:10'),
-(7, 2900, 1500, 1400, 10, 5, 8, 5, 10, 5, '2026-02-05 20:46:10'),
+(1, 0, 0, 0, 16, 9, 16, 9, 15, 9, '2026-04-08 13:47:02'),
+(2, 10000, 5000, 5000, 2, 2, 2, 2, 4, 3, '2026-04-08 12:47:02'),
+(3, 5000, 2500, 2500, 6, 5, 4, 4, 8, 5, '2026-04-08 12:47:02'),
+(4, 7500, 4200, 3300, 4, 3, 3, 3, 5, 4, '2026-04-08 12:47:02'),
+(5, 7500, 1800, 5700, 5, 4, 7, 5, 3, 2, '2026-04-08 12:47:02'),
+(6, 8875, 2175, 6700, 3, 1, 5, 1, 2, 1, '2026-04-06 17:45:03'),
+(7, 2900, 1500, 1400, 10, 6, 8, 6, 10, 6, '2026-04-08 12:47:02'),
 (8, 3300, 600, 2700, 9, 1, 10, 1, 6, 1, '2026-02-05 20:46:10'),
 (9, 180, 100, 80, 13, 1, 13, 1, 13, 1, '2026-02-05 20:46:10'),
-(10, 650, 300, 350, 12, 6, 12, 6, 12, 6, '2026-02-05 20:46:10'),
-(11, 100, 50, 50, 14, 1, 14, 1, 14, 1, '2026-02-05 20:46:10'),
+(10, 650, 300, 350, 12, 7, 12, 7, 12, 7, '2026-04-08 12:47:02'),
+(11, 100, 50, 50, 14, 8, 15, 8, 14, 8, '2026-04-08 13:47:02'),
 (12, 1000, 500, 500, 11, 1, 11, 1, 11, 1, '2026-02-05 20:46:10'),
 (13, 3800, 2000, 1800, 7, 1, 6, 1, 9, 1, '2026-02-05 20:46:10'),
 (14, 3500, 800, 2700, 8, 1, 9, 1, 7, 1, '2026-02-05 20:46:10'),
-(15, 0, 0, 0, 16, 8, 16, 8, 16, 8, '2026-02-05 20:46:10'),
-(16, 25000, 10000, 15000, 1, 1, 1, 1, 1, 1, '2026-02-05 20:46:10');
+(15, 0, 0, 0, 17, 10, 17, 10, 16, 10, '2026-04-08 13:47:02'),
+(16, 25000, 10000, 15000, 1, 1, 1, 1, 1, 1, '2026-02-05 20:46:10'),
+(17, 0, 0, 0, 18, 1, 18, 1, 17, 1, '2026-04-08 13:47:02'),
+(18, 0, 0, 0, 19, 1, 19, 1, 18, 1, '2026-04-08 13:47:02'),
+(19, 75, 75, 0, 15, 1, 14, 1, 19, 1, '2026-04-08 13:47:02');
 
 -- --------------------------------------------------------
 
@@ -1411,7 +1535,8 @@ INSERT INTO `user_series` (`UserId`, `SeriesId`, `Status`, `Favorite`, `Rating`,
 (2, 1, 'COMPLETED', 1, 9.5, '2025-03-01 18:00:00', '2025-03-15 22:00:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 1, 7, 2880),
 (2, 8, 'WATCHING', 0, NULL, '2025-12-01 19:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 1, 2, 900),
 (3, 3, 'WATCHING', 1, NULL, '2025-11-15 20:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 1, 4, 2000),
-(4, 5, 'WATCHING', 1, NULL, '2026-01-05 19:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 1, 1, 3000),
+(4, 1, 'WATCHING', 0, NULL, '2026-04-06 15:33:53', NULL, 0, '2026-04-06 15:33:53', '2026-04-06 15:33:53', 1, 1, 0),
+(4, 5, 'WATCHING', 1, NULL, '2026-01-05 19:00:00', NULL, 3, '2026-04-06 15:14:12', '2026-04-06 15:14:11', 1, 1, 3000),
 (5, 3, 'WATCHING', 0, NULL, '2025-12-15 19:00:00', NULL, 3, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 1, 3, 1200),
 (6, 1, 'COMPLETED', 1, 9.5, '2025-08-01 18:00:00', '2025-08-20 22:00:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 1, 7, 2880),
 (6, 2, 'COMPLETED', 1, 9.0, '2025-09-01 19:00:00', '2025-10-15 23:00:00', 2, '2026-02-05 20:46:10', '2026-02-05 20:46:10', 1, 10, 3180),
@@ -1483,7 +1608,8 @@ CREATE TABLE `user_title` (
 
 INSERT INTO `user_title` (`UserId`, `TitleId`, `EarnedAt`, `IsActive`) VALUES
 (2, 3, '2026-01-01 00:00:00', 1),
-(4, 3, '2026-01-01 00:00:00', 0),
+(4, 1, '2026-04-08 13:46:53', 1),
+(4, 3, '2026-01-01 00:00:00', 1),
 (5, 4, '2025-12-01 20:00:00', 1),
 (6, 2, '2025-11-05 22:15:00', 1),
 (13, 3, '2026-01-01 00:00:00', 1),
@@ -1781,7 +1907,7 @@ ALTER TABLE `episode`
 -- AUTO_INCREMENT for table `mail`
 --
 ALTER TABLE `mail`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
 
 --
 -- AUTO_INCREMENT for table `movie`
@@ -1793,13 +1919,13 @@ ALTER TABLE `movie`
 -- AUTO_INCREMENT for table `purchase`
 --
 ALTER TABLE `purchase`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `security_audit_log`
 --
 ALTER TABLE `security_audit_log`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `series`
@@ -1823,13 +1949,13 @@ ALTER TABLE `title`
 -- AUTO_INCREMENT for table `user`
 --
 ALTER TABLE `user`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `user_challenge`
 --
 ALTER TABLE `user_challenge`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
 
 --
 -- Constraints for dumped tables
@@ -1958,37 +2084,34 @@ DELIMITER $$
 --
 -- Events
 --
-CREATE DEFINER=`root`@`localhost` EVENT `refresh_all_ranks` ON SCHEDULE EVERY 1 HOUR STARTS '2026-02-05 16:51:28' ON COMPLETION NOT PRESERVE ENABLE DO BEGIN
+CREATE DEFINER=`root`@`localhost` EVENT `refresh_all_ranks` ON SCHEDULE EVERY 1 HOUR STARTS '2026-04-08 12:47:02' ON COMPLETION NOT PRESERVE ENABLE DO BEGIN
     -- ==========================================
-    -- ÖSSZES USER RANGJÁNAK ÚJRASZÁMOLÁSA
+    -- OSSZES USER RANGJANAK UJRASZAMOLASA
     -- ==========================================
-    
-    -- Átmeneti táblák létrehozása a gyorsabb számításhoz
 
+    -- Atmeneti tablak letrehozasa a gyorsabb szamitashoz
     DROP TEMPORARY TABLE IF EXISTS temp_global_ranks_total;
     DROP TEMPORARY TABLE IF EXISTS temp_country_ranks_total;
     DROP TEMPORARY TABLE IF EXISTS temp_global_ranks_book;
     DROP TEMPORARY TABLE IF EXISTS temp_country_ranks_book;
     DROP TEMPORARY TABLE IF EXISTS temp_global_ranks_media;
     DROP TEMPORARY TABLE IF EXISTS temp_country_ranks_media;
-    
-    -- GLOBÁLIS RANGOK - ÖSSZES
 
+    -- GLOBALIS RANGOK - OSSZES
     CREATE TEMPORARY TABLE temp_global_ranks_total AS
-    SELECT 
+    SELECT
         u.Id as UserId,
         @rank := @rank + 1 as GlobalRank_Total
     FROM user u, (SELECT @rank := 0) r
     ORDER BY (u.BookPoints + u.SeriesPoints + u.MoviePoints) DESC, u.Id ASC;
-    
-    -- GLOBÁLIS RANGOK - ÖSSZES
 
+    -- ORSZAGOS RANGOK - OSSZES
     CREATE TEMPORARY TABLE temp_country_ranks_total AS
-    SELECT 
+    SELECT
         UserId,
         CountryRank_Total
     FROM (
-        SELECT 
+        SELECT
             u.Id as UserId,
             u.CountryCode,
             @rank := IF(@country = u.CountryCode, @rank + 1, 1) as CountryRank_Total,
@@ -1996,24 +2119,22 @@ CREATE DEFINER=`root`@`localhost` EVENT `refresh_all_ranks` ON SCHEDULE EVERY 1 
         FROM user u, (SELECT @rank := 0, @country := '' COLLATE utf8mb4_hungarian_ci) r
         ORDER BY u.CountryCode, (u.BookPoints + u.SeriesPoints + u.MoviePoints) DESC, u.Id ASC
     ) ranked;
-    
-    -- GLOBÁLIS RANGOK - KÖNYV
 
+    -- GLOBALIS RANGOK - KONYV
     CREATE TEMPORARY TABLE temp_global_ranks_book AS
-    SELECT 
+    SELECT
         u.Id as UserId,
         @rank := @rank + 1 as GlobalRank_Book
     FROM user u, (SELECT @rank := 0) r
     ORDER BY u.BookPoints DESC, u.Id ASC;
-    
-    -- ORSZÁGOS RANGOK - KÖNYV
 
+    -- ORSZAGOS RANGOK - KONYV
     CREATE TEMPORARY TABLE temp_country_ranks_book AS
-    SELECT 
+    SELECT
         UserId,
         CountryRank_Book
     FROM (
-        SELECT 
+        SELECT
             u.Id as UserId,
             u.CountryCode,
             @rank := IF(@country = u.CountryCode, @rank + 1, 1) as CountryRank_Book,
@@ -2021,24 +2142,22 @@ CREATE DEFINER=`root`@`localhost` EVENT `refresh_all_ranks` ON SCHEDULE EVERY 1 
         FROM user u, (SELECT @rank := 0, @country := '' COLLATE utf8mb4_hungarian_ci) r
         ORDER BY u.CountryCode, u.BookPoints DESC, u.Id ASC
     ) ranked;
-    
-    -- GLOBÁLIS RANGOK - MÉDIA
 
+    -- GLOBALIS RANGOK - MEDIA
     CREATE TEMPORARY TABLE temp_global_ranks_media AS
-    SELECT 
+    SELECT
         u.Id as UserId,
         @rank := @rank + 1 as GlobalRank_Media
     FROM user u, (SELECT @rank := 0) r
     ORDER BY (u.SeriesPoints + u.MoviePoints) DESC, u.Id ASC;
-    
-    -- ORSZÁGOS RANGOK - MÉDIA
 
+    -- ORSZAGOS RANGOK - MEDIA
     CREATE TEMPORARY TABLE temp_country_ranks_media AS
-    SELECT 
+    SELECT
         UserId,
         CountryRank_Media
     FROM (
-        SELECT 
+        SELECT
             u.Id as UserId,
             u.CountryCode,
             @rank := IF(@country = u.CountryCode, @rank + 1, 1) as CountryRank_Media,
@@ -2046,9 +2165,8 @@ CREATE DEFINER=`root`@`localhost` EVENT `refresh_all_ranks` ON SCHEDULE EVERY 1 
         FROM user u, (SELECT @rank := 0, @country := '' COLLATE utf8mb4_hungarian_ci) r
         ORDER BY u.CountryCode, (u.SeriesPoints + u.MoviePoints) DESC, u.Id ASC
     ) ranked;
-    
-    -- RANGOK FRISSÍTÉSE A CACHE TÁBLÁBAN
 
+    -- RANGOK FRISSITESE A CACHE TABLABAN
     UPDATE user_rank_cache urc
     LEFT JOIN temp_global_ranks_total grt ON urc.UserId = grt.UserId
     LEFT JOIN temp_country_ranks_total crt ON urc.UserId = crt.UserId
@@ -2056,40 +2174,35 @@ CREATE DEFINER=`root`@`localhost` EVENT `refresh_all_ranks` ON SCHEDULE EVERY 1 
     LEFT JOIN temp_country_ranks_book crb ON urc.UserId = crb.UserId
     LEFT JOIN temp_global_ranks_media grm ON urc.UserId = grm.UserId
     LEFT JOIN temp_country_ranks_media crm ON urc.UserId = crm.UserId
-    SET 
+    SET
         urc.GlobalRank_Total = grt.GlobalRank_Total,
         urc.CountryRank_Total = crt.CountryRank_Total,
         urc.GlobalRank_Book = grb.GlobalRank_Book,
         urc.CountryRank_Book = crb.CountryRank_Book,
         urc.GlobalRank_Media = grm.GlobalRank_Media,
         urc.CountryRank_Media = crm.CountryRank_Media;
-    
-    -- Átmeneti táblák törlése
 
+    -- Atmeneti tablak torlese
     DROP TEMPORARY TABLE IF EXISTS temp_global_ranks_total;
     DROP TEMPORARY TABLE IF EXISTS temp_country_ranks_total;
     DROP TEMPORARY TABLE IF EXISTS temp_global_ranks_book;
     DROP TEMPORARY TABLE IF EXISTS temp_country_ranks_book;
     DROP TEMPORARY TABLE IF EXISTS temp_global_ranks_media;
     DROP TEMPORARY TABLE IF EXISTS temp_country_ranks_media;
-    
 END$$
 
 CREATE DEFINER=`root`@`localhost` EVENT `check_premium_expiration` ON SCHEDULE EVERY 1 DAY STARTS '2026-02-06 03:00:00' ON COMPLETION NOT PRESERVE ENABLE DO BEGIN
     -- ==========================================
-    -- Lejárt prémiumok automatikus elvétele
+    -- Lejart premiumok automatikus elvetele
     -- ==========================================
-    
+
     UPDATE user
-    SET 
+    SET
         Premium = 0,
         PremiumExpiresAt = NULL
     WHERE Premium = 1
       AND PremiumExpiresAt IS NOT NULL
       AND PremiumExpiresAt <= NOW();
-      
-    -- (A trigger automatikusan logol security_audit_log-ba!)
-    
 END$$
 
 DELIMITER ;

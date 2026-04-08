@@ -67,6 +67,244 @@
 
     .tags-inline { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
 
+    .modal-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.45rem;
+    }
+
+    .modal-header-row h4 {
+      margin: 0;
+    }
+
+    .modal-library-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-left: auto;
+    }
+
+    .modal-favorite-btn {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.9);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .modal-favorite-btn i {
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .modal-favorite-btn:hover:not(:disabled),
+    .modal-favorite-btn:focus-visible:not(:disabled) {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.26);
+    }
+
+    .modal-favorite-btn.active {
+      background: rgba(239, 68, 68, 0.24);
+      border-color: rgba(239, 68, 68, 0.58);
+      color: #ffb3b3;
+    }
+
+    .modal-favorite-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .modal-restart-btn {
+      min-height: 2.25rem;
+      border-radius: 999px;
+      border: 1px solid rgba(194,157,89,0.38);
+      background: linear-gradient(180deg, rgba(70,56,28,0.5), rgba(44,35,18,0.4));
+      color: rgba(236,217,173,0.95);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.4rem 0.72rem;
+      font-size: 0.84rem;
+      font-weight: 700;
+      transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .modal-restart-btn:hover:not(:disabled),
+    .modal-restart-btn:focus-visible:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(230,192,124,0.64);
+      background: linear-gradient(180deg, rgba(96,76,38,0.56), rgba(66,52,27,0.5));
+      outline: none;
+    }
+
+    .modal-restart-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .modal-status-dropdown {
+      position: relative;
+      min-width: 11.2rem;
+      z-index: 3;
+    }
+
+    .modal-status-trigger {
+      width: 100%;
+      min-height: 2.25rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: linear-gradient(180deg, rgba(17,17,17,0.72), rgba(10,10,10,0.6));
+      color: rgba(255,255,255,0.94);
+      padding: 0.46rem 0.72rem;
+      font-size: 0.88rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.55rem;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .modal-status-trigger:hover:not(:disabled),
+    .modal-status-trigger:focus-visible:not(:disabled) {
+      border-color: rgba(194,157,89,0.52);
+      box-shadow: 0 0 0 3px rgba(194,157,89,0.18), inset 0 1px 0 rgba(255,255,255,0.05);
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .modal-status-trigger i {
+      color: rgba(255,255,255,0.74);
+      font-size: 0.86rem;
+      line-height: 1;
+    }
+
+    .modal-status-trigger:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .modal-status-trigger.is-locked {
+      border-color: rgba(194,157,89,0.44);
+      background: linear-gradient(180deg, rgba(72,56,29,0.5), rgba(42,33,19,0.46));
+      color: rgba(236,217,173,0.95);
+    }
+
+    .modal-status-trigger.is-locked i {
+      color: rgba(236,217,173,0.9);
+    }
+
+    .modal-status-menu {
+      position: absolute;
+      top: calc(100% + 0.38rem);
+      left: 0;
+      right: 0;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: linear-gradient(180deg, rgba(14,14,14,0.98), rgba(9,9,9,0.96));
+      box-shadow: 0 20px 36px rgba(0,0,0,0.46);
+      max-height: 16rem;
+      overflow-y: auto;
+      display: none;
+      padding: 0.26rem;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .modal-status-menu.show {
+      display: block;
+    }
+
+    .modal-status-option {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.9);
+      text-align: left;
+      border-radius: 8px;
+      padding: 0.5rem 0.62rem;
+      font-size: 0.86rem;
+      font-weight: 600;
+      transition: background-color 0.18s ease, color 0.18s ease;
+    }
+
+    .modal-status-option:hover,
+    .modal-status-option:focus-visible {
+      background: rgba(194,157,89,0.16);
+      color: #f8e7bf;
+      outline: none;
+    }
+
+    .modal-status-option.active {
+      background: linear-gradient(90deg, rgba(194,157,89,0.34), rgba(230,192,124,0.22));
+      color: #fff6df;
+    }
+
+    .modal-library-error {
+      margin-bottom: 0.55rem;
+      color: #ffb3b3;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .age-rating-row {
+      margin-bottom: 0.6rem;
+    }
+
+    .age-rating-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #ffffff;
+      padding: 0.28rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      letter-spacing: 0.01em;
+    }
+
+    .age-rating-all {
+      background: rgba(148, 163, 184, 0.3);
+      border-color: rgba(148, 163, 184, 0.58);
+    }
+
+    .age-rating-kid {
+      background: rgba(34, 197, 94, 0.33);
+      border-color: rgba(34, 197, 94, 0.62);
+    }
+
+    .age-rating-12 {
+      background: rgba(59, 130, 246, 0.32);
+      border-color: rgba(59, 130, 246, 0.62);
+    }
+
+    .age-rating-16 {
+      background: rgba(250, 204, 21, 0.33);
+      border-color: rgba(250, 204, 21, 0.64);
+    }
+
+    .age-rating-18 {
+      background: rgba(239, 68, 68, 0.34);
+      border-color: rgba(239, 68, 68, 0.64);
+    }
+
+    .age-rating-unknown {
+      color: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+
     .tags-inline span {
       background: linear-gradient(180deg, rgba(194,157,89,0.12), rgba(230,192,124,0.06));
       color: var(--primary);
@@ -87,6 +325,20 @@
       .modal-dialog { max-width: 95%; }
       .modal-body .row { align-items: start; }
       .modal-body .col-md-4 { margin-bottom: 1rem; }
+
+      .modal-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .modal-library-actions {
+        width: 100%;
+      }
+
+      .modal-status-dropdown,
+      .modal-status-trigger {
+        width: 100%;
+      }
     }
 
     /* Rating / episodes / comments */

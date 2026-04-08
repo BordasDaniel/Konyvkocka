@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 05, 2026 at 07:45 PM
+-- Generation Time: Apr 08, 2026 at 04:21 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -22,6 +22,7 @@ SET time_zone = "+00:00";
 --
 CREATE DATABASE IF NOT EXISTS `konyvkocka` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_hungarian_ci;
 USE `konyvkocka`;
+
 -- --------------------------------------------------------
 
 --
@@ -33,17 +34,6 @@ CREATE TABLE `age_rating` (
   `Name` varchar(32) NOT NULL,
   `MinAge` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_hungarian_ci;
-
---
--- Dumping data for table `age_rating`
---
-
-INSERT INTO `age_rating` (`Id`, `Name`, `MinAge`) VALUES
-(1, 'Minden', 0),
-(2, 'Gyerek', 0),
-(3, '12+', 12),
-(4, '16+', 16),
-(5, '18+', 18);
 
 -- --------------------------------------------------------
 
@@ -59,18 +49,6 @@ CREATE TABLE `article` (
   `CreatedAt` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_hungarian_ci;
-
---
--- Dumping data for table `article`
---
-
-INSERT INTO `article` (`Id`, `Title`, `Content`, `EventTag`, `CreatedAt`, `updated_at`) VALUES
-(1, 'Üdvözlünk a KönyvKockán!', 'Örömmel üdvözlünk platformunkon! Fedezd fel a könyvek, filmek és sorozatok világát.', 'ANNOUNCEMENT', '2026-01-01 10:00:00', '2026-02-05 10:40:53'),
-(2, 'Új funkció: Hangoskönyvek', 'Mostantól hangoskönyveket is hallgathatsz a platformon!', 'FUNCTION', '2026-01-15 14:30:00', '2026-02-05 10:41:00'),
-(3, 'Rendszerkarbantartás', 'Január 20-án 02:00-04:00 között karbantartást végzünk.', 'ANNOUNCEMENT', '2026-01-18 09:00:00', '2026-02-05 10:41:13'),
-(4, 'Heti toplista frissítve', 'Nézd meg a hét legnépszerűbb tartalmait!', 'UPDATE', '2026-01-28 12:00:00', '2026-02-05 10:41:30'),
-(5, 'Új magyar tartalmak érkeztek', 'Bővült a magyar nyelvű könyvek és filmek kínálata!', 'UPDATE', '2026-01-29 16:00:00', '2026-02-05 10:41:37'),
-(6, 'KönyvKocka 1.0 Launch Esemény - Csatlakozz hozzánk!\r\n', 'Ünnepeld velünk a KönyvKocka 1.0 megjelenését egy különleges online eseményen! Bemutatjuk az új funkciókat, és exkluzív kedvezményeket kínálunk.\r\n\r\n', 'EVENT', '2026-02-05 10:20:30', '2026-02-05 10:41:44');
 
 -- --------------------------------------------------------
 
@@ -88,23 +66,6 @@ CREATE TABLE `badge` (
   `IsHidden` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `badge`
---
-
-INSERT INTO `badge` (`Id`, `Name`, `Description`, `IconURL`, `Category`, `Rarity`, `IsHidden`, `created_at`) VALUES
-(1, 'Tavaszi kihívó', 'Részt vettél a tavaszi eseményen', NULL, 'EVENT', 'RARE', 0, '2026-02-05 11:08:03'),
-(2, 'Nyári maraton', 'Teljesítetted a nyári maratont', NULL, 'EVENT', 'RARE', 0, '2026-02-05 11:08:03'),
-(3, 'Őszi fesztivál', 'Részt vettél az őszi fesztiválon', NULL, 'EVENT', 'RARE', 0, '2026-02-05 11:08:03'),
-(4, 'Vissza a kezdetekhez', 'Elveszítetted a sorozatodat és újrakezdted', NULL, 'STREAK', 'COMMON', 0, '2026-02-05 11:08:03'),
-(5, '7 nap', 'Elértél 7 napos sorozatot', NULL, 'STREAK', 'COMMON', 0, '2026-02-05 11:08:03'),
-(6, '30 nap', 'Elértél 30 napos sorozatot', NULL, 'STREAK', 'RARE', 0, '2026-02-05 11:08:03'),
-(7, '100 nap', 'Elértél 100 napos sorozatot', NULL, 'STREAK', 'EPIC', 0, '2026-02-05 11:08:03'),
-(8, 'Könyvmoly medál', 'Elolvastál 50 könyvet', NULL, 'READING', 'EPIC', 0, '2026-02-05 11:08:03'),
-(9, 'Első könyv', 'Elolvastad az első könyvedet', NULL, 'READING', 'COMMON', 0, '2026-02-05 11:08:03'),
-(10, 'Film rajongó', 'Megnéztél 100 filmet', NULL, 'WATCHING', 'EPIC', 0, '2026-02-05 11:08:03'),
-(11, 'Sorozat függő', 'Befejezted az első sorozatodat', NULL, 'WATCHING', 'COMMON', 0, '2026-02-05 11:08:03');
 
 -- --------------------------------------------------------
 
@@ -189,19 +150,6 @@ CREATE TABLE `challenge` (
   `CreatedAt` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_hungarian_ci;
 
---
--- Dumping data for table `challenge`
---
-
-INSERT INTO `challenge` (`Id`, `Title`, `Description`, `IconURL`, `Type`, `TargetValue`, `RewardXP`, `RewardBadgeId`, `RewardTitleId`, `Difficulty`, `IsActive`, `IsRepeatable`, `CreatedAt`) VALUES
-(1, 'Első lépések', 'Olvass el 5 könyvet a platformon. ', NULL, 'READ', 5, 250, NULL, NULL, 'EASY', 1, 0, '2026-01-14 07:22:12'),
-(2, 'Film maraton', 'Nézz meg 10 filmet.', NULL, 'WATCH', 10, 500, NULL, NULL, 'MEDIUM', 1, 0, '2026-01-14 07:22:12'),
-(3, 'Sorozat guru', 'Nézz meg 3 teljes sorozatot.', NULL, 'WATCH', 3, 750, NULL, NULL, 'HARD', 1, 0, '2026-01-14 07:22:12'),
-(4, 'Olvasó bajnok', 'Tölts el 1000 percet olvasással.', NULL, 'DEDICATION', 1000, 1000, NULL, NULL, 'HARD', 1, 0, '2026-01-14 07:22:12'),
-(5, 'Hétvégi maraton', 'Nézz 300 perc tartalmat.', NULL, 'DEDICATION', 300, 400, NULL, NULL, 'MEDIUM', 1, 0, '2026-01-14 07:22:12'),
-(6, 'Kitartás', 'Érj el 7 napos sorozatot.', NULL, 'DEDICATION', 7, 350, NULL, NULL, 'MEDIUM', 1, 0, '2026-01-14 07:22:12'),
-(7, '30 napos kihívás', 'Érj el 30 napos sorozatot.', NULL, 'DEDICATION', 30, 2000, NULL, NULL, 'EPIC', 1, 0, '2026-01-14 07:22:12');
-
 -- --------------------------------------------------------
 
 --
@@ -214,11 +162,11 @@ CREATE TABLE `deleted_user` (
   `Email` varchar(128) NOT NULL,
   `PasswordHash` text NOT NULL,
   `PasswordSalt` text NOT NULL,
-  `CountryCode` char(2) NOT NULL,
-  `ProfilePic` varchar(512) NOT NULL,
+  `CountryCode` char(2) DEFAULT NULL,
+  `ProfilePic` mediumblob NOT NULL,
   `Premium` tinyint(1) NOT NULL DEFAULT 0,
   `PremiumExpiresAt` datetime DEFAULT NULL,
-  `PermissionLevel` enum('USER','MODERATOR','ADMIN') NOT NULL DEFAULT 'USER',
+  `PermissionLevel` enum('USER','MODERATOR','ADMIN','BANNED') NOT NULL DEFAULT 'USER',
   `CreationDate` date NOT NULL,
   `LastLoginDate` date NOT NULL,
   `Level` int(11) NOT NULL DEFAULT 1,
@@ -378,53 +326,6 @@ CREATE TABLE `tag` (
   `Name` varchar(128) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `tag`
---
-
-INSERT INTO `tag` (`Id`, `Name`) VALUES
-(36, '18+'),
-(31, 'Adaptáció'),
-(27, 'Ajánlott'),
-(1, 'Akció'),
-(24, 'Bestseller'),
-(34, 'Családbarát'),
-(11, 'Családi'),
-(26, 'Díjnyertes'),
-(8, 'Dokumentum'),
-(13, 'Dráma'),
-(38, 'E-book elérhető'),
-(4, 'Életrajzi'),
-(21, 'Elgondolkodtató'),
-(14, 'Fantasy'),
-(20, 'Felemelő'),
-(40, 'Feliratos'),
-(35, 'Felnőtt tartalom'),
-(23, 'Feszült'),
-(37, 'Hangoskönyv elérhető'),
-(3, 'Horror'),
-(16, 'Izgalmas'),
-(5, 'Kaland'),
-(25, 'Klasszikus'),
-(22, 'Könnyű olvasmány'),
-(9, 'Krimi'),
-(33, 'Külföldi szerző'),
-(32, 'Magyar szerző'),
-(17, 'Megható'),
-(12, 'Mese'),
-(29, 'Népszerű'),
-(39, 'Offline elérhető'),
-(6, 'Romantikus'),
-(10, 'Sci-fi'),
-(30, 'Sorozat része'),
-(19, 'Sötét'),
-(41, 'Szinkronizált'),
-(7, 'Thriller'),
-(15, 'Történelmi'),
-(28, 'Új'),
-(18, 'Vicces'),
-(2, 'Vígjáték');
-
 -- --------------------------------------------------------
 
 --
@@ -438,16 +339,6 @@ CREATE TABLE `title` (
   `Rarity` enum('COMMON','RARE','EPIC','LEGENDARY') NOT NULL DEFAULT 'COMMON'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `title`
---
-
-INSERT INTO `title` (`Id`, `Name`, `Description`, `Rarity`) VALUES
-(1, 'Könyvmoly', 'Elolvastál 50 könyvet', 'EPIC'),
-(2, 'Maratonista', 'Teljesítettél egy maratont', 'RARE'),
-(3, 'Veterán', '1 éve regisztrált tag', 'COMMON'),
-(4, 'Felfedező', '10 különböző műfajt kipróbáltál', 'RARE');
-
 -- --------------------------------------------------------
 
 --
@@ -458,13 +349,17 @@ CREATE TABLE `user` (
   `Id` int(11) NOT NULL,
   `Username` varchar(128) NOT NULL,
   `Email` varchar(128) NOT NULL,
+  `IsEmailVerified` tinyint(1) NOT NULL DEFAULT 0,
+  `EmailVerificationTokenHash` varchar(128) DEFAULT NULL,
+  `EmailVerificationTokenExpiresAt` datetime DEFAULT NULL,
+  `EmailVerifiedAt` datetime DEFAULT NULL,
   `PasswordHash` text NOT NULL,
   `PasswordSalt` text NOT NULL,
-  `CountryCode` char(2) NOT NULL,
-  `ProfilePic` varchar(512) NOT NULL,
+  `CountryCode` char(2) DEFAULT NULL,
+  `ProfilePic` mediumblob DEFAULT NULL,
   `Premium` tinyint(1) NOT NULL DEFAULT 0,
   `PremiumExpiresAt` datetime DEFAULT NULL,
-  `PermissionLevel` enum('USER','MODERATOR','ADMIN') NOT NULL DEFAULT 'USER',
+  `PermissionLevel` enum('USER','MODERATOR','ADMIN','BANNED') NOT NULL DEFAULT 'USER',
   `CreationDate` date NOT NULL,
   `LastLoginDate` date NOT NULL,
   `Level` int(11) NOT NULL DEFAULT 1,
@@ -477,13 +372,6 @@ CREATE TABLE `user` (
   `WatchTimeMin` int(11) NOT NULL DEFAULT 0,
   `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_hungarian_ci;
-
---
--- Dumping data for table `user`
---
-
-INSERT INTO `user` (`Id`, `Username`, `Email`, `PasswordHash`, `PasswordSalt`, `CountryCode`, `ProfilePic`, `Premium`, `PremiumExpiresAt`, `PermissionLevel`, `CreationDate`, `LastLoginDate`, `Level`, `XP`, `BookPoints`, `SeriesPoints`, `MoviePoints`, `DayStreak`, `ReadTimeMin`, `WatchTimeMin`, `updated_at`) VALUES
-(1, 'System', 'system@konyvkocka.local', '', '', 'HU', 'system_avatar.png', 0, NULL, 'ADMIN', '2026-02-05', '2026-02-05', 1, 0, 0, 0, 0, 0, 0, 0, '2026-02-05 19:30:44');
 
 --
 -- Triggers `user`
@@ -575,35 +463,57 @@ END
 $$
 DELIMITER ;
 DELIMITER $$
+CREATE TRIGGER `before_user_delete_mail_sender_fix` BEFORE DELETE ON `user` FOR EACH ROW BEGIN
+IF OLD.Id <> 1 AND EXISTS (SELECT 1 FROM user WHERE Id = 1) THEN
+UPDATE mail
+SET SenderId = 1
+WHERE SenderId = OLD.Id;
+ELSE
+DELETE FROM mail
+WHERE SenderId = OLD.Id;
+END IF;
+END
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `deleting_user` AFTER DELETE ON `user` FOR EACH ROW BEGIN
-    INSERT INTO deleted_user (
-        Id, Username, Email, PasswordHash, PasswordSalt, 
-        CountryCode, ProfilePic, Premium, PremiumExpiresAt, PermissionLevel, 
-        CreationDate, LastLoginDate, Level, XP, BookPoints, 
-        SeriesPoints, MoviePoints, DayStreak, ReadTimeMin, WatchTimeMin
-    )
-    VALUES (
-        OLD.Id, 
-        OLD.Username,
-        CONCAT('deleted_', OLD.Id, '@anon.local'),
-        '',
-        '',
-        OLD.CountryCode, 
-        OLD.ProfilePic, 
-        OLD.Premium,
-        OLD.PremiumExpiresAt,
-        OLD.PermissionLevel,
-        OLD.CreationDate, 
-        OLD.LastLoginDate, 
-        OLD.Level,
-        OLD.XP,
-        OLD.BookPoints, 
-        OLD.SeriesPoints, 
-        OLD.MoviePoints, 
-        OLD.DayStreak, 
-        OLD.ReadTimeMin, 
-        OLD.WatchTimeMin
-    );
+INSERT INTO deleted_user (
+Id, Username, Email, PasswordHash, PasswordSalt,
+CountryCode, ProfilePic, Premium, PremiumExpiresAt, PermissionLevel,
+CreationDate, LastLoginDate, Level, XP, BookPoints,
+SeriesPoints, MoviePoints, DayStreak, ReadTimeMin, WatchTimeMin
+)
+VALUES (
+OLD.Id,
+OLD.Username,
+CONCAT('deleted_', OLD.Id, '@anon.local'),
+'',
+'',
+COALESCE(OLD.CountryCode, 'ZZ'),
+IFNULL(OLD.ProfilePic, 0x64656661756c742e706e67),
+OLD.Premium,
+OLD.PremiumExpiresAt,
+OLD.PermissionLevel,
+OLD.CreationDate,
+OLD.LastLoginDate,
+OLD.Level,
+OLD.XP,
+OLD.BookPoints,
+OLD.SeriesPoints,
+OLD.MoviePoints,
+OLD.DayStreak,
+OLD.ReadTimeMin,
+OLD.WatchTimeMin
+);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `trg_user_daily_streak_on_login` BEFORE UPDATE ON `user` FOR EACH ROW BEGIN
+    IF NEW.LastLoginDate = CURDATE()
+       AND (OLD.LastLoginDate IS NULL OR OLD.LastLoginDate < CURDATE()) THEN
+        SET NEW.DayStreak = OLD.DayStreak + 1;
+    END IF;
 END
 $$
 DELIMITER ;
@@ -646,34 +556,44 @@ CREATE TABLE `user_book` (
 --
 DELIMITER $$
 CREATE TRIGGER `after_user_book_complete` BEFORE UPDATE ON `user_book` FOR EACH ROW BEGIN
-    DECLARE book_xp INT;
-    DECLARE book_points INT;
-    
-    -- ✅ Ha Status COMPLETED-re változik ÉS van még hátralévő befejezés
-    IF OLD.Status != 'COMPLETED' 
-       AND NEW.Status = 'COMPLETED' 
-       AND NEW.RemainingCompletions > 0 THEN
-        
-        -- ✅ CompletedAt beállítása CSAK HA MÉG NULL (első befejezés!)
+    DECLARE book_xp INT DEFAULT 0;
+    DECLARE book_points INT DEFAULT 0;
+    DECLARE book_total_pages INT DEFAULT 0;
+
+    -- Once completed, do not allow downgrade through normal flow
+    IF IFNULL(OLD.Status, '') = 'COMPLETED'
+       AND IFNULL(NEW.Status, '') <> 'COMPLETED' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A COMPLETED statusz nem allithato vissza.';
+    END IF;
+
+    -- Completion requires full reading progress
+    IF IFNULL(OLD.Status, '') <> 'COMPLETED'
+       AND IFNULL(NEW.Status, '') = 'COMPLETED' THEN
+
+        SELECT PageNum, RewardXP, RewardPoints
+          INTO book_total_pages, book_xp, book_points
+          FROM book
+         WHERE Id = NEW.BookId;
+
+        IF IFNULL(NEW.CurrentPage, 0) < IFNULL(book_total_pages, 0) THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Konyv csak teljes elorehaladas eseten jelolheto COMPLETED-re.';
+        END IF;
+
         IF OLD.CompletedAt IS NULL THEN
             SET NEW.CompletedAt = NOW();
+
+            IF NEW.RemainingCompletions > 0 THEN
+                SET NEW.RemainingCompletions = NEW.RemainingCompletions - 1;
+
+                UPDATE user
+                SET
+                    XP = XP + book_xp,
+                    BookPoints = BookPoints + book_points
+                WHERE Id = NEW.UserId;
+            END IF;
         END IF;
-        
-        -- ✅ RemainingCompletions csökkentése
-        SET NEW.RemainingCompletions = NEW.RemainingCompletions - 1;
-        
-        -- Könyv jutalmainak lekérése
-        SELECT RewardXP, RewardPoints INTO book_xp, book_points
-        FROM book
-        WHERE Id = NEW.BookId;
-        
-        -- User pontjainak frissítése
-        UPDATE user
-        SET 
-            XP = XP + book_xp,
-            BookPoints = BookPoints + book_points
-        WHERE Id = NEW.UserId;
-        
     END IF;
 END
 $$
@@ -823,13 +743,6 @@ CREATE TABLE `user_rank_cache` (
   `CountryRank_Media` int(11) DEFAULT NULL,
   `LastUpdated` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `user_rank_cache`
---
-
-INSERT INTO `user_rank_cache` (`UserId`, `TotalPoints`, `BookPoints`, `MediaPoints`, `GlobalRank_Total`, `CountryRank_Total`, `GlobalRank_Book`, `CountryRank_Book`, `GlobalRank_Media`, `CountryRank_Media`, `LastUpdated`) VALUES
-(1, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-05 19:30:44');
 
 -- --------------------------------------------------------
 
@@ -1152,19 +1065,19 @@ ALTER TABLE `user_title`
 -- AUTO_INCREMENT for table `age_rating`
 --
 ALTER TABLE `age_rating`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `article`
 --
 ALTER TABLE `article`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `badge`
 --
 ALTER TABLE `badge`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `book`
@@ -1176,7 +1089,7 @@ ALTER TABLE `book`
 -- AUTO_INCREMENT for table `challenge`
 --
 ALTER TABLE `challenge`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `episode`
@@ -1218,19 +1131,19 @@ ALTER TABLE `series`
 -- AUTO_INCREMENT for table `tag`
 --
 ALTER TABLE `tag`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `title`
 --
 ALTER TABLE `title`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `user`
 --
 ALTER TABLE `user`
-  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `Id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `user_challenge`
@@ -1365,37 +1278,34 @@ DELIMITER $$
 --
 -- Events
 --
-CREATE DEFINER=`root`@`localhost` EVENT `refresh_all_ranks` ON SCHEDULE EVERY 1 HOUR STARTS '2026-02-05 16:51:28' ON COMPLETION NOT PRESERVE ENABLE DO BEGIN
+CREATE DEFINER=`root`@`localhost` EVENT `refresh_all_ranks` ON SCHEDULE EVERY 1 HOUR STARTS '2026-04-08 12:47:02' ON COMPLETION NOT PRESERVE ENABLE DO BEGIN
     -- ==========================================
-    -- ÖSSZES USER RANGJÁNAK ÚJRASZÁMOLÁSA
+    -- OSSZES USER RANGJANAK UJRASZAMOLASA
     -- ==========================================
-    
-    -- Átmeneti táblák létrehozása a gyorsabb számításhoz
 
+    -- Atmeneti tablak letrehozasa a gyorsabb szamitashoz
     DROP TEMPORARY TABLE IF EXISTS temp_global_ranks_total;
     DROP TEMPORARY TABLE IF EXISTS temp_country_ranks_total;
     DROP TEMPORARY TABLE IF EXISTS temp_global_ranks_book;
     DROP TEMPORARY TABLE IF EXISTS temp_country_ranks_book;
     DROP TEMPORARY TABLE IF EXISTS temp_global_ranks_media;
     DROP TEMPORARY TABLE IF EXISTS temp_country_ranks_media;
-    
-    -- GLOBÁLIS RANGOK - ÖSSZES
 
+    -- GLOBALIS RANGOK - OSSZES
     CREATE TEMPORARY TABLE temp_global_ranks_total AS
-    SELECT 
+    SELECT
         u.Id as UserId,
         @rank := @rank + 1 as GlobalRank_Total
     FROM user u, (SELECT @rank := 0) r
     ORDER BY (u.BookPoints + u.SeriesPoints + u.MoviePoints) DESC, u.Id ASC;
-    
-    -- GLOBÁLIS RANGOK - ÖSSZES
 
+    -- ORSZAGOS RANGOK - OSSZES
     CREATE TEMPORARY TABLE temp_country_ranks_total AS
-    SELECT 
+    SELECT
         UserId,
         CountryRank_Total
     FROM (
-        SELECT 
+        SELECT
             u.Id as UserId,
             u.CountryCode,
             @rank := IF(@country = u.CountryCode, @rank + 1, 1) as CountryRank_Total,
@@ -1403,24 +1313,22 @@ CREATE DEFINER=`root`@`localhost` EVENT `refresh_all_ranks` ON SCHEDULE EVERY 1 
         FROM user u, (SELECT @rank := 0, @country := '' COLLATE utf8mb4_hungarian_ci) r
         ORDER BY u.CountryCode, (u.BookPoints + u.SeriesPoints + u.MoviePoints) DESC, u.Id ASC
     ) ranked;
-    
-    -- GLOBÁLIS RANGOK - KÖNYV
 
+    -- GLOBALIS RANGOK - KONYV
     CREATE TEMPORARY TABLE temp_global_ranks_book AS
-    SELECT 
+    SELECT
         u.Id as UserId,
         @rank := @rank + 1 as GlobalRank_Book
     FROM user u, (SELECT @rank := 0) r
     ORDER BY u.BookPoints DESC, u.Id ASC;
-    
-    -- ORSZÁGOS RANGOK - KÖNYV
 
+    -- ORSZAGOS RANGOK - KONYV
     CREATE TEMPORARY TABLE temp_country_ranks_book AS
-    SELECT 
+    SELECT
         UserId,
         CountryRank_Book
     FROM (
-        SELECT 
+        SELECT
             u.Id as UserId,
             u.CountryCode,
             @rank := IF(@country = u.CountryCode, @rank + 1, 1) as CountryRank_Book,
@@ -1428,24 +1336,22 @@ CREATE DEFINER=`root`@`localhost` EVENT `refresh_all_ranks` ON SCHEDULE EVERY 1 
         FROM user u, (SELECT @rank := 0, @country := '' COLLATE utf8mb4_hungarian_ci) r
         ORDER BY u.CountryCode, u.BookPoints DESC, u.Id ASC
     ) ranked;
-    
-    -- GLOBÁLIS RANGOK - MÉDIA
 
+    -- GLOBALIS RANGOK - MEDIA
     CREATE TEMPORARY TABLE temp_global_ranks_media AS
-    SELECT 
+    SELECT
         u.Id as UserId,
         @rank := @rank + 1 as GlobalRank_Media
     FROM user u, (SELECT @rank := 0) r
     ORDER BY (u.SeriesPoints + u.MoviePoints) DESC, u.Id ASC;
-    
-    -- ORSZÁGOS RANGOK - MÉDIA
 
+    -- ORSZAGOS RANGOK - MEDIA
     CREATE TEMPORARY TABLE temp_country_ranks_media AS
-    SELECT 
+    SELECT
         UserId,
         CountryRank_Media
     FROM (
-        SELECT 
+        SELECT
             u.Id as UserId,
             u.CountryCode,
             @rank := IF(@country = u.CountryCode, @rank + 1, 1) as CountryRank_Media,
@@ -1453,9 +1359,8 @@ CREATE DEFINER=`root`@`localhost` EVENT `refresh_all_ranks` ON SCHEDULE EVERY 1 
         FROM user u, (SELECT @rank := 0, @country := '' COLLATE utf8mb4_hungarian_ci) r
         ORDER BY u.CountryCode, (u.SeriesPoints + u.MoviePoints) DESC, u.Id ASC
     ) ranked;
-    
-    -- RANGOK FRISSÍTÉSE A CACHE TÁBLÁBAN
 
+    -- RANGOK FRISSITESE A CACHE TABLABAN
     UPDATE user_rank_cache urc
     LEFT JOIN temp_global_ranks_total grt ON urc.UserId = grt.UserId
     LEFT JOIN temp_country_ranks_total crt ON urc.UserId = crt.UserId
@@ -1463,40 +1368,35 @@ CREATE DEFINER=`root`@`localhost` EVENT `refresh_all_ranks` ON SCHEDULE EVERY 1 
     LEFT JOIN temp_country_ranks_book crb ON urc.UserId = crb.UserId
     LEFT JOIN temp_global_ranks_media grm ON urc.UserId = grm.UserId
     LEFT JOIN temp_country_ranks_media crm ON urc.UserId = crm.UserId
-    SET 
+    SET
         urc.GlobalRank_Total = grt.GlobalRank_Total,
         urc.CountryRank_Total = crt.CountryRank_Total,
         urc.GlobalRank_Book = grb.GlobalRank_Book,
         urc.CountryRank_Book = crb.CountryRank_Book,
         urc.GlobalRank_Media = grm.GlobalRank_Media,
         urc.CountryRank_Media = crm.CountryRank_Media;
-    
-    -- Átmeneti táblák törlése
 
+    -- Atmeneti tablak torlese
     DROP TEMPORARY TABLE IF EXISTS temp_global_ranks_total;
     DROP TEMPORARY TABLE IF EXISTS temp_country_ranks_total;
     DROP TEMPORARY TABLE IF EXISTS temp_global_ranks_book;
     DROP TEMPORARY TABLE IF EXISTS temp_country_ranks_book;
     DROP TEMPORARY TABLE IF EXISTS temp_global_ranks_media;
     DROP TEMPORARY TABLE IF EXISTS temp_country_ranks_media;
-    
 END$$
 
 CREATE DEFINER=`root`@`localhost` EVENT `check_premium_expiration` ON SCHEDULE EVERY 1 DAY STARTS '2026-02-06 03:00:00' ON COMPLETION NOT PRESERVE ENABLE DO BEGIN
     -- ==========================================
-    -- Lejárt prémiumok automatikus elvétele
+    -- Lejart premiumok automatikus elvetele
     -- ==========================================
-    
+
     UPDATE user
-    SET 
+    SET
         Premium = 0,
         PremiumExpiresAt = NULL
     WHERE Premium = 1
       AND PremiumExpiresAt IS NOT NULL
       AND PremiumExpiresAt <= NOW();
-      
-    -- (A trigger automatikusan logol security_audit_log-ba!)
-    
 END$$
 
 DELIMITER ;

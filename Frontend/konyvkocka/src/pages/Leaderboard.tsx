@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import {
 	ApiHttpError,
 	getLeaderboard,
@@ -17,7 +18,7 @@ interface LeaderboardEntry {
 	username: string;
 	avatar: string;
 	countryFlag: string;
-	countryCode: string;
+	countryCode: string | null;
 	points: number;
 	booksRead: number;
 	mediaWatched: number;
@@ -27,8 +28,22 @@ interface LeaderboardEntry {
 	isSubscriber: boolean;
 }
 
-const getCountryFlag = (countryCode: string): string =>
-	`https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`;
+const normalizeCountryCode = (countryCode: string | null | undefined): string | null => {
+	const normalized = (countryCode || '').trim().toUpperCase();
+	if (!normalized || normalized === 'ZZ') return null;
+	return normalized;
+};
+
+const getCountryFlag = (countryCode: string | null | undefined): string => {
+	const normalized = normalizeCountryCode(countryCode);
+	if (!normalized) return '';
+	return `https://flagcdn.com/w20/${normalized.toLowerCase()}.png`;
+};
+
+const hasCountryConfigured = (countryCode: string | null | undefined): boolean => {
+	const normalized = normalizeCountryCode(countryCode);
+	return normalized !== null && normalized.length === 2;
+};
 
 const mapEntry = (entry: LeaderboardEntryResponse): LeaderboardEntry => ({
 	rank: entry.rank,
@@ -36,7 +51,7 @@ const mapEntry = (entry: LeaderboardEntryResponse): LeaderboardEntry => ({
 	username: entry.username,
 	avatar: toAvatarSrc(entry.avatar),
 	countryFlag: getCountryFlag(entry.countryCode),
-	countryCode: entry.countryCode,
+	countryCode: normalizeCountryCode(entry.countryCode),
 	points: entry.points,
 	booksRead: entry.bookCount,
 	mediaWatched: entry.mediaCount,
@@ -48,6 +63,7 @@ const mapEntry = (entry: LeaderboardEntryResponse): LeaderboardEntry => ({
 
 export default function Leaderboard() {
 	const { isAuthenticated } = useAuth();
+	const navigate = useNavigate();
 	const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
 	const [locationFilter, setLocationFilter] = useState<LocationFilter>('world');
 	const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
@@ -56,6 +72,7 @@ export default function Leaderboard() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [totalPages, setTotalPages] = useState(1);
 	const [currentUser, setCurrentUser] = useState<LeaderboardEntry | null>(null);
+	const [canViewCountryLeaderboard, setCanViewCountryLeaderboard] = useState(true);
 	const pageSize = 10;
 
 	useEffect(() => {
@@ -77,6 +94,13 @@ export default function Leaderboard() {
 			setLoading(true);
 			setError(null);
 
+			if (locationFilter === 'country' && !canViewCountryLeaderboard) {
+				setLoading(false);
+				setError('Az ország ranglistához előbb állíts be országot a profil beállításokban.');
+				setLocationFilter('world');
+				return;
+			}
+
 			try {
 				const apiContent = contentFilter === 'book' ? 'books' : contentFilter;
 				const response = await getLeaderboard({
@@ -87,14 +111,20 @@ export default function Leaderboard() {
 				});
 
 				if (!isMounted) return;
+				const mappedMe = mapEntry(response.me);
+				setCanViewCountryLeaderboard(hasCountryConfigured(mappedMe.countryCode));
 
 				setLeaderboardData(response.entries.map(mapEntry));
-				setCurrentUser(mapEntry(response.me));
+				setCurrentUser(mappedMe);
 				setTotalPages(Math.max(1, Math.ceil(response.total / response.pageSize)));
 			} catch (loadError) {
 				if (!isMounted) return;
 				if (loadError instanceof ApiHttpError && loadError.status === 401) {
 					setError('A ranglista megtekintesehez be kell jelentkezned.');
+				} else if (loadError instanceof ApiHttpError && loadError.status === 400) {
+					setCanViewCountryLeaderboard(false);
+					setLocationFilter('world');
+					setError('Az ország ranglistához előbb állíts be országot a profil beállításokban.');
 				} else {
 					setError('A ranglista betoltese sikertelen.');
 				}
@@ -111,7 +141,7 @@ export default function Leaderboard() {
 		return () => {
 			isMounted = false;
 		};
-	}, [contentFilter, currentPage, isAuthenticated, locationFilter]);
+	}, [canViewCountryLeaderboard, contentFilter, currentPage, isAuthenticated, locationFilter]);
 
 	const formatNumber = (num: number): string => {
 		return num.toLocaleString('hu-HU');
@@ -119,16 +149,16 @@ export default function Leaderboard() {
 
 	const getContentLabel = (filter: ContentFilter): string => {
 		switch (filter) {
-			case 'all': return 'Osszes';
-			case 'book': return 'Konyvek';
-			case 'media': return 'Media';
+			case 'all': return 'Összes';
+			case 'book': return 'Könyvek';
+			case 'media': return 'Média';
 		}
 	};
 
 	const getLocationLabel = (filter: LocationFilter): string => {
 		switch (filter) {
-			case 'world': return 'Vilag';
-			case 'country': return 'Orszag';
+			case 'world': return 'Világ';
+			case 'country': return 'Ország';
 		}
 	};
 
@@ -166,6 +196,12 @@ export default function Leaderboard() {
 		setCurrentPage(Math.min(totalPages, Math.max(1, page)));
 	};
 
+	const openProfile = (userId: number) => {
+		navigate(`/profil/${userId}`);
+	};
+
+	const countryFilterDisabled = !canViewCountryLeaderboard;
+
 	return (
 		<main className="mt-5">
 			<div className="container py-5" style={{ maxWidth: '1400px' }}>
@@ -195,14 +231,21 @@ export default function Leaderboard() {
 					</div>
 
 					<div className="leaderboard-filter-group">
-						<span className="leaderboard-filter-label">Regio:</span>
+						<span className="leaderboard-filter-label">Régió:</span>
 						<div className="leaderboard-filter-buttons">
 							{(['world', 'country'] as LocationFilter[]).map((filter) => (
 								<button
 									key={filter}
 									className={`btn btn-sm btn-action ${locationFilter === filter ? 'active' : ''}`}
 									type="button"
-									onClick={() => setLocationFilter(filter)}
+									onClick={() => {
+										if (filter === 'country' && countryFilterDisabled) return;
+										setLocationFilter(filter);
+									}}
+									disabled={filter === 'country' && countryFilterDisabled}
+									title={filter === 'country' && countryFilterDisabled
+										? 'Az ország ranglistához előbb állíts be országot a profilban.'
+										: undefined}
 								>
 									{filter === 'world' && <i className="bi bi-globe me-1"></i>}
 									{filter === 'country' && <i className="bi bi-flag me-1"></i>}
@@ -210,6 +253,9 @@ export default function Leaderboard() {
 								</button>
 							))}
 						</div>
+						{countryFilterDisabled && (
+							<small className="leaderboard-region-hint">Állíts be országot a profil beállításokban az országos ranglistához.</small>
+						)}
 					</div>
 				</div>
 
@@ -231,15 +277,19 @@ export default function Leaderboard() {
 							</div>
 							<div className="lb-col lb-player">
 								<img src={currentUser.avatar} alt={currentUser.username} className="player-avatar" />
-								<img src={currentUser.countryFlag} alt={currentUser.countryCode} className="player-flag" />
-								<span className="player-name">
+								{currentUser.countryFlag && <img src={currentUser.countryFlag} alt={currentUser.countryCode ?? ''} className="player-flag" />}
+								<button
+									type="button"
+									className="player-name leaderboard-profile-link"
+									onClick={() => openProfile(currentUser.userId)}
+								>
 									{currentUser.username}
 									{currentUser.isSubscriber && (
 										<svg className="subscriber-crown" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14">
 											<path fill="currentColor" d="M2 17l2-7 4 4 5-9 5 9 4-4 2 7H2z" />
 										</svg>
 									)}
-								</span>
+								</button>
 							</div>
 							<div className="lb-col lb-points"><span className="points-value">{formatNumber(currentUser.points)}</span></div>
 							<div className="lb-col lb-stats"><i className="bi bi-book stat-icon"></i>{formatNumber(currentUser.booksRead)}</div>
@@ -281,15 +331,19 @@ export default function Leaderboard() {
 									</div>
 									<div className="lb-col lb-player">
 										<img src={entry.avatar} alt={entry.username} className="player-avatar" />
-										<img src={entry.countryFlag} alt={entry.countryCode} className="player-flag" />
-										<span className="player-name">
+										{entry.countryFlag && <img src={entry.countryFlag} alt={entry.countryCode ?? ''} className="player-flag" />}
+										<button
+											type="button"
+											className="player-name leaderboard-profile-link"
+											onClick={() => openProfile(entry.userId)}
+										>
 											{entry.username}
 											{entry.isSubscriber && (
 												<svg className="subscriber-crown" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14">
 													<path fill="currentColor" d="M2 17l2-7 4 4 5-9 5 9 4-4 2 7H2z" />
 												</svg>
 											)}
-										</span>
+										</button>
 									</div>
 									<div className="lb-col lb-points"><span className="points-value">{formatNumber(entry.points)}</span></div>
 									<div className="lb-col lb-stats"><i className="bi bi-book stat-icon"></i>{formatNumber(entry.booksRead)}</div>

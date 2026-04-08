@@ -21,6 +21,7 @@ namespace KonyvkockaAPI
 
             // Register custom services
             builder.Services.AddSingleton<ICountryService, CountryService>();
+            builder.Services.AddScoped<IChallengeProgressService, ChallengeProgressService>();
             builder.Services.AddHttpClient();
 
             builder.Services.AddControllers().AddJsonOptions(x => 
@@ -30,6 +31,16 @@ namespace KonyvkockaAPI
             var jwtSettings = new JwtSettings();
             builder.Configuration.GetSection("JwtSettings").Bind(jwtSettings);
             builder.Services.AddSingleton(jwtSettings);
+
+            var emailSettings = new EmailSettings();
+            builder.Configuration.GetSection("EmailSettings").Bind(emailSettings);
+            builder.Services.AddSingleton(emailSettings);
+
+            var appUrlSettings = new AppUrlSettings();
+            builder.Configuration.GetSection("AppUrlSettings").Bind(appUrlSettings);
+            builder.Services.AddSingleton(appUrlSettings);
+
+            builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
             builder.Services.AddAuthentication(options =>
             {

@@ -17,9 +17,10 @@ namespace KonyvkockaAPI.DTO.Request
         public int ContentId { get; set; }
 
         /// <summary>
-        /// Kezdeti státusz: "WATCHING", "PLANNED"
-        /// Alapértelmezett: "PLANNED"
+        /// Opcionális kezdeti státusz.
+        /// Lehetséges értékek: "WATCHING", "COMPLETED", "PAUSED", "DROPPED", "PLANNED", "ARCHIVED"
+        /// Ha nincs megadva, akkor üres (NULL) marad.
         /// </summary>
-        public string Status { get; set; } = "PLANNED";
+        public string? Status { get; set; }
     }
 }

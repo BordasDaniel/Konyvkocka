@@ -1,13 +1,41 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import {
+  ApiHttpError,
+  getAdminChallengeOptions,
+  getAdminChallenges,
+  getAdminContent,
+  getAdminContentOptions,
+  getAdminOverview,
+  getAdminNews,
+  getAdminPurchases,
+  getAdminUsers,
+  sendAdminAnnouncement,
+  updateAdminChallenge,
+  updateAdminContent,
+  updateAdminNews,
+  updateAdminUser,
+  applyContentImageFallback,
+  toContentImageSrc,
+  toAvatarSrc,
+  type AdminAgeRatingOptionResponse,
+  type AdminChallengeBadgeOptionResponse,
+  type AdminChallengeItemResponse,
+  type AdminChallengeTitleOptionResponse,
+  type AdminManagedContentItemResponse,
+  type AdminOverviewResponse,
+  type AdminNewsItemResponse,
+  type AdminPurchaseItemResponse,
+  type AdminUserItemResponse,
+} from '../services/api';
 import '../styles/admin.css';
 
 // ========================
 // TÍPUSOK
 // ========================
 
-type AdminTab = 'overview' | 'users' | 'content' | 'news' | 'challenges' | 'announcements';
+type AdminTab = 'overview' | 'users' | 'content' | 'news' | 'challenges' | 'purchases' | 'announcements';
 
 interface StatCard {
   label: string;
@@ -16,6 +44,13 @@ interface StatCard {
   changeType: 'up' | 'down' | 'neutral';
   icon: string;
   color: string;
+}
+
+interface OverviewActivityItem {
+  icon: string;
+  color: string;
+  text: string;
+  time: string;
 }
 
 interface AdminUser {
@@ -79,7 +114,15 @@ interface AdminNewsItem {
   content: string;
   eventTag: 'UPDATE' | 'ANNOUNCEMENT' | 'EVENT' | 'FUNCTION';
   createdAt: string;
-  updatedAt: string;
+  updatedAt: string | null;
+}
+
+interface AdminNewsSummary {
+  total: number;
+  updates: number;
+  announcements: number;
+  events: number;
+  functions: number;
 }
 
 type AdminChallengeDifficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'EPIC';
@@ -102,6 +145,13 @@ interface AdminChallenge {
   completions: number;
 }
 
+interface AdminChallengeSummary {
+  total: number;
+  active: number;
+  repeatable: number;
+  event: number;
+}
+
 interface AdminBadgeOption {
   id: number;
   name: string;
@@ -120,26 +170,6 @@ interface AdminTitleOption {
 // ========================
 // MOCK ADATOK
 // ========================
-
-const STATS: StatCard[] = [
-  { label: 'Felhasználók', value: '12,847', change: '+324', changeType: 'up', icon: 'bi-people-fill', color: '#4a9eff' },
-  { label: 'Aktív előfizetők', value: '3,291', change: '+89', changeType: 'up', icon: 'bi-star-fill', color: 'var(--secondary)' },
-  { label: 'Havi bevétel', value: '9,840,990 Ft', change: '+12.3%', changeType: 'up', icon: 'bi-cash-stack', color: '#4ade80' },
-  { label: 'Tartalmak', value: '2,456', change: '+18', changeType: 'up', icon: 'bi-collection-fill', color: '#f472b6' },
-  { label: 'Mai látogatók', value: '1,893', change: '-5.2%', changeType: 'down', icon: 'bi-eye-fill', color: '#fb923c' },
-  { label: 'Aktív kihívások', value: '14', change: '+2', changeType: 'up', icon: 'bi-trophy-fill', color: '#a78bfa' },
-];
-
-const MOCK_USERS: AdminUser[] = [
-  { id: 1, username: 'BookMaster99', email: 'bookmaster@example.com', avatar: 'https://i.pravatar.cc/150?img=1', permissionLevel: 'user', subscription: 'premium', premiumExpiresAt: '2026-08-12', level: 120, xp: 840, countryCode: 'HU', joinDate: '2020-03-15', lastLoginDate: '2026-03-12', dayStreak: 47, readTimeMin: 18320, watchTimeMin: 5220, bookPoints: 8450, seriesPoints: 2160, moviePoints: 980 },
-  { id: 2, username: 'CinemaLover', email: 'cinema@example.com', avatar: 'https://i.pravatar.cc/150?img=2', permissionLevel: 'moderator', subscription: 'premium', premiumExpiresAt: '2027-01-01', level: 115, xp: 625, countryCode: 'RO', joinDate: '2020-06-22', lastLoginDate: '2026-03-13', dayStreak: 18, readTimeMin: 6540, watchTimeMin: 24180, bookPoints: 2210, seriesPoints: 5840, moviePoints: 6120 },
-  { id: 3, username: 'ReadingQueen', email: 'queen@example.com', avatar: 'https://i.pravatar.cc/150?img=3', permissionLevel: 'user', subscription: 'premium', premiumExpiresAt: '2026-05-17', level: 112, xp: 410, countryCode: 'HU', joinDate: '2019-11-08', lastLoginDate: '2026-03-11', dayStreak: 83, readTimeMin: 24880, watchTimeMin: 1240, bookPoints: 11020, seriesPoints: 640, moviePoints: 310 },
-  { id: 4, username: 'TrollUser69', email: 'troll@example.com', avatar: 'https://i.pravatar.cc/150?img=4', permissionLevel: 'banned', subscription: 'free', premiumExpiresAt: null, level: 5, xp: 90, countryCode: 'HU', joinDate: '2025-01-20', lastLoginDate: '2026-02-20', dayStreak: 0, readTimeMin: 14, watchTimeMin: 41, bookPoints: 0, seriesPoints: 10, moviePoints: 0 },
-  { id: 5, username: 'PageTurner', email: 'turner@example.com', avatar: 'https://i.pravatar.cc/150?img=5', permissionLevel: 'user', subscription: 'premium', premiumExpiresAt: '2026-09-09', level: 105, xp: 255, countryCode: 'SK', joinDate: '2020-08-30', lastLoginDate: '2026-03-13', dayStreak: 29, readTimeMin: 16770, watchTimeMin: 3100, bookPoints: 9040, seriesPoints: 420, moviePoints: 260 },
-  { id: 6, username: 'FilmFanatic', email: 'fanatic@example.com', avatar: 'https://i.pravatar.cc/150?img=10', permissionLevel: 'user', subscription: 'free', premiumExpiresAt: null, level: 91, xp: 710, countryCode: 'DE', joinDate: '2021-06-20', lastLoginDate: '2026-03-08', dayStreak: 6, readTimeMin: 2100, watchTimeMin: 20640, bookPoints: 840, seriesPoints: 4120, moviePoints: 4970 },
-  { id: 7, username: 'NovelNinja', email: 'ninja@example.com', avatar: 'https://i.pravatar.cc/150?img=9', permissionLevel: 'moderator', subscription: 'premium', premiumExpiresAt: '2026-12-31', level: 94, xp: 930, countryCode: 'AT', joinDate: '2020-09-14', lastLoginDate: '2026-03-13', dayStreak: 12, readTimeMin: 14320, watchTimeMin: 6220, bookPoints: 6900, seriesPoints: 1540, moviePoints: 890 },
-  { id: 8, username: 'SpamBot2025', email: 'spam@fake.com', avatar: 'https://i.pravatar.cc/150?img=20', permissionLevel: 'banned', subscription: 'free', premiumExpiresAt: null, level: 1, xp: 0, countryCode: '??', joinDate: '2025-02-01', lastLoginDate: '2026-02-22', dayStreak: 0, readTimeMin: 0, watchTimeMin: 0, bookPoints: 0, seriesPoints: 0, moviePoints: 0 },
-];
 
 const MOCK_CONTENT: AdminContent[] = [
   {
@@ -312,63 +342,6 @@ const MOCK_CONTENT: AdminContent[] = [
   },
 ];
 
-const MOCK_NEWS: AdminNewsItem[] = [
-  {
-    id: 1,
-    title: 'KönyvKocka 1.0 Launch Esemény',
-    content: 'Ünnepélyes rajt exkluzív tartalmakkal, nyereményjátékkal és élő közösségi programokkal.',
-    eventTag: 'EVENT',
-    createdAt: '2025-11-05T10:30:00',
-    updatedAt: '2025-11-05T10:30:00',
-  },
-  {
-    id: 2,
-    title: 'Új Megtekintés oldal',
-    content: 'A watch felület átdolgozva: gyorsabb betöltés, jobb listanézet és pontosabb lejátszási folytatás.',
-    eventTag: 'FUNCTION',
-    createdAt: '2025-10-30T14:20:00',
-    updatedAt: '2025-10-31T09:40:00',
-  },
-  {
-    id: 3,
-    title: 'PDF olvasó továbbfejlesztve',
-    content: 'Új könyvjelzőzés, stabilabb nagyítás és gyorsabb oldalszinkron a mentett állapotokkal.',
-    eventTag: 'UPDATE',
-    createdAt: '2025-10-28T08:15:00',
-    updatedAt: '2025-10-28T19:05:00',
-  },
-  {
-    id: 4,
-    title: 'Fizetési oldal finomhangolás',
-    content: 'Pontszerű UX javítások, egyértelműbb visszajelzések és hibakezelés a checkout folyamatban.',
-    eventTag: 'ANNOUNCEMENT',
-    createdAt: '2025-10-21T12:00:00',
-    updatedAt: '2025-10-22T11:32:00',
-  },
-  {
-    id: 5,
-    title: 'Téli olvasási akció',
-    content: 'Decemberben minden teljesített olvasás dupla pontot ad, a toplista külön jutalmazással fut.',
-    eventTag: 'EVENT',
-    createdAt: '2025-12-20T09:00:00',
-    updatedAt: '2025-12-20T09:00:00',
-  },
-];
-
-const MOCK_BADGE_OPTIONS: AdminBadgeOption[] = [
-  { id: 1, name: 'Első Fejezet', category: 'READING', rarity: 'COMMON', isHidden: false },
-  { id: 2, name: 'Maraton Mester', category: 'EVENT', rarity: 'EPIC', isHidden: false },
-  { id: 3, name: 'Csendes Megfigyelő', category: 'SOCIAL', rarity: 'RARE', isHidden: true },
-  { id: 4, name: 'Nézőtitán', category: 'WATCHING', rarity: 'LEGENDARY', isHidden: false },
-];
-
-const MOCK_TITLE_OPTIONS: AdminTitleOption[] = [
-  { id: 1, name: 'Könyvmoly', description: 'Kiemelkedő olvasási aktivitásért járó cím.', rarity: 'COMMON' },
-  { id: 2, name: 'Kihívásvadász', description: 'Több event challenge teljesítéséért.', rarity: 'RARE' },
-  { id: 3, name: 'Aréna Bajnok', description: 'Nehéz kihívások teljesítéséért.', rarity: 'EPIC' },
-  { id: 4, name: 'Legendák Őrzője', description: 'Különleges, ritka achievement cím.', rarity: 'LEGENDARY' },
-];
-
 const MOCK_TAG_OPTIONS: AdminTagOption[] = [
   { id: 1, name: 'Klasszikus' },
   { id: 2, name: 'Sci-Fi' },
@@ -378,6 +351,14 @@ const MOCK_TAG_OPTIONS: AdminTagOption[] = [
   { id: 6, name: 'Akcio' },
   { id: 7, name: 'Bestseller' },
   { id: 8, name: 'Dijazott' },
+];
+
+const MOCK_AGE_RATING_OPTIONS: AdminAgeRatingOptionResponse[] = [
+  { id: 1, name: 'Korhatar nelkul', minAge: 0 },
+  { id: 2, name: '6+', minAge: 6 },
+  { id: 3, name: '12+', minAge: 12 },
+  { id: 4, name: '16+', minAge: 16 },
+  { id: 5, name: '18+', minAge: 18 },
 ];
 
 const MOCK_CHALLENGES: AdminChallenge[] = [
@@ -473,16 +454,61 @@ const MOCK_CHALLENGES: AdminChallenge[] = [
 // ========================
 
 const Admin: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const hasAdminAccess = Boolean(user && (user.isAdmin || user.isModerator));
+  const [overviewStats, setOverviewStats] = useState<StatCard[]>([]);
+  const [overviewActivities, setOverviewActivities] = useState<OverviewActivityItem[]>([]);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
-  const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS);
-  const [content, setContent] = useState<AdminContent[]>(MOCK_CONTENT);
-  const [news, setNews] = useState<AdminNewsItem[]>(MOCK_NEWS);
-  const [challenges, setChallenges] = useState<AdminChallenge[]>(MOCK_CHALLENGES);
-  const [badges] = useState<AdminBadgeOption[]>(MOCK_BADGE_OPTIONS);
-  const [titles] = useState<AdminTitleOption[]>(MOCK_TITLE_OPTIONS);
-  const [tags] = useState<AdminTagOption[]>(MOCK_TAG_OPTIONS);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [usersTotalFromApi, setUsersTotalFromApi] = useState(0);
+  const [userSummary, setUserSummary] = useState({
+    totalUsers: 0,
+    premium: 0,
+    staff: 0,
+    banned: 0,
+    activeToday: 0,
+  });
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userSaving, setUserSaving] = useState(false);
+  const [content, setContent] = useState<AdminContent[]>([]);
+  const [contentTotalFromApi, setContentTotalFromApi] = useState(0);
+  const [contentSummary, setContentSummary] = useState({
+    total: 0,
+    books: 0,
+    series: 0,
+    movies: 0,
+  });
+  const [contentLoading, setContentLoading] = useState(false);
+  const [contentSaving, setContentSaving] = useState(false);
+  const [news, setNews] = useState<AdminNewsItem[]>([]);
+  const [newsTotalFromApi, setNewsTotalFromApi] = useState(0);
+  const [newsSummary, setNewsSummary] = useState<AdminNewsSummary>({
+    total: 0,
+    updates: 0,
+    announcements: 0,
+    events: 0,
+    functions: 0,
+  });
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsSaving, setNewsSaving] = useState(false);
+  const [challenges, setChallenges] = useState<AdminChallenge[]>([]);
+  const [challengeTotalFromApi, setChallengeTotalFromApi] = useState(0);
+  const [challengeSummary, setChallengeSummary] = useState<AdminChallengeSummary>({
+    total: 0,
+    active: 0,
+    repeatable: 0,
+    event: 0,
+  });
+  const [challengesLoading, setChallengesLoading] = useState(false);
+  const [challengeSaving, setChallengeSaving] = useState(false);
+  const [badges, setBadges] = useState<AdminBadgeOption[]>([]);
+  const [titles, setTitles] = useState<AdminTitleOption[]>([]);
+  const [ageRatings, setAgeRatings] = useState<AdminAgeRatingOptionResponse[]>([]);
+  const [tags, setTags] = useState<AdminTagOption[]>([]);
+  const [contentTagSearch, setContentTagSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [contentSearch, setContentSearch] = useState('');
   const [newsSearch, setNewsSearch] = useState('');
@@ -496,7 +522,7 @@ const Admin: React.FC = () => {
   const [activeUserDropdown, setActiveUserDropdown] = useState<'permissionLevel' | 'subscription' | null>(null);
   const [selectedContentId, setSelectedContentId] = useState<number | null>(null);
   const [contentDraft, setContentDraft] = useState<AdminContent | null>(null);
-  const [activeContentDropdown, setActiveContentDropdown] = useState<'bookType' | 'tags' | null>(null);
+  const [activeContentDropdown, setActiveContentDropdown] = useState<'bookType' | 'tags' | 'ageRating' | null>(null);
   const [selectedNewsId, setSelectedNewsId] = useState<number | null>(null);
   const [newsDraft, setNewsDraft] = useState<AdminNewsItem | null>(null);
   const [newsTagDropdownOpen, setNewsTagDropdownOpen] = useState(false);
@@ -516,123 +542,32 @@ const Admin: React.FC = () => {
   const [announcementTarget, setAnnouncementTarget] = useState<'all' | 'subscribers' | 'free' | 'specific'>('all');
   const [announcementUsers, setAnnouncementUsers] = useState('');
   const [announcementSent, setAnnouncementSent] = useState(false);
+  const [announcementSending, setAnnouncementSending] = useState(false);
   const [usersPage, setUsersPage] = useState(1);
   const [contentPage, setContentPage] = useState(1);
   const [newsPage, setNewsPage] = useState(1);
   const [challengesPage, setChallengesPage] = useState(1);
+  const [purchasesData, setPurchasesData] = useState<AdminPurchaseItemResponse[]>([]);
+  const [purchasesTotalFromApi, setPurchasesTotalFromApi] = useState(0);
+  const [purchasesPage, setPurchasesPage] = useState(1);
+  const [purchasesLoading, setPurchasesLoading] = useState(false);
+  const [purchasesStatusFilter, setPurchasesStatusFilter] = useState<'all' | 'SUCCESS' | 'PENDING' | 'FAILED' | 'REFUNDED'>('all');
+  const [purchasesSearch, setPurchasesSearch] = useState('');
   const pageSize = 4;
 
   const selectedUser = userDraft;
   const selectedContent = contentDraft;
   const selectedNews = newsDraft;
   const selectedChallenge = challengeDraft;
+  const contentTagSearchNormalized = contentTagSearch.trim().toLocaleLowerCase('hu-HU');
+  const availableContentTags = selectedContent
+    ? tags.filter(tag => !selectedContent.tagIds.includes(tag.id))
+    : [];
+  const filteredContentTags = availableContentTags.filter(tag =>
+    tag.name.toLocaleLowerCase('hu-HU').includes(contentTagSearchNormalized),
+  );
 
   const getUserTotalPoints = (user: AdminUser) => user.bookPoints + user.seriesPoints + user.moviePoints;
-
-  const userSummary = useMemo(() => ({
-    premium: users.filter(user => user.subscription !== 'free').length,
-    staff: users.filter(user => user.permissionLevel === 'moderator' || user.permissionLevel === 'admin').length,
-    banned: users.filter(user => user.permissionLevel === 'banned').length,
-    activeToday: users.filter(user => user.lastLoginDate >= '2026-03-13').length,
-  }), [users]);
-
-  const contentSummary = useMemo(() => ({
-    total: content.length,
-    books: content.filter(item => item.contentType === 'BOOK').length,
-    series: content.filter(item => item.contentType === 'SERIES').length,
-    movies: content.filter(item => item.contentType === 'MOVIE').length,
-  }), [content]);
-
-  // Szűrt felhasználók
-  const filteredUsers = useMemo(() => {
-    let items = users;
-
-    if (userTypeFilter === 'premium') {
-      items = items.filter(user => user.subscription !== 'free');
-    }
-
-    if (userTypeFilter === 'staff') {
-      items = items.filter(user => user.permissionLevel === 'moderator' || user.permissionLevel === 'admin');
-    }
-
-    if (userTypeFilter === 'banned') {
-      items = items.filter(user => user.permissionLevel === 'banned');
-    }
-
-    if (!userSearch.trim()) return items;
-
-    const q = userSearch.toLowerCase();
-    return items.filter(user =>
-      user.username.toLowerCase().includes(q) ||
-      user.email.toLowerCase().includes(q)
-    );
-  }, [users, userSearch, userTypeFilter]);
-
-  // Szűrt tartalmak
-  const filteredContent = useMemo(() => {
-    let items = content;
-    if (contentTypeFilter !== 'all') {
-      items = items.filter(c => c.contentType === contentTypeFilter);
-    }
-    if (contentSearch.trim()) {
-      const q = contentSearch.toLowerCase();
-      items = items.filter(c =>
-        c.title.toLowerCase().includes(q)
-      );
-    }
-    return items;
-  }, [content, contentTypeFilter, contentSearch]);
-
-  // Szűrt hírek
-  const filteredNews = useMemo(() => {
-    let items = news;
-
-    if (newsTypeFilter !== 'all') {
-      items = items.filter(item => item.eventTag === newsTypeFilter);
-    }
-
-    if (!newsSearch.trim()) return items;
-    const q = newsSearch.toLowerCase();
-    return items.filter(n =>
-      n.title.toLowerCase().includes(q) ||
-      n.content.toLowerCase().includes(q) ||
-      n.eventTag.toLowerCase().includes(q)
-    );
-  }, [news, newsSearch, newsTypeFilter]);
-
-  const newsSummary = useMemo(() => ({
-    total: news.length,
-    updates: news.filter(item => item.eventTag === 'UPDATE').length,
-    announcements: news.filter(item => item.eventTag === 'ANNOUNCEMENT').length,
-    events: news.filter(item => item.eventTag === 'EVENT').length,
-    functions: news.filter(item => item.eventTag === 'FUNCTION').length,
-  }), [news]);
-
-  const challengeSummary = useMemo(() => ({
-    total: challenges.length,
-    active: challenges.filter(ch => ch.isActive).length,
-    repeatable: challenges.filter(ch => ch.isRepeatable).length,
-    event: challenges.filter(ch => ch.type === 'EVENT').length,
-  }), [challenges]);
-
-  // Szűrt kihívások
-  const filteredChallenges = useMemo(() => {
-    let items = challenges;
-
-    if (challengeTypeFilter !== 'all') {
-      items = items.filter(ch => ch.type === challengeTypeFilter);
-    }
-
-    if (!challengeSearch.trim()) return items;
-
-    const q = challengeSearch.toLowerCase();
-    return items.filter(ch =>
-      ch.title.toLowerCase().includes(q) ||
-      ch.type.toLowerCase().includes(q) ||
-      ch.difficulty.toLowerCase().includes(q) ||
-      ch.description.toLowerCase().includes(q)
-    );
-  }, [challenges, challengeSearch, challengeTypeFilter]);
 
   const getPaginationRange = (current: number, total: number): number[] => {
     const delta = 2;
@@ -641,29 +576,17 @@ const Admin: React.FC = () => {
     return Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
   };
 
-  const totalUserPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
-  const pagedUsers = useMemo(() => {
-    const start = (usersPage - 1) * pageSize;
-    return filteredUsers.slice(start, start + pageSize);
-  }, [filteredUsers, usersPage]);
+  const totalUserPages = Math.max(1, Math.ceil(usersTotalFromApi / pageSize));
+  const pagedUsers = users;
 
-  const totalContentPages = Math.max(1, Math.ceil(filteredContent.length / pageSize));
-  const pagedContent = useMemo(() => {
-    const start = (contentPage - 1) * pageSize;
-    return filteredContent.slice(start, start + pageSize);
-  }, [filteredContent, contentPage]);
+  const totalContentPages = Math.max(1, Math.ceil(contentTotalFromApi / pageSize));
+  const pagedContent = content;
 
-  const totalNewsPages = Math.max(1, Math.ceil(filteredNews.length / pageSize));
-  const pagedNews = useMemo(() => {
-    const start = (newsPage - 1) * pageSize;
-    return filteredNews.slice(start, start + pageSize);
-  }, [filteredNews, newsPage]);
+  const totalNewsPages = Math.max(1, Math.ceil(newsTotalFromApi / pageSize));
+  const pagedNews = news;
 
-  const totalChallengePages = Math.max(1, Math.ceil(filteredChallenges.length / pageSize));
-  const pagedChallenges = useMemo(() => {
-    const start = (challengesPage - 1) * pageSize;
-    return filteredChallenges.slice(start, start + pageSize);
-  }, [filteredChallenges, challengesPage]);
+  const totalChallengePages = Math.max(1, Math.ceil(challengeTotalFromApi / pageSize));
+  const pagedChallenges = challenges;
 
   useEffect(() => {
     setUsersPage(1);
@@ -697,14 +620,360 @@ const Admin: React.FC = () => {
     if (challengesPage > totalChallengePages) setChallengesPage(totalChallengePages);
   }, [challengesPage, totalChallengePages]);
 
-  // Mentés handler (mock)
-  const handleSave = (section: string) => {
-    // TODO: API hívás
-    setSaveModal({
-      title: 'Mentés kész',
-      message: `${section} módosításai sikeresen mentve lettek.`,
+  // Vásárlások betöltése API-ból
+  const loadPurchases = useCallback(async () => {
+    setPurchasesLoading(true);
+    try {
+      const statusParam = purchasesStatusFilter === 'all' ? undefined : purchasesStatusFilter;
+      const data = await getAdminPurchases({
+        page: purchasesPage,
+        pageSize,
+        status: statusParam,
+        q: purchasesSearch,
+      });
+      setPurchasesData(data.purchases);
+      setPurchasesTotalFromApi(data.total);
+    } catch {
+      setPurchasesData([]);
+      setPurchasesTotalFromApi(0);
+    } finally {
+      setPurchasesLoading(false);
+    }
+  }, [purchasesPage, purchasesSearch, purchasesStatusFilter]);
+
+  useEffect(() => {
+    if (activeTab === 'purchases') {
+      void loadPurchases();
+    }
+  }, [activeTab, loadPurchases]);
+
+  useEffect(() => {
+    setPurchasesPage(1);
+  }, [purchasesSearch, purchasesStatusFilter]);
+
+  const totalPurchasePages = Math.max(1, Math.ceil(purchasesTotalFromApi / pageSize));
+
+  const filteredPurchasesForDisplay = purchasesData;
+
+  const mapAdminUserItem = useCallback((item: AdminUserItemResponse): AdminUser => {
+    const permission = item.permissionLevel?.toLowerCase();
+    const mappedPermission: AdminUser['permissionLevel'] =
+      permission === 'admin' || permission === 'moderator' || permission === 'user'
+        ? permission
+        : 'banned';
+
+    return {
+      id: item.id,
+      username: item.username,
+      email: item.email,
+      avatar: toAvatarSrc(item.avatar),
+      permissionLevel: mappedPermission,
+      subscription: item.premium ? 'premium' : 'free',
+      premiumExpiresAt: item.premiumExpiresAt,
+      level: item.level,
+      xp: item.xp,
+      countryCode: item.countryCode ?? '',
+      joinDate: item.creationDate,
+      lastLoginDate: item.lastLoginDate,
+      dayStreak: item.dayStreak,
+      readTimeMin: item.readTimeMin,
+      watchTimeMin: item.watchTimeMin,
+      bookPoints: item.bookPoints,
+      seriesPoints: item.seriesPoints,
+      moviePoints: item.moviePoints,
+    };
+  }, []);
+
+  const mapAdminContentItem = useCallback((item: AdminManagedContentItemResponse): AdminContent => ({
+    id: item.id,
+    contentType: item.contentType,
+    title: item.title,
+    released: item.released,
+    rating: item.rating,
+    description: item.description,
+    ageRatingId: item.ageRatingId,
+    trailerUrl: item.trailerUrl,
+    rewardXP: item.rewardXP,
+    rewardPoints: item.rewardPoints,
+    hasSubtitles: item.hasSubtitles,
+    isOriginalLanguage: item.isOriginalLanguage,
+    isOfflineAvailable: item.isOfflineAvailable,
+    updatedAt: item.updatedAt,
+    coverOrPosterApiName: item.coverOrPosterApiName,
+    pageNum: item.pageNum,
+    bookType: item.bookType,
+    pdfUrl: item.pdfUrl,
+    audioUrl: item.audioUrl,
+    epubUrl: item.epubUrl,
+    audioLength: item.audioLength,
+    narratorName: item.narratorName,
+    originalLanguage: item.originalLanguage,
+    streamUrl: item.streamUrl,
+    length: item.length,
+    tagIds: item.tagIds,
+  }), []);
+
+  const loadUsers = useCallback(async () => {
+    setUsersLoading(true);
+    try {
+      const data = await getAdminUsers({
+        page: usersPage,
+        pageSize,
+        userType: userTypeFilter,
+        q: userSearch,
+      });
+
+      setUsers(data.users.map(mapAdminUserItem));
+      setUsersTotalFromApi(data.total);
+      setUserSummary(data.summary);
+    } catch {
+      setUsers([]);
+      setUsersTotalFromApi(0);
+      setUserSummary({
+        totalUsers: 0,
+        premium: 0,
+        staff: 0,
+        banned: 0,
+        activeToday: 0,
+      });
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [mapAdminUserItem, userSearch, userTypeFilter, usersPage]);
+
+  const loadContent = useCallback(async () => {
+    setContentLoading(true);
+    try {
+      const typeParam = contentTypeFilter === 'all' ? undefined : contentTypeFilter;
+      const data = await getAdminContent({
+        page: contentPage,
+        pageSize,
+        type: typeParam,
+        q: contentSearch,
+      });
+
+      setContent(data.content.map(mapAdminContentItem));
+      setContentTotalFromApi(data.total);
+      setContentSummary(data.summary);
+    } catch {
+      setContent(MOCK_CONTENT);
+      setContentTotalFromApi(MOCK_CONTENT.length);
+      setContentSummary({
+        total: MOCK_CONTENT.length,
+        books: MOCK_CONTENT.filter(item => item.contentType === 'BOOK').length,
+        series: MOCK_CONTENT.filter(item => item.contentType === 'SERIES').length,
+        movies: MOCK_CONTENT.filter(item => item.contentType === 'MOVIE').length,
+      });
+    } finally {
+      setContentLoading(false);
+    }
+  }, [contentPage, contentSearch, contentTypeFilter, mapAdminContentItem]);
+
+  const loadContentOptions = useCallback(async () => {
+    try {
+      const data = await getAdminContentOptions();
+      setTags(data.tags);
+      setAgeRatings(data.ageRatings);
+    } catch {
+      setTags(MOCK_TAG_OPTIONS);
+      setAgeRatings(MOCK_AGE_RATING_OPTIONS);
+    }
+  }, []);
+
+  const mapAdminNewsItem = useCallback((item: AdminNewsItemResponse): AdminNewsItem => ({
+    id: item.id,
+    title: item.title,
+    content: item.content,
+    eventTag: item.eventTag,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  }), []);
+
+  const loadNews = useCallback(async () => {
+    setNewsLoading(true);
+    try {
+      const eventTagParam = newsTypeFilter === 'all' ? undefined : newsTypeFilter;
+      const data = await getAdminNews({
+        page: newsPage,
+        pageSize,
+        eventTag: eventTagParam,
+        q: newsSearch,
+      });
+      setNews(data.news.map(mapAdminNewsItem));
+      setNewsTotalFromApi(data.total);
+      setNewsSummary(data.summary);
+    } catch {
+      setNews([]);
+      setNewsTotalFromApi(0);
+      setNewsSummary({
+        total: 0,
+        updates: 0,
+        announcements: 0,
+        events: 0,
+        functions: 0,
+      });
+    } finally {
+      setNewsLoading(false);
+    }
+  }, [mapAdminNewsItem, newsPage, newsSearch, newsTypeFilter]);
+
+  const mapAdminChallengeItem = useCallback((item: AdminChallengeItemResponse): AdminChallenge => ({
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    iconUrl: item.iconUrl,
+    type: item.type,
+    targetValue: item.targetValue,
+    rewardXP: item.rewardXP,
+    rewardBadgeId: item.rewardBadgeId,
+    rewardTitleId: item.rewardTitleId,
+    difficulty: item.difficulty,
+    isActive: item.isActive,
+    isRepeatable: item.isRepeatable,
+    createdAt: item.createdAt,
+    participants: item.participants,
+    completions: item.completions,
+  }), []);
+
+  const mapAdminBadgeOption = useCallback((item: AdminChallengeBadgeOptionResponse): AdminBadgeOption => ({
+    id: item.id,
+    name: item.name,
+    category: item.category as AdminBadgeOption['category'],
+    rarity: item.rarity as AdminBadgeOption['rarity'],
+    isHidden: item.isHidden,
+  }), []);
+
+  const mapAdminTitleOption = useCallback((item: AdminChallengeTitleOptionResponse): AdminTitleOption => ({
+    id: item.id,
+    name: item.name,
+    description: item.description ?? '',
+    rarity: item.rarity as AdminTitleOption['rarity'],
+  }), []);
+
+  const loadChallenges = useCallback(async () => {
+    setChallengesLoading(true);
+    try {
+      const typeParam = challengeTypeFilter === 'all' ? undefined : challengeTypeFilter;
+      const data = await getAdminChallenges({
+        page: challengesPage,
+        pageSize,
+        type: typeParam,
+        q: challengeSearch,
+      });
+
+      setChallenges(data.challenges.map(mapAdminChallengeItem));
+      setChallengeTotalFromApi(data.total);
+      setChallengeSummary(data.summary);
+    } catch {
+      setChallenges(MOCK_CHALLENGES);
+      setChallengeTotalFromApi(MOCK_CHALLENGES.length);
+      setChallengeSummary({
+        total: MOCK_CHALLENGES.length,
+        active: MOCK_CHALLENGES.filter(ch => ch.isActive).length,
+        repeatable: MOCK_CHALLENGES.filter(ch => ch.isRepeatable).length,
+        event: MOCK_CHALLENGES.filter(ch => ch.type === 'EVENT').length,
+      });
+    } finally {
+      setChallengesLoading(false);
+    }
+  }, [challengeSearch, challengeTypeFilter, challengesPage, mapAdminChallengeItem]);
+
+  const loadChallengeOptions = useCallback(async () => {
+    try {
+      const data = await getAdminChallengeOptions();
+      setBadges(data.badges.map(mapAdminBadgeOption));
+      setTitles(data.titles.map(mapAdminTitleOption));
+    } catch {
+      setBadges([]);
+      setTitles([]);
+    }
+  }, [mapAdminBadgeOption, mapAdminTitleOption]);
+
+  useEffect(() => {
+    if (activeTab === 'news') {
+      void loadNews();
+    }
+  }, [activeTab, loadNews]);
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      void loadUsers();
+    }
+  }, [activeTab, loadUsers]);
+
+  useEffect(() => {
+    if (activeTab === 'content') {
+      void loadContent();
+    }
+  }, [activeTab, loadContent]);
+
+  useEffect(() => {
+    if (activeTab === 'content') {
+      void loadContentOptions();
+    }
+  }, [activeTab, loadContentOptions]);
+
+  useEffect(() => {
+    if (activeTab === 'challenges') {
+      void loadChallenges();
+    }
+  }, [activeTab, loadChallenges]);
+
+  useEffect(() => {
+    if (activeTab === 'challenges') {
+      void loadChallengeOptions();
+    }
+  }, [activeTab, loadChallengeOptions]);
+
+  const formatOverviewTime = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return 'Ismeretlen időpont';
+
+    return date.toLocaleString('hu-HU', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
     });
   };
+
+  const loadOverview = useCallback(async () => {
+    setOverviewLoading(true);
+    setOverviewError(null);
+
+    try {
+      const data: AdminOverviewResponse = await getAdminOverview();
+      setOverviewStats(data.stats.map((stat) => ({
+        label: stat.label,
+        value: stat.value,
+        change: stat.change,
+        changeType: stat.changeType,
+        icon: stat.icon,
+        color: stat.color,
+      })));
+      setOverviewActivities(data.activities.map((item) => ({
+        icon: item.icon,
+        color: item.color,
+        text: item.text,
+        time: formatOverviewTime(item.timestamp),
+      })));
+    } catch (error) {
+      console.error('Admin overview betöltés sikertelen:', error);
+      setOverviewStats([]);
+      setOverviewActivities([]);
+      setOverviewError('Az áttekintés adatok betöltése sikertelen.');
+    } finally {
+      setOverviewLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'overview') {
+      void loadOverview();
+    }
+  }, [activeTab, loadOverview]);
 
   const openUserModal = (user: AdminUser) => {
     setSelectedUserId(user.id);
@@ -715,6 +984,7 @@ const Admin: React.FC = () => {
     setSelectedContentId(item.id);
     setContentDraft({ ...item });
     setActiveContentDropdown(null);
+    setContentTagSearch('');
   };
 
   const openNewsModal = (item: AdminNewsItem) => {
@@ -739,6 +1009,7 @@ const Admin: React.FC = () => {
     setSelectedContentId(null);
     setContentDraft(null);
     setActiveContentDropdown(null);
+    setContentTagSearch('');
   };
 
   const closeNewsModal = () => {
@@ -761,74 +1032,218 @@ const Admin: React.FC = () => {
     setContentDraft(prev => prev ? { ...prev, [field]: value } : prev);
   };
 
-  const saveUserDraft = () => {
+  const saveUserDraft = async () => {
     if (!userDraft) return;
 
-    const normalizedUser: AdminUser = {
-      ...userDraft,
-      premiumExpiresAt: userDraft.subscription === 'free' ? null : userDraft.premiumExpiresAt,
-    };
+    const normalizedCountryCode = userDraft.countryCode.trim().toUpperCase();
+    const countryCodePayload =
+      normalizedCountryCode.length === 0 || normalizedCountryCode === 'ZZ'
+        ? null
+        : normalizedCountryCode;
 
-    setUsers(prev => prev.map(user =>
-      user.id === normalizedUser.id ? normalizedUser : user
-    ));
+    if (countryCodePayload !== null && countryCodePayload.length !== 2) {
+      setSaveModal({
+        title: 'Hibás országkód',
+        message: 'Az országkód pontosan 2 karakter lehet, vagy üresen hagyható.',
+      });
+      return;
+    }
 
-    closeUserModal();
+    setUserSaving(true);
+
+    try {
+      await updateAdminUser(userDraft.id, {
+        permissionLevel: userDraft.permissionLevel.toUpperCase() as 'USER' | 'MODERATOR' | 'ADMIN' | 'BANNED',
+        premium: userDraft.subscription === 'premium',
+        premiumExpiresAt: userDraft.subscription === 'premium' ? userDraft.premiumExpiresAt : null,
+        level: userDraft.level,
+        xp: userDraft.xp,
+        countryCode: countryCodePayload,
+        dayStreak: userDraft.dayStreak,
+        readTimeMin: userDraft.readTimeMin,
+        watchTimeMin: userDraft.watchTimeMin,
+        bookPoints: userDraft.bookPoints,
+        seriesPoints: userDraft.seriesPoints,
+        moviePoints: userDraft.moviePoints,
+      });
+
+      await loadUsers();
+      closeUserModal();
+      setSaveModal({
+        title: 'Felhasználó frissítve',
+        message: 'A felhasználó adatai sikeresen elmentésre kerültek.',
+      });
+    } catch (error) {
+      const messageText = error instanceof ApiHttpError
+        ? error.message
+        : 'A felhasználó mentése sikertelen. Kérlek próbáld újra.';
+
+      setSaveModal({
+        title: 'Mentési hiba',
+        message: messageText,
+      });
+    } finally {
+      setUserSaving(false);
+    }
   };
 
-  const saveContentDraft = () => {
+  const saveContentDraft = async () => {
     if (!contentDraft) return;
 
-    setContent(prev => prev.map(item =>
-      item.id === contentDraft.id ? contentDraft : item
-    ));
+    const title = contentDraft.title.trim();
+    const description = contentDraft.description.trim();
 
-    closeContentModal();
+    if (!title || !description) {
+      setSaveModal({
+        title: 'Hiányzó mező',
+        message: 'A cím és a leírás kitöltése kötelező.',
+      });
+      return;
+    }
+
+    setContentSaving(true);
+
+    try {
+      await updateAdminContent(contentDraft.contentType, contentDraft.id, {
+        title,
+        released: contentDraft.released,
+        rating: contentDraft.rating,
+        description,
+        ageRatingId: contentDraft.ageRatingId,
+        trailerUrl: contentDraft.trailerUrl,
+        rewardXP: contentDraft.rewardXP,
+        rewardPoints: contentDraft.rewardPoints,
+        hasSubtitles: contentDraft.hasSubtitles,
+        isOriginalLanguage: contentDraft.isOriginalLanguage,
+        isOfflineAvailable: contentDraft.isOfflineAvailable,
+        coverOrPosterApiName: contentDraft.coverOrPosterApiName,
+        pageNum: contentDraft.pageNum,
+        bookType: contentDraft.bookType,
+        pdfUrl: contentDraft.pdfUrl,
+        audioUrl: contentDraft.audioUrl,
+        epubUrl: contentDraft.epubUrl,
+        audioLength: contentDraft.audioLength,
+        narratorName: contentDraft.narratorName,
+        originalLanguage: contentDraft.originalLanguage,
+        streamUrl: contentDraft.streamUrl,
+        length: contentDraft.length,
+        tagIds: contentDraft.tagIds,
+      });
+
+      await loadContent();
+      closeContentModal();
+      setSaveModal({
+        title: 'Tartalom frissítve',
+        message: 'A tartalom adatai sikeresen elmentésre kerültek.',
+      });
+    } catch (error) {
+      const messageText = error instanceof ApiHttpError
+        ? error.message
+        : 'A tartalom mentése sikertelen. Kérlek próbáld újra.';
+
+      setSaveModal({
+        title: 'Mentési hiba',
+        message: messageText,
+      });
+    } finally {
+      setContentSaving(false);
+    }
   };
 
   const updateNewsDraft = <K extends keyof AdminNewsItem>(field: K, value: AdminNewsItem[K]) => {
     setNewsDraft(prev => prev ? { ...prev, [field]: value } : prev);
   };
 
-  const saveNewsDraft = () => {
+  const saveNewsDraft = async () => {
     if (!newsDraft) return;
 
-    const normalizedNews: AdminNewsItem = {
-      ...newsDraft,
-      updatedAt: new Date().toISOString(),
-    };
+    const title = newsDraft.title.trim();
+    const content = newsDraft.content.trim();
+    if (!title || !content) {
+      setSaveModal({
+        title: 'Hiányzó mező',
+        message: 'A cím és a tartalom kitöltése kötelező.',
+      });
+      return;
+    }
 
-    setNews(prev => prev.map(item =>
-      item.id === normalizedNews.id ? normalizedNews : item
-    ));
+    setNewsSaving(true);
 
-    closeNewsModal();
-    setSaveModal({
-      title: 'Cikk frissítve',
-      message: 'A hír adatai sikeresen elmentésre kerültek.',
-    });
+    try {
+      await updateAdminNews(newsDraft.id, {
+        title,
+        content,
+        eventTag: newsDraft.eventTag,
+      });
+
+      await loadNews();
+
+      closeNewsModal();
+      setSaveModal({
+        title: 'Cikk frissítve',
+        message: 'A hír adatai sikeresen elmentésre kerültek.',
+      });
+    } catch {
+      setSaveModal({
+        title: 'Mentési hiba',
+        message: 'A cikk mentése sikertelen. Kérlek próbáld újra.',
+      });
+    } finally {
+      setNewsSaving(false);
+    }
   };
 
   const updateChallengeDraft = <K extends keyof AdminChallenge>(field: K, value: AdminChallenge[K]) => {
     setChallengeDraft(prev => prev ? { ...prev, [field]: value } : prev);
   };
 
-  const saveChallengeDraft = () => {
+  const saveChallengeDraft = async () => {
     if (!challengeDraft) return;
 
-    setChallenges(prev => prev.map(item =>
-      item.id === challengeDraft.id ? challengeDraft : item
-    ));
+    const title = challengeDraft.title.trim();
+    const description = challengeDraft.description.trim();
 
-    closeChallengeModal();
-  };
+    if (!title || !description) {
+      setSaveModal({
+        title: 'Hiányzó mező',
+        message: 'A cím és a leírás kitöltése kötelező.',
+      });
+      return;
+    }
 
-  const deleteChallenge = (id: number) => {
-    if (!window.confirm('Biztosan törlöd ezt a kihívást?')) return;
+    setChallengeSaving(true);
 
-    setChallenges(prev => prev.filter(item => item.id !== id));
-    if (selectedChallengeId === id) {
+    try {
+      await updateAdminChallenge(challengeDraft.id, {
+        title,
+        description,
+        type: challengeDraft.type,
+        targetValue: challengeDraft.targetValue,
+        rewardXP: challengeDraft.rewardXP,
+        rewardBadgeId: challengeDraft.rewardBadgeId,
+        rewardTitleId: challengeDraft.rewardTitleId,
+        difficulty: challengeDraft.difficulty,
+        isActive: challengeDraft.isActive,
+        isRepeatable: challengeDraft.isRepeatable,
+      });
+
+      await loadChallenges();
       closeChallengeModal();
+      setSaveModal({
+        title: 'Kihívás frissítve',
+        message: 'A kihívás adatai sikeresen elmentésre kerültek.',
+      });
+    } catch (error) {
+      const messageText = error instanceof ApiHttpError
+        ? error.message
+        : 'A kihívás mentése sikertelen. Kérlek próbáld újra.';
+
+      setSaveModal({
+        title: 'Mentési hiba',
+        message: messageText,
+      });
+    } finally {
+      setChallengeSaving(false);
     }
   };
 
@@ -885,6 +1300,7 @@ const Admin: React.FC = () => {
       if (!target.closest('.admin-custom-select')) {
         setActiveUserDropdown(null);
         setActiveContentDropdown(null);
+        setContentTagSearch('');
         setNewsTagDropdownOpen(false);
         setActiveChallengeDropdown(null);
       }
@@ -942,14 +1358,21 @@ const Admin: React.FC = () => {
   const getBadgeById = (id: number | null) => badges.find(b => b.id === id) ?? null;
   const getTitleById = (id: number | null) => titles.find(t => t.id === id) ?? null;
   const getTagById = (id: number) => tags.find(tag => tag.id === id) ?? null;
-
-  const deleteContent = (id: number) => {
-    if (window.confirm('Biztosan törlöd ezt a tartalmat?')) {
-      setContent(prev => prev.filter(c => c.id !== id));
-      if (selectedContentId === id) {
-        closeContentModal();
-      }
+  const getAgeRatingById = (id: number | null) => ageRatings.find(item => item.id === id) ?? null;
+  const formatAgeRatingLabel = (option: AdminAgeRatingOptionResponse) => {
+    const normalizedName = option.name.trim();
+    if (!normalizedName) {
+      return option.minAge > 0 ? `${option.minAge}+` : 'Korhatar nelkul';
     }
+
+    if (option.minAge <= 0) {
+      return normalizedName;
+    }
+
+    const minAgeText = String(option.minAge);
+    const loweredName = normalizedName.toLocaleLowerCase('hu-HU');
+    const alreadyContainsAge = loweredName.includes(`${minAgeText}+`) || loweredName.includes(minAgeText);
+    return alreadyContainsAge ? normalizedName : `${normalizedName} (${option.minAge}+)`;
   };
 
   const addTagToContentDraft = (tagId: number) => {
@@ -966,23 +1389,59 @@ const Admin: React.FC = () => {
     });
   };
 
-  // Hír törlése
-  const deleteNews = (id: number) => {
-    if (window.confirm('Biztosan törlöd ezt a hírt?')) {
-      setNews(prev => prev.filter(n => n.id !== id));
-    }
-  };
-
   // Bejelentés küldése
-  const sendAnnouncement = () => {
-    if (!announcementText.trim()) return;
-    // TODO: API hívás
-    setAnnouncementSent(true);
-    setTimeout(() => {
-      setAnnouncementSent(false);
+  const sendAnnouncement = async () => {
+    const message = announcementText.trim();
+    if (!message) return;
+
+    const specificUsernames = announcementUsers
+      .split(',')
+      .map(name => name.trim())
+      .filter(Boolean);
+
+    if (announcementTarget === 'specific' && specificUsernames.length === 0) {
+      setSaveModal({
+        title: 'Hiányzó címzett',
+        message: 'Adott felhasználók célcsoportnál legalább egy felhasználónevet adj meg.',
+      });
+      return;
+    }
+
+    setAnnouncementSending(true);
+
+    try {
+      const result = await sendAdminAnnouncement({
+        target: announcementTarget,
+        message,
+        usernames: announcementTarget === 'specific' ? specificUsernames : undefined,
+      });
+
+      setAnnouncementSent(true);
+      setSaveModal({
+        title: 'Bejelentés elküldve',
+        message: result.missingUsernames.length > 0
+          ? `${result.sentCount} címzettnek elküldve. Nem található felhasználók: ${result.missingUsernames.join(', ')}`
+          : `${result.sentCount} címzettnek elküldve.`,
+      });
+
+      setTimeout(() => {
+        setAnnouncementSent(false);
+      }, 3000);
+
       setAnnouncementText('');
       setAnnouncementUsers('');
-    }, 3000);
+    } catch (error) {
+      const messageText = error instanceof ApiHttpError
+        ? error.message
+        : 'A bejelentés küldése sikertelen. Kérlek próbáld újra.';
+
+      setSaveModal({
+        title: 'Küldési hiba',
+        message: messageText,
+      });
+    } finally {
+      setAnnouncementSending(false);
+    }
   };
 
   // Helper: badge színek
@@ -1104,12 +1563,76 @@ const Admin: React.FC = () => {
     );
   }
 
+  if (!hasAdminAccess) {
+    return (
+      <main className="d-flex align-items-center justify-content-center mt-5 pt-4" style={{
+        minHeight: '80vh',
+        background: 'transparent'
+      }}>
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-md-6 col-lg-5">
+              <div className="text-center p-4" style={{
+                background: 'rgba(12, 10, 8, 0.5)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                border: '1px solid rgba(194, 157, 89, 0.15)',
+                borderRadius: '16px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
+              }}>
+                <div className="mb-3">
+                  <i className="bi bi-shield-lock" style={{
+                    fontSize: '4.5rem',
+                    color: 'var(--secondary)'
+                  }}></i>
+                </div>
+
+                <h1 className="display-1 fw-bold mb-3" style={{
+                  fontSize: 'clamp(4rem, 12vw, 6rem)',
+                  color: 'var(--secondary)',
+                  letterSpacing: '0.1em'
+                }}>
+                  403
+                </h1>
+
+                <h2 className="h5 mb-3" style={{ color: 'var(--h1Text)' }}>Hozzáférés megtagadva</h2>
+                <p className="mb-4" style={{
+                  color: 'rgba(224, 224, 224, 0.7)',
+                  fontSize: '0.95rem',
+                  lineHeight: '1.6'
+                }}>
+                  Az admin felülethez admin vagy moderátor jogosultság szükséges.
+                </p>
+
+                <div className="mb-4">
+                  <button className="btn px-5 py-2" onClick={() => navigate('/')} style={{
+                    background: 'linear-gradient(135deg, var(--secondary), var(--primary))',
+                    color: 'var(--bg)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 12px rgba(194, 157, 89, 0.25)',
+                    transition: 'all 0.3s ease'
+                  }}>
+                    <i className="bi bi-house-door me-2"></i>
+                    KEZDŐLAP
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   const tabs: { key: AdminTab; label: string; icon: string }[] = [
     { key: 'overview', label: 'Áttekintés', icon: 'bi-speedometer2' },
     { key: 'users', label: 'Felhasználók', icon: 'bi-people-fill' },
     { key: 'content', label: 'Tartalmak', icon: 'bi-collection-fill' },
     { key: 'news', label: 'Hírek', icon: 'bi-newspaper' },
     { key: 'challenges', label: 'Kihívások', icon: 'bi-trophy-fill' },
+    { key: 'purchases', label: 'Vásárlások', icon: 'bi-bag-check-fill' },
     { key: 'announcements', label: 'Bejelentés', icon: 'bi-megaphone-fill' },
   ];
 
@@ -1143,9 +1666,13 @@ const Admin: React.FC = () => {
           {/* ======================== ÁTTEKINTÉS ======================== */}
           {activeTab === 'overview' && (
             <div className="admin-section">
+              {overviewError && (
+                <div className="alert alert-warning mb-3" role="alert">{overviewError}</div>
+              )}
+
               {/* Statisztika kártyák */}
               <div className="admin-stats-grid">
-                {STATS.map((stat, idx) => (
+                {overviewStats.map((stat, idx) => (
                   <div key={idx} className="admin-stat-card">
                     <div className="admin-stat-icon" style={{ color: stat.color }}>
                       <i className={`bi ${stat.icon}`}></i>
@@ -1162,6 +1689,14 @@ const Admin: React.FC = () => {
                 ))}
               </div>
 
+              {overviewLoading && (
+                <div className="admin-card mt-3 text-center py-4">
+                  <div className="spinner-border text-light" role="status">
+                    <span className="visually-hidden">Betöltés...</span>
+                  </div>
+                </div>
+              )}
+
               {/* Legutóbbi aktivitás */}
               <div className="admin-card mt-4">
                 <h3 className="admin-card-title">
@@ -1169,14 +1704,16 @@ const Admin: React.FC = () => {
                   Legutóbbi aktivitás
                 </h3>
                 <div className="admin-activity-list">
-                  {[
-                    { icon: 'bi-person-plus-fill', color: '#4a9eff', text: 'Új felhasználó regisztrált: TavasziOlvaso', time: '2026.02.25. 14:32' },
-                    { icon: 'bi-star-fill', color: 'var(--secondary)', text: 'Új Premium előfizető: ReadingQueen', time: '2026.02.25. 14:14' },
-                    { icon: 'bi-book-fill', color: '#4ade80', text: 'Új könyv hozzáadva: "Az éjszaka gyermekei"', time: '2026.02.25. 13:45' },
-                    { icon: 'bi-flag-fill', color: '#f87171', text: 'Bejelentés: TrollUser69 spam tevékenység', time: '2026.02.25. 12:30' },
-                    { icon: 'bi-trophy-fill', color: '#a78bfa', text: '156 felhasználó teljesítette a "30 napos maraton" kihívást', time: '2026.02.25. 11:18' },
-                    { icon: 'bi-cash-stack', color: '#4ade80', text: 'Napi bevétel összesítő: 327,450 Ft', time: '2026.02.25. 09:00' },
-                  ].map((item, idx) => (
+                  {overviewActivities.length === 0 && !overviewLoading && (
+                    <div className="admin-activity-item">
+                      <div className="admin-activity-icon" style={{ color: '#9ca3af' }}>
+                        <i className="bi bi-info-circle"></i>
+                      </div>
+                      <div className="admin-activity-text">Nincs elérhető aktivitás adat.</div>
+                      <div className="admin-activity-time">-</div>
+                    </div>
+                  )}
+                  {overviewActivities.map((item, idx) => (
                     <div key={idx} className="admin-activity-item">
                       <div className="admin-activity-icon" style={{ color: item.color }}>
                         <i className={`bi ${item.icon}`}></i>
@@ -1197,7 +1734,7 @@ const Admin: React.FC = () => {
                 <div className="admin-users-stat">
                   <span className="admin-users-stat-label">Prémium fiókok</span>
                   <strong>
-                    {Math.round((userSummary.premium / Math.max(users.length, 1)) * 100)}%
+                    {Math.round((userSummary.premium / Math.max(userSummary.totalUsers, 1)) * 100)}%
                     <span className="admin-users-stat-range"> (300 - 1500)</span>
                   </strong>
                 </div>
@@ -1220,7 +1757,7 @@ const Admin: React.FC = () => {
                   <h3 className="admin-card-title">
                     <i className="bi bi-people-fill me-2"></i>
                     Felhasználók kezelése
-                    <span className="admin-count">{users.length}</span>
+                    <span className="admin-count">{usersTotalFromApi}</span>
                   </h3>
                   <div className="admin-header-controls">
                     <div className="admin-filter-pills">
@@ -1268,7 +1805,12 @@ const Admin: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {pagedUsers.map(user => (
+                      {usersLoading ? (
+                        <tr>
+                          <td colSpan={9} className="text-center text-muted py-4">Felhasználók betöltése...</td>
+                        </tr>
+                      ) : (
+                        pagedUsers.map(user => (
                         <tr
                           key={user.id}
                           className={user.permissionLevel === 'banned' ? 'banned-row admin-user-row' : 'admin-user-row'}
@@ -1318,12 +1860,13 @@ const Admin: React.FC = () => {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ))
+                      )}
                     </tbody>
                   </table>
                 </div>
 
-                {filteredUsers.length > 0 && totalUserPages > 1 && (
+                {usersTotalFromApi > 0 && totalUserPages > 1 && (
                   <nav className="admin-pagination-wrap" aria-label="Felhasználók lapozása">
                     <ul className="pagination kk-pagination justify-content-center mb-0">
                       <li className={`page-item ${usersPage === 1 ? 'disabled' : ''}`}>
@@ -1343,12 +1886,6 @@ const Admin: React.FC = () => {
                   </nav>
                 )}
 
-                <div className="admin-save-bar">
-                  <button className="admin-send-btn" onClick={() => handleSave('Felhasználók')}>
-                    <i className="bi bi-floppy-fill me-2"></i>
-                    Módosítások mentése
-                  </button>
-                </div>
               </div>
 
               {selectedUser && (
@@ -1519,10 +2056,10 @@ const Admin: React.FC = () => {
                     </div>
 
                     <div className="admin-user-modal-footer">
-                      <button className="admin-user-secondary-btn" onClick={closeUserModal}>Mégse</button>
-                      <button className="admin-send-btn" onClick={saveUserDraft}>
+                      <button className="admin-user-secondary-btn" onClick={closeUserModal} disabled={userSaving}>Mégse</button>
+                      <button className="admin-send-btn" onClick={saveUserDraft} disabled={userSaving}>
                         <i className="bi bi-check2-circle me-2"></i>
-                        Felhasználó mentése
+                        {userSaving ? 'Mentés...' : 'Felhasználó mentése'}
                       </button>
                     </div>
                   </div>
@@ -1559,7 +2096,7 @@ const Admin: React.FC = () => {
                   <h3 className="admin-card-title">
                     <i className="bi bi-collection-fill me-2"></i>
                     Tartalmak kezelése
-                    <span className="admin-count">{content.length}</span>
+                    <span className="admin-count">{contentTotalFromApi}</span>
                   </h3>
                   <div className="admin-header-controls">
                     <div className="admin-filter-pills">
@@ -1600,11 +2137,21 @@ const Admin: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {pagedContent.map(item => (
+                      {contentLoading ? (
+                        <tr>
+                          <td colSpan={8} className="text-center text-muted py-4">Tartalmak betöltése...</td>
+                        </tr>
+                      ) : (
+                        pagedContent.map(item => (
                         <tr key={item.id} className="admin-content-row" onClick={() => openContentModal(item)}>
                           <td>
                             <div className="admin-content-cell">
-                              <img src={item.coverOrPosterApiName} alt={item.title} className="admin-content-cover" />
+                              <img
+                                src={toContentImageSrc(item.coverOrPosterApiName)}
+                                onError={(event) => applyContentImageFallback(event.currentTarget)}
+                                alt={item.title}
+                                className="admin-content-cover"
+                              />
                               <div>
                                 <div className="admin-news-title">{item.title}</div>
                                 <small className="admin-content-meta">#{item.id}</small>
@@ -1647,25 +2194,16 @@ const Admin: React.FC = () => {
                               >
                                 <i className="bi bi-pencil-fill"></i>
                               </button>
-                              <button
-                                className="admin-btn-icon text-danger"
-                                title="Törlés"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  deleteContent(item.id);
-                                }}
-                              >
-                                <i className="bi bi-trash-fill"></i>
-                              </button>
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ))
+                      )}
                     </tbody>
                   </table>
                 </div>
 
-                {filteredContent.length > 0 && totalContentPages > 1 && (
+                {contentTotalFromApi > 0 && totalContentPages > 1 && (
                   <nav className="admin-pagination-wrap" aria-label="Tartalmak lapozása">
                     <ul className="pagination kk-pagination justify-content-center mb-0">
                       <li className={`page-item ${contentPage === 1 ? 'disabled' : ''}`}>
@@ -1685,12 +2223,6 @@ const Admin: React.FC = () => {
                   </nav>
                 )}
 
-                <div className="admin-save-bar">
-                  <button className="admin-send-btn" onClick={() => handleSave('Tartalmak')}>
-                    <i className="bi bi-floppy-fill me-2"></i>
-                    Változtatások mentése
-                  </button>
-                </div>
               </div>
 
               {selectedContent && (
@@ -1713,7 +2245,7 @@ const Admin: React.FC = () => {
                           <strong>{selectedContent.contentType}</strong>
                         </div>
                         <div className="admin-user-snapshot">
-                          <span className="admin-user-snapshot-label">Azonosító</span>
+                          <p>Book/Movie/Series tabla mezok szerint (nincs uj letrehozas, csak edit).</p>
                           <strong>#{selectedContent.id}</strong>
                         </div>
                         <div className="admin-user-snapshot">
@@ -1745,8 +2277,46 @@ const Admin: React.FC = () => {
                           </label>
 
                           <label className="admin-user-field">
-                            <span>AgeRatingId</span>
-                            <input type="number" min={1} value={selectedContent.ageRatingId ?? ''} onChange={(event) => updateContentDraft('ageRatingId', event.target.value ? Number(event.target.value) : null)} />
+                            <span>Korhatár</span>
+                            <div className="admin-custom-select">
+                              <button
+                                type="button"
+                                className="admin-custom-select-trigger"
+                                aria-expanded={activeContentDropdown === 'ageRating'}
+                                onClick={() => setActiveContentDropdown(prev => prev === 'ageRating' ? null : 'ageRating')}
+                              >
+                                <span>
+                                  {selectedContent.ageRatingId === null
+                                    ? 'Nincs korhatar'
+                                    : (getAgeRatingById(selectedContent.ageRatingId)?.name ?? `AgeRating #${selectedContent.ageRatingId}`)}
+                                </span>
+                              </button>
+                              <div className={`admin-custom-select-menu ${activeContentDropdown === 'ageRating' ? 'show' : ''}`}>
+                                <button
+                                  type="button"
+                                  className={`admin-custom-select-option ${selectedContent.ageRatingId === null ? 'active' : ''}`}
+                                  onClick={() => {
+                                    updateContentDraft('ageRatingId', null);
+                                    setActiveContentDropdown(null);
+                                  }}
+                                >
+                                  Nincs korhatar
+                                </button>
+                                {ageRatings.map(option => (
+                                  <button
+                                    key={option.id}
+                                    type="button"
+                                    className={`admin-custom-select-option ${selectedContent.ageRatingId === option.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                      updateContentDraft('ageRatingId', option.id);
+                                      setActiveContentDropdown(null);
+                                    }}
+                                  >
+                                    {formatAgeRatingLabel(option)}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           </label>
 
                           <label className="admin-user-field">
@@ -1799,19 +2369,40 @@ const Admin: React.FC = () => {
                                   type="button"
                                   className="admin-custom-select-trigger"
                                   aria-expanded={activeContentDropdown === 'tags'}
-                                  onClick={() => setActiveContentDropdown(prev => prev === 'tags' ? null : 'tags')}
+                                  onClick={() => {
+                                    const next = activeContentDropdown === 'tags' ? null : 'tags';
+                                    setActiveContentDropdown(next);
+                                    if (next === 'tags') {
+                                      setContentTagSearch('');
+                                    }
+                                  }}
                                 >
                                   <span>Tag hozzaadása</span>
                                 </button>
                                 <div className={`admin-custom-select-menu ${activeContentDropdown === 'tags' ? 'show' : ''}`}>
-                                  {tags.filter(tag => !selectedContent.tagIds.includes(tag.id)).length === 0 && (
+                                  <div className="admin-custom-select-search">
+                                    <i className="bi bi-search"></i>
+                                    <input
+                                      type="text"
+                                      value={contentTagSearch}
+                                      placeholder="Tag keresese"
+                                      onChange={(event) => setContentTagSearch(event.target.value)}
+                                    />
+                                  </div>
+
+                                  {availableContentTags.length === 0 && (
                                     <button type="button" className="admin-custom-select-option" disabled>
                                       Minden tag hozzarendelve
                                     </button>
                                   )}
-                                  {tags
-                                    .filter(tag => !selectedContent.tagIds.includes(tag.id))
-                                    .map(tag => (
+
+                                  {availableContentTags.length > 0 && filteredContentTags.length === 0 && (
+                                    <button type="button" className="admin-custom-select-option" disabled>
+                                      Nincs talalat
+                                    </button>
+                                  )}
+
+                                  {filteredContentTags.map(tag => (
                                       <button
                                         key={tag.id}
                                         type="button"
@@ -1819,6 +2410,7 @@ const Admin: React.FC = () => {
                                         onClick={() => {
                                           addTagToContentDraft(tag.id);
                                           setActiveContentDropdown(null);
+                                          setContentTagSearch('');
                                         }}
                                       >
                                         {tag.name}
@@ -1940,10 +2532,10 @@ const Admin: React.FC = () => {
                     </div>
 
                     <div className="admin-user-modal-footer">
-                      <button className="admin-user-secondary-btn" onClick={closeContentModal}>Mégse</button>
-                      <button className="admin-send-btn" onClick={saveContentDraft}>
+                      <button className="admin-user-secondary-btn" onClick={closeContentModal} disabled={contentSaving}>Mégse</button>
+                      <button className="admin-send-btn" onClick={saveContentDraft} disabled={contentSaving}>
                         <i className="bi bi-check2-circle me-2"></i>
-                        Tartalom mentése
+                        {contentSaving ? 'Mentés...' : 'Tartalom mentése'}
                       </button>
                     </div>
                   </div>
@@ -1983,7 +2575,7 @@ const Admin: React.FC = () => {
                   <h3 className="admin-card-title">
                     <i className="bi bi-newspaper me-2"></i>
                     Hírcikkek kezelése
-                    <span className="admin-count">{news.length}</span>
+                    <span className="admin-count">{newsTotalFromApi}</span>
                   </h3>
                   <div className="admin-header-controls">
                     <div className="admin-filter-pills">
@@ -2029,7 +2621,12 @@ const Admin: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {pagedNews.map(item => (
+                      {newsLoading ? (
+                        <tr>
+                          <td colSpan={6} className="text-center text-muted py-4">Hírek betöltése...</td>
+                        </tr>
+                      ) : (
+                        pagedNews.map(item => (
                         <tr key={item.id} className="admin-news-row" onClick={() => openNewsModal(item)}>
                           <td><span className="admin-news-title">{item.title}</span></td>
                           <td>
@@ -2039,7 +2636,7 @@ const Admin: React.FC = () => {
                           </td>
                           <td>{getEventTagBadge(item.eventTag)}</td>
                           <td>{new Date(item.createdAt).toLocaleString('hu-HU')}</td>
-                          <td>{new Date(item.updatedAt).toLocaleString('hu-HU')}</td>
+                          <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleString('hu-HU') : 'Nincs adat'}</td>
                           <td>
                             <div className="admin-actions">
                               <button
@@ -2052,25 +2649,16 @@ const Admin: React.FC = () => {
                               >
                                 <i className="bi bi-pencil-fill"></i>
                               </button>
-                              <button
-                                className="admin-btn-icon text-danger"
-                                title="Törlés"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  deleteNews(item.id);
-                                }}
-                              >
-                                <i className="bi bi-trash-fill"></i>
-                              </button>
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ))
+                      )}
                     </tbody>
                   </table>
                 </div>
 
-                {filteredNews.length > 0 && totalNewsPages > 1 && (
+                {newsTotalFromApi > 0 && totalNewsPages > 1 && (
                   <nav className="admin-pagination-wrap" aria-label="Hírek lapozása">
                     <ul className="pagination kk-pagination justify-content-center mb-0">
                       <li className={`page-item ${newsPage === 1 ? 'disabled' : ''}`}>
@@ -2090,12 +2678,6 @@ const Admin: React.FC = () => {
                   </nav>
                 )}
 
-                <div className="admin-save-bar">
-                  <button className="admin-send-btn" onClick={() => handleSave('Hírek')}>
-                    <i className="bi bi-floppy-fill me-2"></i>
-                    Változtatások mentése
-                  </button>
-                </div>
               </div>
 
               {selectedNews && (
@@ -2123,7 +2705,7 @@ const Admin: React.FC = () => {
                         </div>
                         <div className="admin-user-snapshot">
                           <span className="admin-user-snapshot-label">Utolsó frissítés</span>
-                          <strong>{new Date(selectedNews.updatedAt).toLocaleString('hu-HU')}</strong>
+                          <strong>{selectedNews.updatedAt ? new Date(selectedNews.updatedAt).toLocaleString('hu-HU') : 'Nincs adat'}</strong>
                         </div>
                       </div>
 
@@ -2183,10 +2765,10 @@ const Admin: React.FC = () => {
                     </div>
 
                     <div className="admin-user-modal-footer">
-                      <button className="admin-user-secondary-btn" onClick={closeNewsModal}>Mégse</button>
-                      <button className="admin-send-btn" onClick={saveNewsDraft}>
+                      <button className="admin-user-secondary-btn" onClick={closeNewsModal} disabled={newsSaving}>Mégse</button>
+                      <button className="admin-send-btn" onClick={saveNewsDraft} disabled={newsSaving}>
                         <i className="bi bi-check2-circle me-2"></i>
-                        Cikk mentése
+                        {newsSaving ? 'Mentés...' : 'Cikk mentése'}
                       </button>
                     </div>
                   </div>
@@ -2222,7 +2804,7 @@ const Admin: React.FC = () => {
                   <h3 className="admin-card-title">
                     <i className="bi bi-trophy-fill me-2"></i>
                     Kihívások kezelése
-                    <span className="admin-count">{challenges.length}</span>
+                    <span className="admin-count">{challengeTotalFromApi}</span>
                   </h3>
                   <div className="admin-header-controls">
                     <div className="admin-filter-pills">
@@ -2273,7 +2855,12 @@ const Admin: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {pagedChallenges.map(ch => (
+                      {challengesLoading ? (
+                        <tr>
+                          <td colSpan={9} className="text-center text-muted py-4">Kihívások betöltése...</td>
+                        </tr>
+                      ) : (
+                        pagedChallenges.map(ch => (
                         <tr key={ch.id} className="admin-challenge-row" onClick={() => openChallengeModal(ch)}>
                           <td><span className="admin-news-title">{ch.title}</span></td>
                           <td>
@@ -2318,25 +2905,16 @@ const Admin: React.FC = () => {
                               >
                                 <i className="bi bi-pencil-fill"></i>
                               </button>
-                              <button
-                                className="admin-btn-icon text-danger"
-                                title="Törlés"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  deleteChallenge(ch.id);
-                                }}
-                              >
-                                <i className="bi bi-trash-fill"></i>
-                              </button>
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ))
+                      )}
                     </tbody>
                   </table>
                 </div>
 
-                {filteredChallenges.length > 0 && totalChallengePages > 1 && (
+                {challengeTotalFromApi > 0 && totalChallengePages > 1 && (
                   <nav className="admin-pagination-wrap" aria-label="Kihívások lapozása">
                     <ul className="pagination kk-pagination justify-content-center mb-0">
                       <li className={`page-item ${challengesPage === 1 ? 'disabled' : ''}`}>
@@ -2356,12 +2934,6 @@ const Admin: React.FC = () => {
                   </nav>
                 )}
 
-                <div className="admin-save-bar">
-                  <button className="admin-send-btn" onClick={() => handleSave('Kihívások')}>
-                    <i className="bi bi-floppy-fill me-2"></i>
-                    Változtatások mentése
-                  </button>
-                </div>
               </div>
 
               {selectedChallenge && (
@@ -2570,15 +3142,147 @@ const Admin: React.FC = () => {
                     </div>
 
                     <div className="admin-user-modal-footer">
-                      <button className="admin-user-secondary-btn" onClick={closeChallengeModal}>Mégse</button>
-                      <button className="admin-send-btn" onClick={saveChallengeDraft}>
+                      <button className="admin-user-secondary-btn" onClick={closeChallengeModal} disabled={challengeSaving}>Mégse</button>
+                      <button className="admin-send-btn" onClick={saveChallengeDraft} disabled={challengeSaving}>
                         <i className="bi bi-check2-circle me-2"></i>
-                        Kihívás mentése
+                        {challengeSaving ? 'Mentés...' : 'Kihívás mentése'}
                       </button>
                     </div>
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ======================== BEJELENTÉS ======================== */}
+          {activeTab === 'purchases' && (
+            <div className="admin-section">
+              <div className="admin-users-overview">
+                <div className="admin-users-stat">
+                  <span className="admin-users-stat-label">Összes vásárlás</span>
+                  <strong>{purchasesTotalFromApi}</strong>
+                </div>
+              </div>
+
+              <div className="admin-card">
+                <div className="admin-card-header">
+                  <h3 className="admin-card-title">
+                    <i className="bi bi-bag-check-fill me-2"></i>
+                    Vásárlások kezelése
+                    <span className="admin-count">{purchasesTotalFromApi}</span>
+                  </h3>
+                  <div className="admin-header-controls">
+                    <div className="admin-filter-pills">
+                      {([
+                        { key: 'all', label: 'Mind' },
+                        { key: 'SUCCESS', label: 'Sikeres' },
+                        { key: 'PENDING', label: 'Függőben' },
+                        { key: 'FAILED', label: 'Sikertelen' },
+                        { key: 'REFUNDED', label: 'Visszatérítve' },
+                      ] as const).map(filter => (
+                        <button
+                          key={filter.key}
+                          className={`admin-pill ${purchasesStatusFilter === filter.key ? 'active' : ''}`}
+                          onClick={() => setPurchasesStatusFilter(filter.key)}
+                        >
+                          {filter.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="admin-search">
+                      <i className="bi bi-search"></i>
+                      <input
+                        type="text"
+                        placeholder="Keresés felhasználónév vagy e-mail alapján..."
+                        value={purchasesSearch}
+                        onChange={(e) => setPurchasesSearch(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="admin-table-wrapper">
+                  {purchasesLoading ? (
+                    <div className="text-center py-4">
+                      <div className="spinner-border text-light" role="status">
+                        <span className="visually-hidden">Betöltés...</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>#ID</th>
+                          <th>Felhasználó</th>
+                          <th>Csomag</th>
+                          <th>Ár</th>
+                          <th>Státusz</th>
+                          <th>Dátum</th>
+                          <th>Frissítve</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPurchasesForDisplay.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="text-center py-4">
+                              <i className="bi bi-inbox" style={{ fontSize: '2rem', opacity: 0.5 }}></i>
+                              <p className="mt-2 mb-0">Nincs megjeleníthető vásárlás</p>
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredPurchasesForDisplay.map(purchase => (
+                            <tr key={purchase.id}>
+                              <td><code>#{purchase.id}</code></td>
+                              <td>
+                                <div>
+                                  <div style={{ fontWeight: 600 }}>{purchase.username}</div>
+                                  <small style={{ opacity: 0.6 }}>{purchase.email}</small>
+                                </div>
+                              </td>
+                              <td>
+                                {purchase.tier === 'ONE_M' && <span className="admin-badge admin-badge-blue">1 hónap</span>}
+                                {purchase.tier === 'QUARTER_Y' && <span className="admin-badge admin-badge-purple">3 hónap</span>}
+                                {purchase.tier === 'FULL_Y' && <span className="admin-badge admin-badge-gold">12 hónap</span>}
+                              </td>
+                              <td>{purchase.price != null ? `${purchase.price.toLocaleString('hu-HU')} Ft` : '—'}</td>
+                              <td>
+                                {purchase.purchaseStatus === 'SUCCESS' && <span className="admin-badge admin-badge-green">Sikeres</span>}
+                                {purchase.purchaseStatus === 'PENDING' && <span className="admin-badge admin-badge-yellow">Függőben</span>}
+                                {purchase.purchaseStatus === 'FAILED' && <span className="admin-badge admin-badge-red">Sikertelen</span>}
+                                {purchase.purchaseStatus === 'REFUNDED' && <span className="admin-badge admin-badge-dim">Visszatérítve</span>}
+                                {!purchase.purchaseStatus && <span className="admin-badge admin-badge-dim">Ismeretlen</span>}
+                              </td>
+                              <td>{purchase.purchaseDate ? new Date(purchase.purchaseDate).toLocaleDateString('hu-HU') : '—'}</td>
+                              <td>{purchase.updatedAt ? new Date(purchase.updatedAt).toLocaleString('hu-HU') : '—'}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+                {!purchasesLoading && purchasesTotalFromApi > 0 && totalPurchasePages > 1 && (
+                  <nav className="admin-pagination-wrap" aria-label="Vásárlások lapozása">
+                    <ul className="pagination kk-pagination justify-content-center mb-0">
+                      <li className={`page-item ${purchasesPage === 1 ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setPurchasesPage(Math.max(1, purchasesPage - 1))}>Előző</button>
+                      </li>
+
+                      {getPaginationRange(purchasesPage, totalPurchasePages).map((page) => (
+                        <li key={page} className={`page-item ${purchasesPage === page ? 'active' : ''}`}>
+                          <button className="page-link" onClick={() => setPurchasesPage(page)}>{page}</button>
+                        </li>
+                      ))}
+
+                      <li className={`page-item ${purchasesPage === totalPurchasePages ? 'disabled' : ''}`}>
+                        <button className="page-link" onClick={() => setPurchasesPage(Math.min(totalPurchasePages, purchasesPage + 1))}>Következő</button>
+                      </li>
+                    </ul>
+                  </nav>
+                )}
+              </div>
             </div>
           )}
 
@@ -2655,10 +3359,10 @@ const Admin: React.FC = () => {
                       <button
                         className="admin-send-btn"
                         onClick={sendAnnouncement}
-                        disabled={!announcementText.trim()}
+                        disabled={announcementSending || !announcementText.trim() || (announcementTarget === 'specific' && !announcementUsers.trim())}
                       >
                         <i className="bi bi-send-fill me-2"></i>
-                        Bejelentés küldése
+                        {announcementSending ? 'Küldés...' : 'Bejelentés küldése'}
                       </button>
                     </div>
                   </div>

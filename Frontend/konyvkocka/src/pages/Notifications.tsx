@@ -78,6 +78,12 @@ const Notifications: React.FC = () => {
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
+		window.dispatchEvent(new CustomEvent('kk_notifications_unread_changed', {
+			detail: { unreadCount },
+		}));
+	}, [unreadCount]);
+
+	useEffect(() => {
 		let isMounted = true;
 
 		const loadNotifications = async () => {

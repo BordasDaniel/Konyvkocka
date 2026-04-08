@@ -18,6 +18,26 @@ namespace KonyvkockaAPI.Controllers
             _context = context;
         }
 
+        private static string? NormalizeCountryCode(string? countryCode)
+        {
+            var normalized = countryCode?.Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(normalized) || normalized == "ZZ")
+                return null;
+
+            return normalized;
+        }
+
+        private static bool IsPremiumActive(User user, DateTime utcNow)
+        {
+            if (!user.Premium)
+                return false;
+
+            if (!user.PremiumExpiresAt.HasValue)
+                return true;
+
+            return user.PremiumExpiresAt.Value > utcNow;
+        }
+
         /// <summary>
         /// Ranglista lekérése tartalom- és régió-szűrő szerint.
         /// GET /api/leaderboard?content=all&amp;region=world&amp;page=1&amp;pageSize=50
@@ -45,14 +65,17 @@ namespace KonyvkockaAPI.Controllers
             var validContent = new[] { "all", "books", "media" };
             var validRegion = new[] { "world", "country" };
 
-            if (!validContent.Contains(content.ToLower()))
+            var normalizedContent = content.ToLowerInvariant();
+            var normalizedRegion = region.ToLowerInvariant();
+
+            if (!validContent.Contains(normalizedContent))
                 return BadRequest(new ErrorResponseDTO
                 {
                     Error = "InvalidParameter",
                     Message = "A content paraméter értéke csak 'all', 'books' vagy 'media' lehet."
                 });
 
-            if (!validRegion.Contains(region.ToLower()))
+            if (!validRegion.Contains(normalizedRegion))
                 return BadRequest(new ErrorResponseDTO
                 {
                     Error = "InvalidParameter",
@@ -74,11 +97,22 @@ namespace KonyvkockaAPI.Controllers
                         Message = "Érvénytelen vagy lejárt token."
                     });
 
+                var normalizedCurrentCountryCode = NormalizeCountryCode(currentUser.CountryCode);
+
+                if (normalizedRegion == "country" && string.IsNullOrWhiteSpace(normalizedCurrentCountryCode))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "CountryNotSet",
+                        Message = "Az ország ranglistához előbb állíts be országot a profil beállításokban."
+                    });
+                }
+
                 // --- alap lekérdezés, régió szűrés ---
                 IQueryable<User> query = _context.Users;
 
-                if (region.ToLower() == "country")
-                    query = query.Where(u => u.CountryCode == currentUser.CountryCode);
+                if (normalizedRegion == "country")
+                    query = query.Where(u => u.CountryCode == normalizedCurrentCountryCode);
 
                 // --- rendezés content szerint ---
                 query = content.ToLower() switch
@@ -189,8 +223,8 @@ namespace KonyvkockaAPI.Controllers
                 UserId = u.Id,
                 Username = u.Username,
                 Avatar = u.ProfilePic != null ? Convert.ToBase64String(u.ProfilePic) : null,
-                CountryCode = u.CountryCode,
-                IsPremium = u.Premium,
+                CountryCode = NormalizeCountryCode(u.CountryCode),
+                IsPremium = IsPremiumActive(u, DateTime.UtcNow),
                 Points = points,
                 BookCount = bookCount,
                 MediaCount = mediaCount,

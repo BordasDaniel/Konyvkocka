@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ApiHttpError, requestPasswordResetEmail } from '../services/api';
 import '../styles/login.css';
 
 // Declare grecaptcha for TypeScript
@@ -11,14 +12,42 @@ declare global {
 }
 
 type FormType = 'login' | 'register' | 'forgot';
+type LoginFeedbackIcon = 'error' | 'email';
 
 const Login: React.FC = () => {
+  const recaptchaSiteKey = (import.meta.env.VITE_RECAPTCHA_SITE_KEY ?? '').trim();
+  const loginRecaptchaWidgetId = useRef<number | null>(null);
+  const registerRecaptchaWidgetId = useRef<number | null>(null);
+
   const [formType, setFormType] = useState<FormType>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [_isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginErrorModal, setLoginErrorModal] = useState<{ open: boolean; title: string; message: string; icon: LoginFeedbackIcon }>({
+    open: false,
+    title: '',
+    message: '',
+    icon: 'error',
+  });
   const navigate = useNavigate();
   const { login, register, isAuthenticated } = useAuth();
+
+  const openLoginErrorModal = (title: string, message: string) => {
+    setLoginErrorModal({ open: true, title, message, icon: 'error' });
+  };
+
+  const openEmailInfoModal = (title: string, message: string) => {
+    setLoginErrorModal({
+      open: true,
+      title,
+      message,
+      icon: 'email',
+    });
+  };
+
+  const closeLoginErrorModal = () => {
+    setLoginErrorModal({ open: false, title: '', message: '', icon: 'error' });
+  };
 
   // Ha már be van jelentkezve, irányítsuk át a profil oldalra
   useEffect(() => {
@@ -28,6 +57,8 @@ const Login: React.FC = () => {
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
+    if (!recaptchaSiteKey) return;
+
     // Load reCAPTCHA script
     const existingScript = document.querySelector('script[src*="recaptcha"]');
     
@@ -54,9 +85,11 @@ const Login: React.FC = () => {
     if (!existingScript) {
       return loadRecaptcha();
     }
-  }, []);
+  }, [recaptchaSiteKey]);
 
   useEffect(() => {
+    if (!recaptchaSiteKey) return;
+
     // Render reCAPTCHA when form changes with retry logic
     let retryCount = 0;
     const maxRetries = 10;
@@ -68,9 +101,14 @@ const Login: React.FC = () => {
         
         if (container && container.childElementCount === 0) {
           try {
-            window.grecaptcha.render(containerId, {
-              'sitekey': '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI' // Test key
+            const widgetId = window.grecaptcha.render(containerId, {
+              'sitekey': recaptchaSiteKey
             });
+            if (containerId === 'recaptcha-container-register') {
+              registerRecaptchaWidgetId.current = widgetId;
+            } else {
+              loginRecaptchaWidgetId.current = widgetId;
+            }
             console.log('reCAPTCHA rendered for', formType);
           } catch (e) {
             console.log('reCAPTCHA render error:', e);
@@ -84,18 +122,50 @@ const Login: React.FC = () => {
     
     const timer = setTimeout(tryRenderCaptcha, 100);
     return () => clearTimeout(timer);
-  }, [formType]);
+  }, [formType, recaptchaSiteKey]);
+
+  useEffect(() => {
+    if (!loginErrorModal.open) return;
+
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyOverflow = document.body.style.overflow;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeLoginErrorModal();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overflow = originalBodyOverflow;
+    };
+  }, [loginErrorModal.open]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!recaptchaSiteKey) {
+      openLoginErrorModal('Sikertelen bejelentkezés', 'A reCAPTCHA nincs beállítva. Kérlek, add meg a VITE_RECAPTCHA_SITE_KEY értékét.');
+      return;
+    }
     
     // reCAPTCHA validation
-    if (typeof window.grecaptcha !== 'undefined') {
-      const recaptchaResponse = window.grecaptcha.getResponse();
-      if (recaptchaResponse.length === 0) {
-        alert('Kérlek, erősítsd meg, hogy nem vagy robot!');
-        return;
-      }
+    if (typeof window.grecaptcha === 'undefined') {
+      openLoginErrorModal('Sikertelen bejelentkezés', 'A robotvédelem még nem töltődött be. Próbáld meg újra pár másodperc múlva.');
+      return;
+    }
+
+    const widgetId = loginRecaptchaWidgetId.current;
+    const recaptchaResponse = widgetId !== null ? window.grecaptcha.getResponse(widgetId) : '';
+    if (recaptchaResponse.length === 0) {
+      openLoginErrorModal('Sikertelen bejelentkezés', 'Kérlek, erősítsd meg, hogy nem vagy robot.');
+      return;
     }
 
     // Login logic
@@ -104,29 +174,44 @@ const Login: React.FC = () => {
 
     if (email && password) {
       setIsSubmitting(true);
-      const success = await login(email, password);
+      const result = await login(email, password);
       setIsSubmitting(false);
       
-      if (success) {
+      if (result.success) {
         navigate('/profil');
       } else {
-        alert('Sikertelen bejelentkezés! Ellenőrizd az adataidat.');
+        if (result.reason === 'suspended') {
+          openLoginErrorModal('Sikertelen bejelentkezés', 'A felhasználói fiókod fel van függesztve. Kérlek, vedd fel a kapcsolatot az ügyfélszolgálattal.');
+        } else if (result.reason === 'unverified') {
+          openLoginErrorModal('Fiók aktiválása szükséges', 'A belépéshez előbb aktiváld a fiókodat az emailben kapott megerősítő linkkel.');
+        } else {
+          openLoginErrorModal('Sikertelen bejelentkezés', result.message);
+        }
       }
     } else {
-      alert('Kérlek, töltsd ki az összes mezőt!');
+      openLoginErrorModal('Sikertelen bejelentkezés', 'Kérlek, töltsd ki az összes mezőt.');
     }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!recaptchaSiteKey) {
+      alert('A reCAPTCHA nincs beállítva. Kérlek, add meg a VITE_RECAPTCHA_SITE_KEY értékét.');
+      return;
+    }
+
     // reCAPTCHA validation
-    if (typeof window.grecaptcha !== 'undefined') {
-      const recaptchaResponse = window.grecaptcha.getResponse(1);
-      if (recaptchaResponse.length === 0) {
-        alert('Kérlek, erősítsd meg, hogy nem vagy robot!');
-        return;
-      }
+    if (typeof window.grecaptcha === 'undefined') {
+      alert('A robotvédelem még nem töltődött be. Próbáld meg újra pár másodperc múlva.');
+      return;
+    }
+
+    const widgetId = registerRecaptchaWidgetId.current;
+    const recaptchaResponse = widgetId !== null ? window.grecaptcha.getResponse(widgetId) : '';
+    if (recaptchaResponse.length === 0) {
+      alert('Kérlek, erősítsd meg, hogy nem vagy robot!');
+      return;
     }
 
     // Registration logic
@@ -142,26 +227,43 @@ const Login: React.FC = () => {
 
     if (username && email && password && confirmPassword) {
       setIsSubmitting(true);
-      const success = await register(username, email, password);
+      const result = await register(username, email, password);
       setIsSubmitting(false);
       
-      if (success) {
-        navigate('/profil');
+      if (result.success) {
+        setFormType('login');
+        openEmailInfoModal('Erősítsd meg az email címed', result.message);
       } else {
-        alert('Sikertelen regisztráció! Próbáld újra.');
+        alert(result.message);
       }
     } else {
       alert('Kérlek, töltsd ki az összes mezőt!');
     }
   };
 
-  const handleForgotPassword = (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const email = (document.getElementById('email') as HTMLInputElement)?.value;
-    if (email) {
-      alert('Jelszó visszaállítási link elküldve!');
-    } else {
-      alert('Kérlek, add meg az email címed!');
+    if (!email || email.trim().length === 0) {
+      openLoginErrorModal('Hiányzó email cím', 'Kérlek, add meg az email címed!');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await requestPasswordResetEmail(email.trim());
+      setFormType('login');
+      openEmailInfoModal('Jelszó-visszaállítás', response.message);
+    } catch (error) {
+      const message =
+        error instanceof ApiHttpError && typeof error.message === 'string' && error.message.trim().length > 0
+          ? error.message
+          : 'A jelszó-visszaállítási kérés nem sikerült. Kérlek, próbáld újra.';
+
+      openLoginErrorModal('Sikertelen kérés', message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -217,9 +319,15 @@ const Login: React.FC = () => {
                         <label className="form-check-label" htmlFor="rememberMe">Emlékezz rám</label>
                       </div>
                       <div className="mb-3 d-flex justify-content-center">
-                        <div id="recaptcha-container"></div>
+                        {recaptchaSiteKey ? (
+                          <div id="recaptcha-container"></div>
+                        ) : (
+                          <small className="text-warning">A reCAPTCHA nincs konfigurálva (VITE_RECAPTCHA_SITE_KEY).</small>
+                        )}
                       </div>
-                      <button type="submit" className="btn btn-primary w-100 text-white">Bejelentkezés</button>
+                      <button type="submit" className="btn btn-primary w-100 text-white" disabled={isSubmitting}>
+                        {isSubmitting ? 'Bejelentkezés...' : 'Bejelentkezés'}
+                      </button>
                     </form>
                     <div className="text-center form-change-links mt-3">
                       <a href="#" onClick={(e) => { e.preventDefault(); setFormType('forgot'); }} className="text-light">Elfelejtetted a jelszavad?</a>
@@ -282,7 +390,11 @@ const Login: React.FC = () => {
                         </div>
                       </div>
                       <div className="mb-3 d-flex justify-content-center">
-                        <div id="recaptcha-container-register"></div>
+                        {recaptchaSiteKey ? (
+                          <div id="recaptcha-container-register"></div>
+                        ) : (
+                          <small className="text-warning">A reCAPTCHA nincs konfigurálva (VITE_RECAPTCHA_SITE_KEY).</small>
+                        )}
                       </div>
                       <button type="submit" className="btn btn-primary w-100 text-white">Regisztráció</button>
                     </form>
@@ -302,7 +414,9 @@ const Login: React.FC = () => {
                         <label htmlFor="email" className="form-label fw-bold">Email cím</label>
                         <input type="email" className="form-control" id="email" placeholder="Írd be az email címed" required />
                       </div>
-                      <button type="submit" className="btn btn-primary w-100 text-white">Jelszó visszaállítása</button>
+                      <button type="submit" className="btn btn-primary w-100 text-white" disabled={isSubmitting}>
+                        {isSubmitting ? 'Küldés...' : 'Jelszó visszaállítása'}
+                      </button>
                     </form>
                     <div className="text-center form-change-links mt-3">
                       <a href="#" onClick={(e) => { e.preventDefault(); setFormType('register'); }} className="text-light">Még nincs fiókod? Regisztrálj!</a>
@@ -316,6 +430,34 @@ const Login: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {loginErrorModal.open && (
+        <div className="login-error-modal-backdrop" onClick={closeLoginErrorModal}>
+          <div
+            className="login-error-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="login-feedback-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div
+              className={`login-error-modal-icon ${
+                loginErrorModal.icon === 'email'
+                  ? 'login-error-modal-icon--email'
+                  : 'login-error-modal-icon--error'
+              }`}
+              aria-hidden="true"
+            >
+              <i className={`bi ${loginErrorModal.icon === 'email' ? 'bi-envelope-check-fill' : 'bi-x-circle'}`}></i>
+            </div>
+            <h4 id="login-feedback-title">{loginErrorModal.title}</h4>
+            <p>{loginErrorModal.message}</p>
+            <button type="button" className="btn btn-primary text-white" onClick={closeLoginErrorModal}>
+              Rendben
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
