@@ -29,6 +29,7 @@ interface ReaderLocationState {
 }
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5269').replace(/\/$/, '');
+const PAGE_ADVANCE_LOCK_MS = 5000;
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const toPdfLoadUrl = (rawUrl: string): string => {
@@ -70,6 +71,10 @@ const Reader: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [sidebarShow, setSidebarShow] = useState<boolean>(false);
   const [activeBookId, setActiveBookId] = useState<number | null>(null);
+  const [maxUnlockedPage, setMaxUnlockedPage] = useState<number>(1);
+  const [nextForwardUnlockAt, setNextForwardUnlockAt] = useState<number>(0);
+  const [forwardLockRemainingSec, setForwardLockRemainingSec] = useState<number>(0);
+  const [navigationGuardMessage, setNavigationGuardMessage] = useState<string>('');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
@@ -78,22 +83,46 @@ const Reader: React.FC = () => {
   const lastSavedPageRef = useRef<number>(0);
   const progressReadyRef = useRef<boolean>(false);
   const completedStatusLockedRef = useRef<boolean>(false);
+  const guardMessageTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Keyboard shortcuts
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') prevPage();
-      if (e.key === 'ArrowRight') nextPage();
-      if (e.key === '+' || e.key === '=') zoomIn();
-      if (e.key === '-') zoomOut();
-      if (e.key === 'f') toggleFullscreen();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      if (guardMessageTimerRef.current !== null) {
+        window.clearTimeout(guardMessageTimerRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (nextForwardUnlockAt <= 0) {
+      setForwardLockRemainingSec(0);
+      return;
+    }
+
+    const updateRemaining = () => {
+      const remainingMs = nextForwardUnlockAt - Date.now();
+      if (remainingMs <= 0) {
+        setForwardLockRemainingSec(0);
+        setNextForwardUnlockAt(0);
+        return true;
+      }
+
+      setForwardLockRemainingSec(Math.ceil(remainingMs / 1000));
+      return false;
+    };
+
+    if (updateRemaining()) return;
+
+    const timer = window.setInterval(() => {
+      if (updateRemaining()) {
+        window.clearInterval(timer);
+      }
+    }, 250);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [nextForwardUnlockAt]);
 
   useEffect(() => {
     let isMounted = true;
@@ -228,6 +257,10 @@ const Reader: React.FC = () => {
       progressReadyRef.current = false;
       lastSavedPageRef.current = 0;
       completedStatusLockedRef.current = false;
+      setMaxUnlockedPage(1);
+      setNextForwardUnlockAt(0);
+      setForwardLockRemainingSec(0);
+      setNavigationGuardMessage('');
       return;
     }
 
@@ -241,6 +274,8 @@ const Reader: React.FC = () => {
 
         const savedPage = Math.max(1, Number(item.progress ?? 1));
         setPageNum(savedPage);
+        setMaxUnlockedPage(savedPage);
+        setNextForwardUnlockAt(Date.now() + PAGE_ADVANCE_LOCK_MS);
         lastSavedPageRef.current = savedPage;
         completedStatusLockedRef.current = (item.status ?? '').toUpperCase() === 'COMPLETED';
       } catch (loadError) {
@@ -251,6 +286,8 @@ const Reader: React.FC = () => {
         }
 
         setPageNum(1);
+        setMaxUnlockedPage(1);
+        setNextForwardUnlockAt(Date.now() + PAGE_ADVANCE_LOCK_MS);
         lastSavedPageRef.current = 1;
         completedStatusLockedRef.current = false;
       } finally {
@@ -566,20 +603,85 @@ const Reader: React.FC = () => {
     }
   };
 
+  const showNavigationGuardMessage = (message: string) => {
+    setNavigationGuardMessage(message);
+
+    if (guardMessageTimerRef.current !== null) {
+      window.clearTimeout(guardMessageTimerRef.current);
+    }
+
+    guardMessageTimerRef.current = window.setTimeout(() => {
+      setNavigationGuardMessage('');
+      guardMessageTimerRef.current = null;
+    }, 2500);
+  };
+
+  const navigateToPage = (targetPage: number): boolean => {
+    if (!Number.isInteger(targetPage) || targetPage < 1 || targetPage > totalPages) {
+      return false;
+    }
+
+    if (targetPage === pageNum) {
+      return true;
+    }
+
+    if (targetPage < pageNum) {
+      queueRenderPage(targetPage);
+      setNavigationGuardMessage('');
+      return true;
+    }
+
+    if (targetPage <= maxUnlockedPage) {
+      queueRenderPage(targetPage);
+      setNavigationGuardMessage('');
+      return true;
+    }
+
+    if (targetPage > maxUnlockedPage + 1) {
+      showNavigationGuardMessage(`A(z) ${targetPage}. oldal még zárolt. Előbb a következő oldalt nyisd meg.`);
+      return false;
+    }
+
+    if (Date.now() < nextForwardUnlockAt) {
+      const remainingSec = Math.max(1, Math.ceil((nextForwardUnlockAt - Date.now()) / 1000));
+      showNavigationGuardMessage(`A következő oldal ${remainingSec} mp múlva nyílik meg.`);
+      return false;
+    }
+
+    queueRenderPage(targetPage);
+    setMaxUnlockedPage(targetPage);
+    setNextForwardUnlockAt(Date.now() + PAGE_ADVANCE_LOCK_MS);
+    setNavigationGuardMessage('');
+    return true;
+  };
+
   const prevPage = () => {
-    if (pageNum <= 1) return;
-    queueRenderPage(pageNum - 1);
+    void navigateToPage(pageNum - 1);
   };
 
   const nextPage = () => {
-    if (pageNum >= totalPages) return;
-    queueRenderPage(pageNum + 1);
+    void navigateToPage(pageNum + 1);
   };
 
   const goToPage = (num: number) => {
-    if (num < 1 || num > totalPages) return;
-    queueRenderPage(num);
+    void navigateToPage(num);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') prevPage();
+      if (e.key === 'ArrowRight') nextPage();
+      if (e.key === '+' || e.key === '=') zoomIn();
+      if (e.key === '-') zoomOut();
+      if (e.key === 'f') toggleFullscreen();
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [maxUnlockedPage, nextForwardUnlockAt, pageNum, totalPages, scale]);
 
   const updateZoom = (newScale: number) => {
     // Store scroll position
@@ -660,6 +762,11 @@ const Reader: React.FC = () => {
     window.open(pdfUrl, '_blank');
   };
 
+  const isNextUnreadPage = pageNum + 1 > maxUnlockedPage;
+  const isNextPageLocked = isNextUnreadPage && forwardLockRemainingSec > 0;
+  const canGoNext = pageNum < totalPages && !isNextPageLocked;
+  const maxPageInput = Math.max(1, Math.min(totalPages || 1, maxUnlockedPage + 1));
+
   return (
     <div className="reader-container">
       {/* Overlay mobilon amikor a sidebar nyitva van */}
@@ -689,7 +796,7 @@ const Reader: React.FC = () => {
           <div className="control-group">
             <label className="control-label">Oldal navigáció</label>
             <div className="page-nav">
-              <button className="btn-control" onClick={prevPage} title="Előző oldal">
+              <button className="btn-control" onClick={prevPage} title="Előző oldal" disabled={pageNum <= 1}>
                 <i className="bi bi-chevron-left"></i>
               </button>
               <div className="page-info">
@@ -697,16 +804,27 @@ const Reader: React.FC = () => {
                   type="number" 
                   className="page-input" 
                   min="1" 
-                  max={totalPages}
+                  max={maxPageInput}
                   value={pageNum}
-                  onChange={(e) => goToPage(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const parsed = Number.parseInt(e.target.value, 10);
+                    if (Number.isNaN(parsed)) return;
+                    goToPage(parsed);
+                  }}
+                  disabled={totalPages <= 0}
                 />
                 <span className="page-total">/ <span>{totalPages || '-'}</span></span>
               </div>
-              <button className="btn-control" onClick={nextPage} title="Következő oldal">
+              <button className="btn-control" onClick={nextPage} title="Következő oldal" disabled={!canGoNext}>
                 <i className="bi bi-chevron-right"></i>
               </button>
             </div>
+            {isNextPageLocked && (
+              <p className="reader-page-lock-hint mb-0">Következő oldal elérhető: {forwardLockRemainingSec} mp</p>
+            )}
+            {navigationGuardMessage && (
+              <p className="reader-page-guard-message mb-0">{navigationGuardMessage}</p>
+            )}
           </div>
 
           <div className="control-group">
@@ -817,13 +935,13 @@ const Reader: React.FC = () => {
 
         {/* Bottom navigation bar */}
         <div className="reader-bottom-nav">
-          <button className="btn-nav" onClick={prevPage}>
+          <button className="btn-nav" onClick={prevPage} disabled={pageNum <= 1}>
             <i className="bi bi-chevron-left"></i> Előző
           </button>
           <div className="page-indicator">
             <span>{pageNum}</span> / <span>{totalPages || '-'}</span>
           </div>
-          <button className="btn-nav" onClick={nextPage}>
+          <button className="btn-nav" onClick={nextPage} disabled={!canGoNext}>
             Következő <i className="bi bi-chevron-right"></i>
           </button>
         </div>

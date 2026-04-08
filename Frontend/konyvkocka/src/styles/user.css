@@ -59,6 +59,7 @@
 }
 
 .profile-bar h2{ color: var(--h1Text); font-weight:700; font-size: 2rem; }
+.profile-auth-required-message{ color: rgba(245, 247, 255, 0.9); }
 .progress-level{ display:flex; align-items:center; gap:1rem }
 
 /* Profile header layout: identity + filters + level */

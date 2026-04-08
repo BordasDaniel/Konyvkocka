@@ -1569,7 +1569,7 @@ const User: React.FC = () => {
 				<div className="profile-bar text-center py-5">
 					<i className="bi bi-lock" style={{ fontSize: '3rem', color: 'var(--secondary)' }}></i>
 					<h3 className="mt-3">Bejelentkezes szukseges</h3>
-					<p className="text-muted mb-0">A profil oldal megtekintesehez jelentkezz be.</p>
+					<p className="profile-auth-required-message mb-0">A profil oldal megtekintesehez jelentkezz be.</p>
 				</div>
 			</main>
 		);
