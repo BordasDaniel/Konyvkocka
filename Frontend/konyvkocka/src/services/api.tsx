@@ -1074,11 +1074,23 @@ export interface CreatePurchaseResponse {
 	expiresAt: string;
 }
 
-export const createPurchase = async (tier: string): Promise<CreatePurchaseResponse> =>
+export interface CreatePurchaseRequest {
+	tier: string;
+	lastName: string;
+	firstName: string;
+	billingEmail: string;
+	phone?: string;
+	country: string;
+	zip: string;
+	city: string;
+	address: string;
+}
+
+export const createPurchase = async (payload: CreatePurchaseRequest): Promise<CreatePurchaseResponse> =>
 	request<CreatePurchaseResponse>('/api/subscription/purchase', {
 		method: 'POST',
 		auth: true,
-		body: { tier },
+		body: payload,
 	});
 
 // ========================

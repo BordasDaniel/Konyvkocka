@@ -166,7 +166,17 @@ function Payment(): React.JSX.Element {
         setIsProcessing(true)
         try {
             const tier = PLAN_TO_TIER[selectedPlan.id]
-            const result = await createPurchase(tier)
+            const result = await createPurchase({
+                tier,
+                lastName: billing.lastName.trim(),
+                firstName: billing.firstName.trim(),
+                billingEmail: billing.email.trim(),
+                phone: billing.phone.trim() || undefined,
+                country: countryNameMap[billing.country] ?? billing.country,
+                zip: billing.zip.trim(),
+                city: billing.city.trim(),
+                address: billing.address.trim(),
+            })
             showPaymentModal(true, method, `TRX-${result.purchaseId}`)
         } catch (error) {
             if (error instanceof ApiHttpError && error.status === 409) {
