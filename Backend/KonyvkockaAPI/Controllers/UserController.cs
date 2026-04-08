@@ -21,6 +21,15 @@ namespace KonyvkockaAPI.Controllers
             _context = context;
         }
 
+        private static string? NormalizeCountryCode(string? countryCode)
+        {
+            var normalized = countryCode?.Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(normalized) || normalized == "ZZ")
+                return null;
+
+            return normalized.Length == 2 ? normalized : null;
+        }
+
         // ================================================================
         // GET /api/user/{userId}/profile
         // Publikus profil – nem kell auth
@@ -51,6 +60,9 @@ namespace KonyvkockaAPI.Controllers
                 var rankCache = await _context.UserRankCaches
                     .FirstOrDefaultAsync(r => r.UserId == userId);
 
+                var normalizedCountryCode = NormalizeCountryCode(user.CountryCode);
+                var hasCountryConfigured = !string.IsNullOrWhiteSpace(normalizedCountryCode);
+
                 var activeTitles = await _context.UserTitles
                     .Where(ut => ut.UserId == userId && ut.IsActive)
                     .Include(ut => ut.Title)
@@ -73,7 +85,7 @@ namespace KonyvkockaAPI.Controllers
                     Id           = user.Id,
                     Username     = user.Username,
                     Avatar       = user.ProfilePic != null ? Convert.ToBase64String(user.ProfilePic) : null,
-                    CountryCode  = user.CountryCode,
+                    CountryCode  = normalizedCountryCode,
                     Email        = email,
                     IsSubscriber = user.Premium,
                     PremiumExpiresAt = user.PremiumExpiresAt,
@@ -90,7 +102,7 @@ namespace KonyvkockaAPI.Controllers
                     All = new ProfileTabAllDTO
                     {
                         GlobalRank     = rankCache?.GlobalRankTotal,
-                        CountryRank    = rankCache?.CountryRankTotal,
+                        CountryRank    = hasCountryConfigured ? rankCache?.CountryRankTotal : null,
                         Points         = user.BookPoints + user.SeriesPoints + user.MoviePoints,
                         TimeMin        = user.ReadTimeMin + user.WatchTimeMin,
                         CompletionRate = allTotal > 0 ? Math.Round((double)allCompleted / allTotal, 2) : 0,
@@ -102,7 +114,7 @@ namespace KonyvkockaAPI.Controllers
                     Media = new ProfileTabMediaDTO
                     {
                         GlobalRank     = rankCache?.GlobalRankMedia,
-                        CountryRank    = rankCache?.CountryRankMedia,
+                        CountryRank    = hasCountryConfigured ? rankCache?.CountryRankMedia : null,
                         Points         = user.SeriesPoints + user.MoviePoints,
                         WatchTimeMin   = user.WatchTimeMin,
                         CompletionRate = mediaTotal > 0 ? Math.Round((double)mediaCompleted / mediaTotal, 2) : 0,
@@ -113,7 +125,7 @@ namespace KonyvkockaAPI.Controllers
                     Books = new ProfileTabBooksDTO
                     {
                         GlobalRank     = rankCache?.GlobalRankBook,
-                        CountryRank    = rankCache?.CountryRankBook,
+                        CountryRank    = hasCountryConfigured ? rankCache?.CountryRankBook : null,
                         Points         = user.BookPoints,
                         ReadTimeMin    = user.ReadTimeMin,
                         CompletionRate = booksTotal > 0 ? Math.Round((double)booksCompleted / booksTotal, 2) : 0,
@@ -657,7 +669,17 @@ namespace KonyvkockaAPI.Controllers
 
                 // --- Országkód ---
                 if (dto.CountryCode != null)
-                    user.CountryCode = dto.CountryCode;
+                {
+                    var trimmedCountryCode = dto.CountryCode.Trim();
+                    if (trimmedCountryCode.Length > 0 && trimmedCountryCode.Length != 2)
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidCountryCode",
+                            Message = "Az országkód pontosan 2 karakter lehet, vagy üresen hagyva törölhető."
+                        });
+
+                    user.CountryCode = NormalizeCountryCode(trimmedCountryCode);
+                }
 
                 // --- Jelszó ---
                 if (!string.IsNullOrWhiteSpace(dto.NewPasswordHash))

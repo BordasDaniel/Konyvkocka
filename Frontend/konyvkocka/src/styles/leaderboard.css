@@ -114,6 +114,24 @@ main {
   text-decoration: none;
 }
 
+.leaderboard-filters .btn-action:disabled,
+.leaderboard-filters .btn-action:disabled:hover {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.58) !important;
+  border-color: rgba(255,255,255,0.06);
+  transform: none;
+  box-shadow: none;
+}
+
+.leaderboard-region-hint {
+  width: 100%;
+  color: rgba(255, 210, 143, 0.92);
+  font-size: 0.82rem;
+  margin-top: 0.2rem;
+}
+
 @media (max-width: 767px) {
   .leaderboard-filters{
     justify-content: flex-start;

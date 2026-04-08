@@ -178,7 +178,7 @@ namespace KonyvkockaAPI.Controllers
                     EmailVerificationTokenExpiresAt = DateTime.Now.AddHours(24),
                     PasswordHash     = doubleHash,
                     PasswordSalt     = registerDto.PasswordSalt,
-                    CountryCode      = "ZZ",
+                    CountryCode      = null,
                     ProfilePic       = null,
                     Premium          = false,
                     PremiumExpiresAt = null,

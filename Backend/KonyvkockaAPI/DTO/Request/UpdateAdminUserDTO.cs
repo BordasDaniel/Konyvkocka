@@ -7,7 +7,7 @@ namespace KonyvkockaAPI.DTO.Request
         public DateTime? PremiumExpiresAt { get; set; }
         public int Level { get; set; }
         public int Xp { get; set; }
-        public string CountryCode { get; set; } = string.Empty;
+        public string? CountryCode { get; set; }
         public int DayStreak { get; set; }
         public int ReadTimeMin { get; set; }
         public int WatchTimeMin { get; set; }

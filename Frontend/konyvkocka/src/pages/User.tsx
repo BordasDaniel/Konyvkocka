@@ -30,7 +30,7 @@ interface UserProfile {
 	username: string;
 	avatar: string;
 	country: string;
-	countryCode: string;
+	countryCode: string | null;
 	countryFlag: string;
 	level: number;
 	levelProgress: number;
@@ -114,7 +114,7 @@ interface MedalDetails {
 interface UserSettings {
 	username: string;
 	email: string;
-	countryCode: string;
+	countryCode: string | null;
 	avatarDataUrl: string | null;
 	selectedBadges: string[];
 	profileVisibility: 'public' | 'friends' | 'private';
@@ -151,6 +151,7 @@ const COUNTRY_LABELS: Record<string, string> = {
 	HU: 'Magyarország',
 	DE: 'Németország',
 	EN: 'Anglia',
+	GB: 'Egyesült Királyság',
 	FR: 'Franciaország',
 	US: 'Egyesült Államok',
 	ES: 'Spanyolország',
@@ -158,12 +159,64 @@ const COUNTRY_LABELS: Record<string, string> = {
 	PL: 'Lengyelország',
 	RO: 'Románia',
 	CZ: 'Csehország',
+	AT: 'Ausztria',
+	SK: 'Szlovákia',
+	NL: 'Hollandia',
+	SE: 'Svédország',
+	NO: 'Norvégia',
+	FI: 'Finnország',
+	DK: 'Dánia',
+	PT: 'Portugália',
+	GR: 'Görögország',
+	HR: 'Horvátország',
+	RS: 'Szerbia',
+	UA: 'Ukrajna',
 };
 
-const getCountryName = (countryCode: string): string => COUNTRY_LABELS[countryCode] ?? countryCode;
+const COUNTRY_OPTIONS: Array<{ value: string | null; label: string }> = [
+	{ value: null, label: 'Nincs beállítva' },
+	{ value: 'HU', label: 'Magyarország' },
+	{ value: 'DE', label: 'Németország' },
+	{ value: 'EN', label: 'Anglia' },
+	{ value: 'GB', label: 'Egyesült Királyság' },
+	{ value: 'FR', label: 'Franciaország' },
+	{ value: 'US', label: 'Egyesült Államok' },
+	{ value: 'ES', label: 'Spanyolország' },
+	{ value: 'IT', label: 'Olaszország' },
+	{ value: 'PL', label: 'Lengyelország' },
+	{ value: 'RO', label: 'Románia' },
+	{ value: 'CZ', label: 'Csehország' },
+	{ value: 'AT', label: 'Ausztria' },
+	{ value: 'SK', label: 'Szlovákia' },
+	{ value: 'NL', label: 'Hollandia' },
+	{ value: 'SE', label: 'Svédország' },
+	{ value: 'NO', label: 'Norvégia' },
+	{ value: 'FI', label: 'Finnország' },
+	{ value: 'DK', label: 'Dánia' },
+	{ value: 'PT', label: 'Portugália' },
+	{ value: 'GR', label: 'Görögország' },
+	{ value: 'HR', label: 'Horvátország' },
+	{ value: 'RS', label: 'Szerbia' },
+	{ value: 'UA', label: 'Ukrajna' },
+];
 
-const getCountryFlagUrl = (countryCode: string): string =>
-	`https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`;
+const normalizeCountryCode = (countryCode: string | null | undefined): string | null => {
+	const normalized = countryCode?.trim().toUpperCase() ?? '';
+	if (!normalized || normalized === 'ZZ') return null;
+	return normalized;
+};
+
+const getCountryName = (countryCode: string | null | undefined): string => {
+	const normalized = normalizeCountryCode(countryCode);
+	if (!normalized) return 'Nincs beállítva';
+	return COUNTRY_LABELS[normalized] ?? normalized;
+};
+
+const getCountryFlagUrl = (countryCode: string | null | undefined): string => {
+	const normalized = normalizeCountryCode(countryCode);
+	if (!normalized) return '';
+	return `https://flagcdn.com/w20/${normalized.toLowerCase()}.png`;
+};
 
 const formatDuration = (minutes: number): string => {
 	if (minutes <= 0) return '0p';
@@ -497,7 +550,7 @@ const getStoredUserId = (): number | null => {
 
 type ViewType = 'all' | 'book' | 'media' | 'settings';
 
-type OpenSelectId = 'profileVisibility' | 'language' | 'badge-0' | 'badge-1' | 'badge-2' | 'notificationFrequency' | 'timezone' | 'reportReason' | null;
+type OpenSelectId = 'profileVisibility' | 'language' | 'countryCode' | 'badge-0' | 'badge-1' | 'badge-2' | 'notificationFrequency' | 'timezone' | 'reportReason' | null;
 type SaveModalState = { type: 'success' | 'error'; title: string; message: string } | null;
 type MedalModalState = { medal: Medal; groupTitle: string; details: MedalDetails } | null;
 type MedalRarityKey = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
@@ -675,7 +728,7 @@ const User: React.FC = () => {
 	const [settings, setSettings] = useState<UserSettings>({
 		username: '',
 		email: '',
-		countryCode: 'HU',
+		countryCode: null,
 		avatarDataUrl: null,
 		selectedBadges: [],
 		profileVisibility: 'public',
@@ -993,7 +1046,7 @@ const User: React.FC = () => {
 								: normalizeActiveBadges(profileResponse.activeTitles);
 						})()
 						: normalizeActiveBadges(profileResponse.activeTitles);
-					const countryCode = (profileResponse.countryCode || 'HU').toUpperCase();
+					const countryCode = normalizeCountryCode(profileResponse.countryCode);
 					const mappedProfile: UserProfile = {
 						username: profileResponse.username,
 						avatar: toAvatarSrc(profileResponse.avatar),
@@ -1050,14 +1103,22 @@ const User: React.FC = () => {
 						const { email: _ignoredEmail, username: _ignoredUsername, ...safeParsed } = parsed;
 						const { selectedBadges: _ignoredSelectedBadges, selectedTitles: _ignoredSelectedTitles, ...safeParsedWithoutBadges } =
 							safeParsed as Partial<UserSettings> & { selectedTitles?: string[] };
-						setSettings(prev => ({
-							...prev,
-							...safeParsedWithoutBadges,
-							avatarDataUrl: null,
-							selectedBadges: prev.selectedBadges,
-							username: prev.username,
-							email: serverEmail || prev.email,
-						}));
+						setSettings(prev => {
+							const resolvedCountryCode =
+								safeParsedWithoutBadges.countryCode === undefined
+									? prev.countryCode
+									: normalizeCountryCode(safeParsedWithoutBadges.countryCode);
+
+							return {
+								...prev,
+								...safeParsedWithoutBadges,
+								countryCode: resolvedCountryCode,
+								avatarDataUrl: null,
+								selectedBadges: prev.selectedBadges,
+								username: prev.username,
+								email: serverEmail || prev.email,
+							};
+						});
 					}
 				}
 			} catch (error) {
@@ -1480,7 +1541,7 @@ const User: React.FC = () => {
 								</div>
 								{settings.showCountryOnProfile && (
 									<div className="d-flex align-items-center gap-2 mb-0">
-										<img src={profile.countryFlag} alt={profile.country} />
+										{profile.countryFlag && <img src={profile.countryFlag} alt={profile.country} />}
 										<small>{profile.country}</small>
 									</div>
 								)}
@@ -1758,13 +1819,35 @@ const User: React.FC = () => {
 									/>
 								</div>
 								<div className="col-md-6 mb-3">
-									<label className="form-label">Országkód</label>
-									<input
-										className="form-control"
-										value={settings.countryCode}
-										maxLength={2}
-										onChange={(e) => updateSetting('countryCode', e.target.value.toUpperCase())}
-									/>
+									<label className="form-label">Ország</label>
+									<div className="custom-select-wrapper position-relative">
+										<button
+											className="form-select text-start"
+											type="button"
+											id="countryCodeDropdown"
+											aria-expanded={openSelect === 'countryCode'}
+											onClick={(e) => {
+												e.stopPropagation();
+												setOpenSelect(prev => (prev === 'countryCode' ? null : 'countryCode'));
+											}}
+										>
+											<span>{getCountryName(settings.countryCode)}</span>
+										</button>
+										<div className={`custom-select-menu ${openSelect === 'countryCode' ? 'show' : ''}`}>
+											{COUNTRY_OPTIONS.map((countryOption) => (
+												<div
+													key={countryOption.value ?? 'none'}
+													className="country-item"
+													onClick={() => {
+														updateSetting('countryCode', countryOption.value);
+														setOpenSelect(null);
+													}}
+												>
+													{countryOption.label}
+												</div>
+											))}
+										</div>
+									</div>
 								</div>
 								<div className="col-md-6 mb-3">
 									<label className="form-label">Jogosultság</label>
@@ -1928,7 +2011,7 @@ const User: React.FC = () => {
 										))}
 									</div>
 									{badgeOptions.length === 0 && (
-										<small className="text-muted d-block mt-2">Még nincs megszerzett jelvényed, ezért nem állítható be aktív jelvény.</small>
+										<small className="settings-empty-badges d-block mt-2">Még nincs megszerzett jelvényed, ezért nem állítható be aktív jelvény.</small>
 									)}
 								</div>
 								<div className="col-md-6 mb-3">

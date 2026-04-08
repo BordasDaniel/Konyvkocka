@@ -518,6 +518,11 @@
 
 .settings-hint{ color: rgba(255,255,255,0.8) !important; }
 
+.settings-empty-badges {
+  color: rgba(230, 192, 124, 0.95) !important;
+  font-weight: 600;
+}
+
 .settings-title-grid {
   margin-top: 0.2rem;
 }

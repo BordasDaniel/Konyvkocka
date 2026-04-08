@@ -15,7 +15,7 @@ public partial class DeletedUser
 
     public string PasswordSalt { get; set; } = null!;
 
-    public string CountryCode { get; set; } = null!;
+    public string? CountryCode { get; set; }
 
     public byte[] ProfilePic { get; set; } = null!;
 

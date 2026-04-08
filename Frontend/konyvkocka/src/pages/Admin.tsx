@@ -672,7 +672,7 @@ const Admin: React.FC = () => {
       premiumExpiresAt: item.premiumExpiresAt,
       level: item.level,
       xp: item.xp,
-      countryCode: item.countryCode,
+      countryCode: item.countryCode ?? '',
       joinDate: item.creationDate,
       lastLoginDate: item.lastLoginDate,
       dayStreak: item.dayStreak,
@@ -1036,10 +1036,15 @@ const Admin: React.FC = () => {
     if (!userDraft) return;
 
     const normalizedCountryCode = userDraft.countryCode.trim().toUpperCase();
-    if (normalizedCountryCode.length !== 2) {
+    const countryCodePayload =
+      normalizedCountryCode.length === 0 || normalizedCountryCode === 'ZZ'
+        ? null
+        : normalizedCountryCode;
+
+    if (countryCodePayload !== null && countryCodePayload.length !== 2) {
       setSaveModal({
         title: 'Hibás országkód',
-        message: 'Az országkód pontosan 2 karakter lehet.',
+        message: 'Az országkód pontosan 2 karakter lehet, vagy üresen hagyható.',
       });
       return;
     }
@@ -1053,7 +1058,7 @@ const Admin: React.FC = () => {
         premiumExpiresAt: userDraft.subscription === 'premium' ? userDraft.premiumExpiresAt : null,
         level: userDraft.level,
         xp: userDraft.xp,
-        countryCode: normalizedCountryCode,
+        countryCode: countryCodePayload,
         dayStreak: userDraft.dayStreak,
         readTimeMin: userDraft.readTimeMin,
         watchTimeMin: userDraft.watchTimeMin,

@@ -8,7 +8,7 @@ namespace KonyvkockaAPI.DTO.Response
         public int Id { get; set; }
         public string Username { get; set; } = null!;
         public string? Avatar { get; set; }
-        public string CountryCode { get; set; } = null!;
+        public string? CountryCode { get; set; }
         public string? Email { get; set; }
         public bool IsSubscriber { get; set; }
         public DateTime? PremiumExpiresAt { get; set; }

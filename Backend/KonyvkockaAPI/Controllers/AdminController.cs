@@ -1126,7 +1126,7 @@ namespace KonyvkockaAPI.Controllers
                         PremiumExpiresAt = u.PremiumExpiresAt,
                         Level           = u.Level,
                         Xp              = u.Xp,
-                        CountryCode     = u.CountryCode,
+                        CountryCode     = string.Equals(u.CountryCode, "ZZ", StringComparison.OrdinalIgnoreCase) ? null : u.CountryCode,
                         CreationDate    = u.CreationDate,
                         LastLoginDate   = u.LastLoginDate,
                         DayStreak       = u.DayStreak,
@@ -1169,7 +1169,7 @@ namespace KonyvkockaAPI.Controllers
                 }
 
                 var normalizedPermissionLevel = dto.PermissionLevel?.Trim().ToUpperInvariant() ?? string.Empty;
-                var normalizedCountryCode = dto.CountryCode?.Trim().ToUpperInvariant() ?? string.Empty;
+                var normalizedCountryCode = dto.CountryCode?.Trim().ToUpperInvariant();
 
                 var allowedPermissionLevels = new[] { "USER", "MODERATOR", "ADMIN", "BANNED" };
                 if (!allowedPermissionLevels.Contains(normalizedPermissionLevel))
@@ -1181,14 +1181,18 @@ namespace KonyvkockaAPI.Controllers
                     });
                 }
 
-                if (normalizedCountryCode.Length != 2)
+                if (!string.IsNullOrEmpty(normalizedCountryCode) && normalizedCountryCode != "ZZ" && normalizedCountryCode.Length != 2)
                 {
                     return BadRequest(new ErrorResponseDTO
                     {
                         Error = "InvalidCountryCode",
-                        Message = "Az országkód pontosan 2 karakter lehet"
+                        Message = "Az országkód pontosan 2 karakter lehet, vagy üresen hagyva törölhető"
                     });
                 }
+
+                var countryCodeToSave = string.IsNullOrEmpty(normalizedCountryCode) || normalizedCountryCode == "ZZ"
+                    ? null
+                    : normalizedCountryCode;
 
                 if (dto.Level < 1)
                 {
@@ -1232,7 +1236,7 @@ namespace KonyvkockaAPI.Controllers
                 user.PremiumExpiresAt = dto.Premium ? dto.PremiumExpiresAt : null;
                 user.Level = dto.Level;
                 user.Xp = dto.Xp;
-                user.CountryCode = normalizedCountryCode;
+                user.CountryCode = countryCodeToSave;
                 user.DayStreak = dto.DayStreak;
                 user.ReadTimeMin = dto.ReadTimeMin;
                 user.WatchTimeMin = dto.WatchTimeMin;
@@ -1253,7 +1257,7 @@ namespace KonyvkockaAPI.Controllers
                     PremiumExpiresAt = user.PremiumExpiresAt,
                     Level = user.Level,
                     Xp = user.Xp,
-                    CountryCode = user.CountryCode,
+                    CountryCode = string.Equals(user.CountryCode, "ZZ", StringComparison.OrdinalIgnoreCase) ? null : user.CountryCode,
                     CreationDate = user.CreationDate,
                     LastLoginDate = user.LastLoginDate,
                     DayStreak = user.DayStreak,

@@ -48,7 +48,7 @@ namespace KonyvkockaAPI.DTO.Response
         public DateTime? PremiumExpiresAt { get; set; }
         public int Level { get; set; }
         public int Xp { get; set; }
-        public string CountryCode { get; set; } = null!;
+        public string? CountryCode { get; set; }
         public DateTime CreationDate { get; set; }
         public DateTime LastLoginDate { get; set; }
         public int DayStreak { get; set; }

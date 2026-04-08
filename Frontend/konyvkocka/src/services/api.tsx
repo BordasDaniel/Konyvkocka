@@ -717,7 +717,7 @@ export interface UserProfileResponse {
 	id: number;
 	username: string;
 	avatar: string | null;
-	countryCode: string;
+	countryCode: string | null;
 	email: string | null;
 	isSubscriber: boolean;
 	premiumExpiresAt: string | null;
@@ -936,7 +936,7 @@ export interface LeaderboardEntryResponse {
 	userId: number;
 	username: string;
 	avatar: string | null;
-	countryCode: string;
+	countryCode: string | null;
 	isPremium: boolean;
 	points: number;
 	bookCount: number;
@@ -1119,7 +1119,7 @@ export interface AdminUserItemResponse {
 	premiumExpiresAt: string | null;
 	level: number;
 	xp: number;
-	countryCode: string;
+	countryCode: string | null;
 	creationDate: string;
 	lastLoginDate: string;
 	dayStreak: number;
@@ -1280,7 +1280,7 @@ export interface UpdateAdminUserPayload {
 	premiumExpiresAt: string | null;
 	level: number;
 	xp: number;
-	countryCode: string;
+	countryCode: string | null;
 	dayStreak: number;
 	readTimeMin: number;
 	watchTimeMin: number;
