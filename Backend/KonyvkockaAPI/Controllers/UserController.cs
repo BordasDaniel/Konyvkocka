@@ -30,6 +30,29 @@ namespace KonyvkockaAPI.Controllers
             return normalized.Length == 2 ? normalized : null;
         }
 
+        private static bool IsPremiumActive(User user, DateTime utcNow)
+        {
+            if (!user.Premium)
+                return false;
+
+            if (!user.PremiumExpiresAt.HasValue)
+                return true;
+
+            return user.PremiumExpiresAt.Value > utcNow;
+        }
+
+        private static bool NormalizeExpiredPremium(User user, DateTime utcNow)
+        {
+            if (user.Premium && user.PremiumExpiresAt.HasValue && user.PremiumExpiresAt.Value <= utcNow)
+            {
+                user.Premium = false;
+                user.PremiumExpiresAt = null;
+                return true;
+            }
+
+            return false;
+        }
+
         // ================================================================
         // GET /api/user/{userId}/profile
         // Publikus profil – nem kell auth
@@ -44,6 +67,14 @@ namespace KonyvkockaAPI.Controllers
                 var user = await _context.Users.FindAsync(userId);
                 if (user == null)
                     return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
+
+                var utcNow = DateTime.UtcNow;
+                if (NormalizeExpiredPremium(user, utcNow))
+                {
+                    await _context.SaveChangesAsync();
+                }
+
+                var isSubscriber = IsPremiumActive(user, utcNow);
 
                 var booksCompleted  = await _context.UserBooks.CountAsync(ub => ub.UserId == userId && ub.Status == "COMPLETED");
                 var booksTotal      = await _context.UserBooks.CountAsync(ub => ub.UserId == userId);
@@ -87,8 +118,8 @@ namespace KonyvkockaAPI.Controllers
                     Avatar       = user.ProfilePic != null ? Convert.ToBase64String(user.ProfilePic) : null,
                     CountryCode  = normalizedCountryCode,
                     Email        = email,
-                    IsSubscriber = user.Premium,
-                    PremiumExpiresAt = user.PremiumExpiresAt,
+                    IsSubscriber = isSubscriber,
+                    PremiumExpiresAt = isSubscriber ? user.PremiumExpiresAt : null,
                     CreationDate = user.CreationDate,
                     LastLoginDate = user.LastLoginDate,
                     Xp           = user.Xp,

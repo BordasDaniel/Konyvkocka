@@ -237,6 +237,11 @@ public partial class KonyvkockaContext : DbContext
                 .HasColumnType("enum('ONE_M','QUARTER_Y','FULL_Y')");
             entity.Property(e => e.PurchaseDate).HasDefaultValueSql("'NULL'").HasColumnType("date");
             entity.Property(e => e.PurchaseStatus).HasMaxLength(128).HasDefaultValueSql("'NULL'");
+            entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("'current_timestamp()'")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
             entity.Property(e => e.UserId).HasColumnType("int(11)");
             entity.HasOne(d => d.User).WithMany(p => p.Purchases)
                 .HasForeignKey(d => d.UserId)

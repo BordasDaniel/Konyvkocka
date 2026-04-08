@@ -35,7 +35,10 @@ namespace KonyvkockaAPI.Controllers
                 if (user == null)
                     return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
 
-                if (!user.Premium)
+                var utcNow = DateTime.UtcNow;
+                NormalizeExpiredPremium(user, utcNow);
+
+                if (!IsPremiumActive(user, utcNow))
                 {
                     return Ok(new SubscriptionInfoDTO
                     {
@@ -50,6 +53,11 @@ namespace KonyvkockaAPI.Controllers
                     Name      = "Prémium",
                     ExpiresAt = user.PremiumExpiresAt
                 });
+            }
+            catch (DbUpdateException ex)
+            {
+                var dbMessage = GetInnermostMessage(ex);
+                return StatusCode(500, new ErrorResponseDTO { Error = "DatabaseError", Message = dbMessage });
             }
             catch (Exception ex)
             {
@@ -128,13 +136,23 @@ namespace KonyvkockaAPI.Controllers
                 if (user == null)
                     return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
 
-                // Dupla előfizetés megakadályozása
-                if (user.Premium && user.PremiumExpiresAt.HasValue && user.PremiumExpiresAt.Value > DateTime.UtcNow)
+                var utcNow = DateTime.UtcNow;
+                if (NormalizeExpiredPremium(user, utcNow))
                 {
+                    await _context.SaveChangesAsync();
+                }
+
+                // Dupla előfizetés megakadályozása
+                if (IsPremiumActive(user, utcNow))
+                {
+                    var until = user.PremiumExpiresAt.HasValue
+                        ? $"{user.PremiumExpiresAt.Value:yyyy-MM-dd} napjáig"
+                        : "lejárat nélkül";
+
                     return Conflict(new ErrorResponseDTO
                     {
                         Error   = "AlreadySubscribed",
-                        Message = $"Már rendelkezel aktív prémium előfizetéssel, amely {user.PremiumExpiresAt.Value:yyyy-MM-dd} napjáig érvényes."
+                        Message = $"Már rendelkezel aktív prémium előfizetéssel ({until})."
                     });
                 }
 
@@ -163,7 +181,7 @@ namespace KonyvkockaAPI.Controllers
                         });
                 }
 
-                var now = DateTime.UtcNow;
+                var now = utcNow;
 
                 var purchase = new Purchase
                 {
@@ -191,10 +209,49 @@ namespace KonyvkockaAPI.Controllers
                     expiresAt  = user.PremiumExpiresAt
                 });
             }
+            catch (DbUpdateException ex)
+            {
+                var dbMessage = GetInnermostMessage(ex);
+                return StatusCode(500, new ErrorResponseDTO { Error = "DatabaseError", Message = dbMessage });
+            }
             catch (Exception ex)
             {
                 return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
             }
+        }
+
+        private static bool IsPremiumActive(User user, DateTime utcNow)
+        {
+            if (!user.Premium)
+                return false;
+
+            if (!user.PremiumExpiresAt.HasValue)
+                return true;
+
+            return user.PremiumExpiresAt.Value > utcNow;
+        }
+
+        private static bool NormalizeExpiredPremium(User user, DateTime utcNow)
+        {
+            if (user.Premium && user.PremiumExpiresAt.HasValue && user.PremiumExpiresAt.Value <= utcNow)
+            {
+                user.Premium = false;
+                user.PremiumExpiresAt = null;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string GetInnermostMessage(Exception exception)
+        {
+            var current = exception;
+            while (current.InnerException != null)
+            {
+                current = current.InnerException;
+            }
+
+            return current.Message;
         }
 
     }

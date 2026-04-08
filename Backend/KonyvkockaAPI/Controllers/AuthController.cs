@@ -69,7 +69,13 @@ namespace KonyvkockaAPI.Controllers
                         Message = "Érvénytelen vagy lejárt token"
                     });
 
-                return Ok(BuildUserMeDTO(user));
+                var utcNow = DateTime.UtcNow;
+                if (NormalizeExpiredPremium(user, utcNow))
+                {
+                    await _context.SaveChangesAsync();
+                }
+
+                return Ok(BuildUserMeDTO(user, utcNow));
             }
             catch (Exception)
             {
@@ -125,14 +131,16 @@ namespace KonyvkockaAPI.Controllers
                         Message = "A bejelentkezéshez előbb aktiválnod kell a fiókodat az emailben kapott linkkel"
                     });
 
+                var utcNow = DateTime.UtcNow;
+                NormalizeExpiredPremium(user, utcNow);
                 user.LastLoginDate = DateTime.Now;
                 await _context.SaveChangesAsync();
                 await _challengeProgressService.RecalculateForUserAsync(user.Id, HttpContext.RequestAborted);
 
                 return Ok(new AuthResponseDTO
                 {
-                    User  = BuildUserMeDTO(user),
-                    Token = GenerateJwtToken(user)
+                    User  = BuildUserMeDTO(user, utcNow),
+                    Token = GenerateJwtToken(user, utcNow)
                 });
             }
             catch (Exception ex)
@@ -328,23 +336,23 @@ namespace KonyvkockaAPI.Controllers
 
         #region Helpers
 
-        private static UserMeDTO BuildUserMeDTO(User user) => new()
+        private static UserMeDTO BuildUserMeDTO(User user, DateTime utcNow) => new()
         {
             Id              = user.Id,
             Username        = user.Username,
             Email           = user.Email,
             Avatar          = user.ProfilePic != null ? Convert.ToBase64String(user.ProfilePic) : null,
-            IsSubscriber    = user.Premium,
+            IsSubscriber    = IsPremiumActive(user, utcNow),
             PermissionLevel = user.PermissionLevel ?? "USER"
         };
 
-        private string GenerateJwtToken(User user)
+        private string GenerateJwtToken(User user, DateTime utcNow)
         {
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Username),
                 new Claim("userId",          user.Id.ToString()),
-                new Claim("premium",         user.Premium.ToString()),
+                new Claim("premium",         IsPremiumActive(user, utcNow).ToString()),
                 new Claim("permissionLevel", user.PermissionLevel ?? "USER"),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
@@ -359,6 +367,29 @@ namespace KonyvkockaAPI.Controllers
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private static bool IsPremiumActive(User user, DateTime utcNow)
+        {
+            if (!user.Premium)
+                return false;
+
+            if (!user.PremiumExpiresAt.HasValue)
+                return true;
+
+            return user.PremiumExpiresAt.Value > utcNow;
+        }
+
+        private static bool NormalizeExpiredPremium(User user, DateTime utcNow)
+        {
+            if (user.Premium && user.PremiumExpiresAt.HasValue && user.PremiumExpiresAt.Value <= utcNow)
+            {
+                user.Premium = false;
+                user.PremiumExpiresAt = null;
+                return true;
+            }
+
+            return false;
         }
 
         private static string CreateSHA256(string input)

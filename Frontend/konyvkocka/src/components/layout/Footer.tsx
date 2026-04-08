@@ -34,7 +34,7 @@ function Footer() {
               </div>
           </div>
           <div className="footer-bottom text-center">
-              <p className="mb-0">&copy; 2025 KönyvKocka. Minden jog fenntartva.</p>
+              <p className="mb-0">&copy; 2026 KönyvKocka. Minden jog fenntartva.</p>
           </div>
       </div>
     </footer>

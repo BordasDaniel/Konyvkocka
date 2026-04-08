@@ -27,6 +27,17 @@ namespace KonyvkockaAPI.Controllers
             return normalized;
         }
 
+        private static bool IsPremiumActive(User user, DateTime utcNow)
+        {
+            if (!user.Premium)
+                return false;
+
+            if (!user.PremiumExpiresAt.HasValue)
+                return true;
+
+            return user.PremiumExpiresAt.Value > utcNow;
+        }
+
         /// <summary>
         /// Ranglista lekérése tartalom- és régió-szűrő szerint.
         /// GET /api/leaderboard?content=all&amp;region=world&amp;page=1&amp;pageSize=50
@@ -213,7 +224,7 @@ namespace KonyvkockaAPI.Controllers
                 Username = u.Username,
                 Avatar = u.ProfilePic != null ? Convert.ToBase64String(u.ProfilePic) : null,
                 CountryCode = NormalizeCountryCode(u.CountryCode),
-                IsPremium = u.Premium,
+                IsPremium = IsPremiumActive(u, DateTime.UtcNow),
                 Points = points,
                 BookCount = bookCount,
                 MediaCount = mediaCount,
