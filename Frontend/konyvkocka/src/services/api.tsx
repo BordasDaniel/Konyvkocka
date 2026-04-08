@@ -764,6 +764,22 @@ export interface OwnedUserTitleResponse {
 	earnedAt: string;
 }
 
+export type ReportUserReason =
+	| 'SPAM'
+	| 'HARASSMENT'
+	| 'FRAUD'
+	| 'IMPERSONATION'
+	| 'HATE_SPEECH'
+	| 'THREAT_VIOLENCE'
+	| 'INAPPROPRIATE_CONTENT'
+	| 'FAKE_PROFILE'
+	| 'OTHER';
+
+export interface ReportUserPayload {
+	reason: ReportUserReason;
+	details: string;
+}
+
 export interface UpdateUserSettingsParams {
 	avatarDataUrl?: string | null;
 	countryCode?: string | null;
@@ -797,6 +813,13 @@ export const getUserBadges = async (userId: number): Promise<UserBadgeCategoryRe
 
 export const getOwnedUserTitles = async (): Promise<OwnedUserTitleResponse[]> =>
 	request<OwnedUserTitleResponse[]>('/api/user/settings/titles', { auth: true });
+
+export const reportUser = async (userId: number, payload: ReportUserPayload): Promise<{ message: string }> =>
+	request<{ message: string }>(`/api/user/${userId}/report`, {
+		auth: true,
+		method: 'POST',
+		body: payload,
+	});
 
 export const updateUserSettings = async (params: UpdateUserSettingsParams): Promise<void> => {
 	const body: {

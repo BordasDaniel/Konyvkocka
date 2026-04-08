@@ -129,6 +129,156 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
+        // POST /api/user/{targetUserId}/report
+        // Felhasználó jelentése - moderátor/admin címzetteknek továbbítva
+        // ================================================================
+        [HttpPost("{targetUserId}/report")]
+        public async Task<IActionResult> ReportUser(int targetUserId, [FromBody] ReportUserDTO dto)
+        {
+            try
+            {
+                var reporterIdClaim = User.FindFirst("userId")?.Value;
+                if (!int.TryParse(reporterIdClaim, out var reporterId) || reporterId <= 0)
+                    return Unauthorized(new ErrorResponseDTO { Error = "Unauthorized", Message = "Érvénytelen vagy lejárt token" });
+
+                if (targetUserId <= 0)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidUser",
+                        Message = "Érvénytelen felhasználó azonosító"
+                    });
+                }
+
+                if (reporterId == targetUserId)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "SelfReportNotAllowed",
+                        Message = "Saját profil nem jelenthető"
+                    });
+                }
+
+                if (dto == null)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidPayload",
+                        Message = "A kérés törzse kötelező"
+                    });
+                }
+
+                var reason = dto.Reason?.Trim().ToUpperInvariant() ?? string.Empty;
+                var reasonLabels = new Dictionary<string, string>
+                {
+                    ["SPAM"] = "Spam / hirdetés",
+                    ["HARASSMENT"] = "Zaklatás",
+                    ["FRAUD"] = "Csalás",
+                    ["IMPERSONATION"] = "Más személynek adja ki magát",
+                    ["HATE_SPEECH"] = "Gyűlöletkeltő beszéd",
+                    ["THREAT_VIOLENCE"] = "Fenyegetés vagy erőszak",
+                    ["INAPPROPRIATE_CONTENT"] = "Nem megfelelő tartalom",
+                    ["FAKE_PROFILE"] = "Hamis profil",
+                    ["OTHER"] = "Egyéb"
+                };
+
+                if (!reasonLabels.TryGetValue(reason, out var reasonLabel))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidReason",
+                        Message = "Érvénytelen jelentési ok"
+                    });
+                }
+
+                var details = dto.Details?.Trim() ?? string.Empty;
+                if (details.Length < 10)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidDetails",
+                        Message = "A részletes indoklás legalább 10 karakter legyen"
+                    });
+                }
+
+                if (details.Length > 2000)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "DetailsTooLong",
+                        Message = "A részletes indoklás maximum 2000 karakter lehet"
+                    });
+                }
+
+                var users = await _context.Users
+                    .Where(u => u.Id == targetUserId || u.Id == reporterId)
+                    .Select(u => new { u.Id, u.Username })
+                    .ToListAsync();
+
+                var targetUser = users.FirstOrDefault(u => u.Id == targetUserId);
+                if (targetUser == null)
+                {
+                    return NotFound(new ErrorResponseDTO
+                    {
+                        Error = "NotFound",
+                        Message = "A jelentett felhasználó nem található"
+                    });
+                }
+
+                var reporterUser = users.FirstOrDefault(u => u.Id == reporterId);
+                if (reporterUser == null)
+                    return Unauthorized(new ErrorResponseDTO { Error = "Unauthorized", Message = "A bejelentkező felhasználó nem található" });
+
+                var receiverIds = await _context.Users
+                    .Where(u => (u.PermissionLevel == "ADMIN" || u.PermissionLevel == "MODERATOR") && u.Id != reporterId)
+                    .Select(u => u.Id)
+                    .ToListAsync();
+
+                if (receiverIds.Count == 0)
+                {
+                    return StatusCode(500, new ErrorResponseDTO
+                    {
+                        Error = "NoModeratorsAvailable",
+                        Message = "Jelenleg nincs elérhető moderátor vagy admin a jelentés fogadásához"
+                    });
+                }
+
+                var now = DateTime.UtcNow;
+                var subject = $"Felhasználói jelentés • {reasonLabel}";
+                var message =
+                    $"Jelentett felhasználó: {targetUser.Username} (ID: {targetUser.Id})\n" +
+                    $"Bejelentő: {reporterUser.Username} (ID: {reporterUser.Id})\n" +
+                    $"Ok: {reasonLabel}\n" +
+                    "\n" +
+                    "Részletes indoklás:\n" +
+                    details;
+
+                var mails = receiverIds.Select(receiverId => new Mail
+                {
+                    ReceiverId = receiverId,
+                    SenderId = reporterId,
+                    Type = "SYSTEM",
+                    Subject = subject,
+                    Message = message,
+                    IsRead = false,
+                    CreatedAt = now
+                }).ToList();
+
+                await _context.Mails.AddRangeAsync(mails);
+                await _context.SaveChangesAsync();
+
+                return Ok(new MessageResponseDTO
+                {
+                    Message = "Köszönjük! A jelentést továbbítottuk a moderátoroknak."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
         // GET /api/user/{userId}/recent/{type}
         // Legutóbb megtekintett 3 tartalom
         // type: "all" | "media" | "books"

@@ -78,6 +78,43 @@
 .profile-header-filters{ grid-area: filters; }
 .profile-header-level{ grid-area: level; justify-self: end; }
 
+.profile-name-row{
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.profile-name-row h2{
+  margin: 0;
+}
+
+.btn-report-flag{
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.48);
+  background: linear-gradient(180deg, rgba(127, 29, 29, 0.32), rgba(69, 10, 10, 0.28));
+  color: #fda4af;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.btn-report-flag:hover:not(:disabled){
+  color: #ffe2e2;
+  border-color: rgba(248, 113, 113, 0.72);
+  box-shadow: 0 8px 18px rgba(127, 29, 29, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-report-flag:disabled{
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 /* progress wrapper: responsive control for progress bar width */
 .progress-wrapper{ width:180px }
 .progress-wrapper .progress{ height:10px }
@@ -137,6 +174,8 @@
   .profile-header-filters{ justify-self: center; width: 100%; }
   .profile-header-level{ justify-self: center; }
   .profile-header-level .progress-level{ justify-content: center; }
+
+  .profile-name-row{ align-items: center; }
 
   /* Profile filters: stack vertically on phones */
   .profile-actions{
@@ -677,9 +716,17 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
+  font-size: 1.8rem;
+}
+
+.user-save-modal-icon.is-success {
   background: rgba(74, 222, 128, 0.12);
   color: #4ade80;
-  font-size: 1.8rem;
+}
+
+.user-save-modal-icon.is-error {
+  background: rgba(248, 113, 113, 0.16);
+  color: #f87171;
 }
 
 .user-save-modal h4 {
@@ -721,4 +768,149 @@
 .user-save-modal .admin-send-btn {
   width: 100%;
   justify-content: center;
+}
+
+.user-report-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1260;
+  background: rgba(5, 5, 5, 0.62);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.user-report-modal {
+  width: min(560px, 100%);
+  background: linear-gradient(180deg, rgba(13, 11, 9, 0.99), rgba(9, 8, 7, 0.96));
+  border: 1px solid rgba(194, 157, 89, 0.25);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.48);
+  padding: 1.4rem;
+}
+
+.user-report-modal h4 {
+  margin: 0 0 0.4rem;
+  color: var(--h1Text);
+}
+
+.user-report-modal p {
+  margin: 0 0 1.1rem;
+  color: rgba(255, 255, 255, 0.66);
+  line-height: 1.45;
+}
+
+.user-report-modal .form-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+.user-report-modal .form-control,
+.user-report-modal .form-select {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.user-report-modal .form-control:focus,
+.user-report-modal .form-select:focus {
+  border-color: rgba(194, 157, 89, 0.62);
+  box-shadow: 0 0 0 0.2rem rgba(194, 157, 89, 0.15);
+}
+
+.report-locked-field {
+  position: relative;
+}
+
+.report-locked-field .form-control {
+  padding-right: 2rem;
+}
+
+.report-locked-field i {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(230, 192, 124, 0.72);
+  pointer-events: none;
+}
+
+.report-char-count {
+  display: block;
+  margin-top: 0.4rem;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.user-report-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-report-actions .btn {
+  border-radius: 10px;
+  border: 1px solid rgba(194,157,89,0.24);
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  transition: all 0.22s ease;
+  box-shadow: none;
+}
+
+.user-report-actions #reportApply {
+  background: linear-gradient(135deg, rgba(230,192,124,0.95), rgba(194,157,89,0.95));
+  color: #15120e;
+  border-color: rgba(230,192,124,0.65);
+}
+
+.user-report-actions #reportApply:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(194,157,89,0.35);
+  color: #15120e;
+}
+
+.user-report-actions #reportCancel {
+  background: linear-gradient(180deg, rgba(194,157,89,0.18), rgba(194,157,89,0.08));
+  color: var(--secondary) !important;
+  -webkit-text-fill-color: var(--secondary);
+  opacity: 1;
+  border-color: rgba(194,157,89,0.34);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.user-report-actions #reportCancel:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.22);
+  border-color: rgba(230,192,124,0.62);
+  background: linear-gradient(180deg, rgba(194,157,89,0.24), rgba(194,157,89,0.12));
+  color: #f7f0e2 !important;
+  -webkit-text-fill-color: #f7f0e2;
+}
+
+.user-report-actions .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 575px) {
+  .user-report-modal {
+    padding: 1rem;
+  }
+
+  .user-report-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-report-actions .btn {
+    width: 100%;
+  }
 }

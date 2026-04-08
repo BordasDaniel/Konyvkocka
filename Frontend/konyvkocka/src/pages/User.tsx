@@ -13,8 +13,10 @@ import {
 	applyContentImageFallback,
 	toAvatarSrc,
 	toContentImageSrc,
+	reportUser,
 	updateUserSettings,
 	type OwnedUserTitleResponse,
+	type ReportUserReason,
 	type UserBadgeCategoryResponse,
 	type UserProfileResponse,
 	type UserRecentFavoriteItemResponse,
@@ -495,7 +497,7 @@ const getStoredUserId = (): number | null => {
 
 type ViewType = 'all' | 'book' | 'media' | 'settings';
 
-type OpenSelectId = 'profileVisibility' | 'language' | 'badge-0' | 'badge-1' | 'badge-2' | 'notificationFrequency' | 'timezone' | null;
+type OpenSelectId = 'profileVisibility' | 'language' | 'badge-0' | 'badge-1' | 'badge-2' | 'notificationFrequency' | 'timezone' | 'reportReason' | null;
 type SaveModalState = { type: 'success' | 'error'; title: string; message: string } | null;
 type MedalModalState = { medal: Medal; groupTitle: string; details: MedalDetails } | null;
 type MedalRarityKey = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
@@ -567,6 +569,46 @@ const TIMEZONE_OPTIONS: Array<{ value: string; label: string }> = [
 	{ value: 'America/New_York', label: 'America/New_York (GMT-5)' },
 ];
 
+const REPORT_REASON_OPTIONS: Array<{ value: ReportUserReason; label: string }> = [
+	{ value: 'SPAM', label: 'Spam vagy kéretlen hirdetés' },
+	{ value: 'HARASSMENT', label: 'Zaklatás vagy bántó viselkedés' },
+	{ value: 'FRAUD', label: 'Csalás vagy átverés' },
+	{ value: 'IMPERSONATION', label: 'Más személynek adja ki magát' },
+	{ value: 'HATE_SPEECH', label: 'Gyűlöletkeltő vagy sértő beszéd' },
+	{ value: 'THREAT_VIOLENCE', label: 'Fenyegetés vagy erőszakos viselkedés' },
+	{ value: 'INAPPROPRIATE_CONTENT', label: 'Nem megfelelő tartalom' },
+	{ value: 'FAKE_PROFILE', label: 'Hamis profil' },
+	{ value: 'OTHER', label: 'Egyéb' },
+];
+
+const REPORTED_USERS_STORAGE_KEY = 'kk_reported_users';
+
+const getReportReasonLabel = (value: ReportUserReason): string =>
+	REPORT_REASON_OPTIONS.find((option) => option.value === value)?.label ?? REPORT_REASON_OPTIONS[0].label;
+
+const buildReportedPairKey = (viewerId: number, targetUserId: number): string => `${viewerId}:${targetUserId}`;
+
+const readReportedPairKeys = (): Set<string> => {
+	try {
+		const raw = localStorage.getItem(REPORTED_USERS_STORAGE_KEY);
+		if (!raw) return new Set();
+		const parsed = JSON.parse(raw) as unknown;
+		if (!Array.isArray(parsed)) return new Set();
+		return new Set(parsed.filter((value): value is string => typeof value === 'string'));
+	} catch {
+		return new Set();
+	}
+};
+
+const hasUserAlreadyReported = (viewerId: number, targetUserId: number): boolean =>
+	readReportedPairKeys().has(buildReportedPairKey(viewerId, targetUserId));
+
+const storeReportedPair = (viewerId: number, targetUserId: number): void => {
+	const keys = readReportedPairKeys();
+	keys.add(buildReportedPairKey(viewerId, targetUserId));
+	localStorage.setItem(REPORTED_USERS_STORAGE_KEY, JSON.stringify(Array.from(keys)));
+};
+
 interface LocationState {
 	view?: 'settings';
 }
@@ -607,9 +649,15 @@ const User: React.FC = () => {
 	const [medalGroups, setMedalGroups] = useState<MedalGroup[]>([]);
 	const [badgeOptions, setBadgeOptions] = useState<BadgeOption[]>([]);
 	const [profileUserId, setProfileUserId] = useState<number | null>(null);
+	const [viewerUserId, setViewerUserId] = useState<number | null>(null);
+	const [hasReportedCurrentProfile, setHasReportedCurrentProfile] = useState(false);
 	const [authRequired, setAuthRequired] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [saveModal, setSaveModal] = useState<SaveModalState>(null);
+	const [reportModalOpen, setReportModalOpen] = useState(false);
+	const [reportReason, setReportReason] = useState<ReportUserReason>('SPAM');
+	const [reportDetails, setReportDetails] = useState('');
+	const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 	const [medalModal, setMedalModal] = useState<MedalModalState>(null);
 	const [medalModalVisible, setMedalModalVisible] = useState(false);
 	const [medalModalClosing, setMedalModalClosing] = useState(false);
@@ -777,6 +825,49 @@ const User: React.FC = () => {
 		};
 	}, [saveModal]);
 
+	useLayoutEffect(() => {
+		if (!reportModalOpen) return;
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape' && !isSubmittingReport) {
+				setReportModalOpen(false);
+			}
+		};
+
+		const html = document.documentElement;
+		const body = document.body;
+		const lockCount = Number(body.dataset.kkScrollLocks || '0');
+
+		if (lockCount === 0) {
+			const scrollBarWidth = window.innerWidth - html.clientWidth;
+			html.style.setProperty('--scrollbar-compensation', `${scrollBarWidth}px`);
+			html.style.overflow = 'hidden';
+			body.style.overflow = 'hidden';
+			body.style.paddingRight = `${scrollBarWidth}px`;
+			body.classList.add('kk-scroll-lock');
+		}
+
+		body.dataset.kkScrollLocks = String(lockCount + 1);
+		document.addEventListener('keydown', onKeyDown);
+
+		return () => {
+			const current = Number(body.dataset.kkScrollLocks || '1');
+			const next = Math.max(0, current - 1);
+			if (next === 0) {
+				delete body.dataset.kkScrollLocks;
+				html.style.overflow = '';
+				body.style.overflow = '';
+				body.style.paddingRight = '';
+				html.style.removeProperty('--scrollbar-compensation');
+				body.classList.remove('kk-scroll-lock');
+			} else {
+				body.dataset.kkScrollLocks = String(next);
+			}
+
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, [isSubmittingReport, reportModalOpen]);
+
 	useEffect(() => {
 		if (medalModal) {
 			setMedalModalClosing(false);
@@ -845,6 +936,7 @@ const User: React.FC = () => {
 	useEffect(() => {
 		setReadBooksOpen(false);
 		setFavBooksOpen(false);
+		setReportModalOpen(false);
 		setMedalModal(null);
 		setMedalModalVisible(false);
 		setMedalModalClosing(false);
@@ -869,8 +961,12 @@ const User: React.FC = () => {
 			let serverEmail = '';
 			try {
 				const viewerUserId = getStoredUserId();
+				setViewerUserId(viewerUserId);
 				const targetUserId = requestedProfileUserId ?? viewerUserId;
 				setProfileUserId(targetUserId);
+				setHasReportedCurrentProfile(
+					Boolean(viewerUserId && targetUserId && viewerUserId !== targetUserId && hasUserAlreadyReported(viewerUserId, targetUserId)),
+				);
 
 				if (targetUserId) {
 					const shouldLoadOwnedTitles = !isReadOnlyProfile && viewerUserId === targetUserId;
@@ -1039,6 +1135,112 @@ const User: React.FC = () => {
 
 	// Jelenlegi nézet statisztikái
 	const currentStats = allStats[activeView] || allStats['all'];
+
+	const openReportModal = () => {
+		if (!isReadOnlyProfile || !profileUserId) return;
+
+		if (!viewerUserId) {
+			setSaveModal({
+				type: 'error',
+				title: 'Bejelentkezés szükséges',
+				message: 'Felhasználó jelentéséhez be kell jelentkezned.',
+			});
+			return;
+		}
+
+		if (viewerUserId === profileUserId) {
+			setSaveModal({
+				type: 'error',
+				title: 'Saját profil',
+				message: 'A saját profilodat nem jelentheted.',
+			});
+			return;
+		}
+
+		if (hasReportedCurrentProfile) {
+			setSaveModal({
+				type: 'error',
+				title: 'Már elküldve',
+				message: 'Ezt a felhasználót már jelentetted.',
+			});
+			return;
+		}
+
+		setReportReason('SPAM');
+		setReportDetails('');
+		setOpenSelect(null);
+		setReportModalOpen(true);
+	};
+
+	const handleReportCancel = () => {
+		if (isSubmittingReport) return;
+		setOpenSelect(null);
+		setReportModalOpen(false);
+	};
+
+	const handleReportSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
+		event.preventDefault();
+
+		if (!profileUserId) {
+			setReportModalOpen(false);
+			setSaveModal({
+				type: 'error',
+				title: 'Jelentés sikertelen',
+				message: 'Nem sikerült meghatározni a jelentett felhasználót.',
+			});
+			return;
+		}
+
+		const details = reportDetails.trim();
+		if (details.length < 10) {
+			setReportModalOpen(false);
+			setSaveModal({
+				type: 'error',
+				title: 'Jelentés sikertelen',
+				message: 'A részletes indoklás legalább 10 karakter legyen.',
+			});
+			return;
+		}
+
+		setIsSubmittingReport(true);
+
+		try {
+			const response = await reportUser(profileUserId, {
+				reason: reportReason,
+				details,
+			});
+			if (viewerUserId) {
+				storeReportedPair(viewerUserId, profileUserId);
+				setHasReportedCurrentProfile(true);
+			}
+
+			setReportModalOpen(false);
+			setSaveModal({
+				type: 'success',
+				title: 'Sikeres jelentés küldés',
+				message: response.message || 'Köszönjük! A jelentést továbbítottuk a moderátoroknak.',
+			});
+			setReportDetails('');
+		} catch (error) {
+			let message = 'A jelentés küldése sikertelen volt.';
+			if (error instanceof ApiHttpError) {
+				message = error.status === 401
+					? 'A jelentés küldéséhez be kell jelentkezned.'
+					: error.message;
+			} else if (error instanceof Error) {
+				message = error.message;
+			}
+
+			setReportModalOpen(false);
+			setSaveModal({
+				type: 'error',
+				title: 'Jelentés sikertelen',
+				message,
+			});
+		} finally {
+			setIsSubmittingReport(false);
+		}
+	};
 
 	// Beállítások mentése
 	const handleSaveSettings = async () => {
@@ -1244,24 +1446,38 @@ const User: React.FC = () => {
 								<img src={profile.avatar} alt="avatar" />
 							</div>
 							<div className="profile-identity">
-								<h2 className="mb-1">
-									{profile.isSubscriber && (
-										<svg
-											className="subscriber-crown"
-											xmlns="http://www.w3.org/2000/svg"
-											viewBox="0 0 24 24"
-											width="20"
-											height="20"
-											role="img"
-											aria-label="Előfizető"
-											focusable="false"
+								<div className="profile-name-row">
+									<h2 className="mb-1">
+										{profile.isSubscriber && (
+											<svg
+												className="subscriber-crown"
+												xmlns="http://www.w3.org/2000/svg"
+												viewBox="0 0 24 24"
+												width="20"
+												height="20"
+												role="img"
+												aria-label="Előfizető"
+												focusable="false"
+											>
+												<title>Előfizető</title>
+												<path fill="currentColor" d="M2 17l2-7 4 4 5-9 5 9 4-4 2 7H2z" />
+											</svg>
+										)}
+										{profile.username}
+									</h2>
+									{isReadOnlyProfile && (
+										<button
+											type="button"
+											className="btn-report-flag"
+											onClick={openReportModal}
+											disabled={isSubmittingReport || hasReportedCurrentProfile}
+											title={hasReportedCurrentProfile ? 'Felhasználó már jelentve' : 'Felhasználó jelentése'}
+											aria-label={hasReportedCurrentProfile ? 'Felhasználó már jelentve' : 'Felhasználó jelentése'}
 										>
-											<title>Előfizető</title>
-											<path fill="currentColor" d="M2 17l2-7 4 4 5-9 5 9 4-4 2 7H2z" />
-										</svg>
+											<i className="bi bi-flag-fill"></i>
+										</button>
 									)}
-									{profile.username}
-								</h2>
+								</div>
 								{settings.showCountryOnProfile && (
 									<div className="d-flex align-items-center gap-2 mb-0">
 										<img src={profile.countryFlag} alt={profile.country} />
@@ -1930,14 +2146,107 @@ const User: React.FC = () => {
 						aria-modal="true"
 						aria-labelledby="user-save-modal-title"
 					>
-						<div className="user-save-modal-icon">
-							<i className={`bi ${saveModal.type === 'success' ? 'bi-check2-circle' : 'bi-exclamation-circle'}`}></i>
+						<div className={`user-save-modal-icon ${saveModal.type === 'success' ? 'is-success' : 'is-error'}`}>
+							<i className={`bi ${saveModal.type === 'success' ? 'bi-check2-circle' : 'bi-x-circle'}`}></i>
 						</div>
 						<h4 id="user-save-modal-title">{saveModal.title}</h4>
 						<p>{saveModal.message}</p>
 						<button className="admin-send-btn" onClick={() => setSaveModal(null)}>
 							Rendben
 						</button>
+					</div>
+				</div>
+			)}
+
+			{reportModalOpen && (
+				<div
+					className="user-report-modal-backdrop"
+					onClick={() => {
+						if (!isSubmittingReport) setReportModalOpen(false);
+					}}
+				>
+					<div
+						className="user-report-modal"
+						onClick={(event) => event.stopPropagation()}
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="user-report-modal-title"
+					>
+						<h4 id="user-report-modal-title">Felhasználó jelentése</h4>
+						<p>
+							A jelentés kizárólag moderátorok és adminok számára kerül továbbításra.
+						</p>
+
+						<form onSubmit={handleReportSubmit}>
+							<div className="mb-3">
+								<label className="form-label">Jelentett felhasználónév</label>
+								<div className="report-locked-field">
+									<input className="form-control" value={profile.username} readOnly disabled />
+									<i className="bi bi-lock-fill" aria-hidden="true"></i>
+								</div>
+							</div>
+							<div className="mb-3">
+								<label className="form-label">Jelentés oka</label>
+								<div className="custom-select-wrapper position-relative">
+									<button
+										className="form-select text-start"
+										type="button"
+										id="reportReasonDropdown"
+										aria-expanded={openSelect === 'reportReason'}
+										onClick={(e) => {
+											e.stopPropagation();
+											if (isSubmittingReport) return;
+											setOpenSelect(prev => (prev === 'reportReason' ? null : 'reportReason'));
+										}}
+									>
+										<span>{getReportReasonLabel(reportReason)}</span>
+									</button>
+									<div className={`custom-select-menu ${openSelect === 'reportReason' ? 'show' : ''}`}>
+										{REPORT_REASON_OPTIONS.map((option) => (
+											<div
+												key={option.value}
+												className="country-item"
+												onClick={() => {
+													setReportReason(option.value);
+													setOpenSelect(null);
+												}}
+											>
+												{option.label}
+											</div>
+										))}
+									</div>
+								</div>
+							</div>
+							<div className="mb-2">
+								<label className="form-label" htmlFor="reportDetails">Részletes indoklás</label>
+								<textarea
+									id="reportDetails"
+									className="form-control"
+									rows={5}
+									maxLength={2000}
+									placeholder="Írd le röviden, mi történt és miért tartod problémásnak ezt a profilt."
+									value={reportDetails}
+									onChange={(event) => setReportDetails(event.target.value)}
+									disabled={isSubmittingReport}
+								/>
+								<small className="report-char-count">{reportDetails.length}/2000</small>
+							</div>
+
+							<div className="user-report-actions">
+								<button
+									type="button"
+									id="reportCancel"
+									className="btn btn-secondary btn-sm reset"
+									onClick={handleReportCancel}
+									disabled={isSubmittingReport}
+								>
+									Mégse
+								</button>
+								<button id="reportApply" type="submit" className="btn btn-primary btn-sm" disabled={isSubmittingReport}>
+									{isSubmittingReport ? 'Küldés...' : 'Alkalmaz'}
+								</button>
+							</div>
+						</form>
 					</div>
 				</div>
 			)}
