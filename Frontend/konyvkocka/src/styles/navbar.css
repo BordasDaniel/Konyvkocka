@@ -92,7 +92,6 @@
   margin-top: 0;
   position: absolute;
   top: calc(100% + 9px) !important;
-  left: 0;
   background: linear-gradient(180deg, rgba(10,10,10,0.72), rgba(18,18,18,0.5)) !important;
   background-color: rgba(18,18,18,0.6) !important;
   -webkit-background-clip: padding-box;
@@ -122,6 +121,13 @@
   transition: opacity 120ms ease-out;
   transform-origin: top center;
   opacity: 0;
+}
+
+/* Keep profile dropdown spacing consistent from the viewport right edge. */
+.navbar-custom .nav-item.dropdown > .dropdown-menu.dropdown-menu-end {
+  left: auto !important;
+  right: 0 !important;
+  transform-origin: top right;
 }
 
 .navbar-custom .dropdown-menu.show {
@@ -169,6 +175,13 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+        backdrop-filter: blur(10px);
+
+  }
+
+  .navbar>.container, .navbar>.container-fluid, .navbar>.container-lg, .navbar>.container-md, .navbar>.container-sm, .navbar>.container-xl, .navbar>.container-xxl
+  {
+    backdrop-filter: blur(10px);
   }
 
   .navbar-collapse .navbar-nav {
