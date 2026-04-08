@@ -1,0 +1,137 @@
+.kk-non-premium-ad-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(3, 3, 3, 0.72);
+	display: grid;
+	place-items: center;
+	padding: 1rem;
+	z-index: 1300;
+	animation: kkAdOverlayIn 160ms ease-out;
+}
+
+.kk-non-premium-ad {
+	width: min(96vw, 560px);
+	background: linear-gradient(180deg, rgba(16, 16, 16, 0.98), rgba(10, 10, 10, 0.96));
+	border: 1px solid rgba(230, 192, 124, 0.55);
+	border-radius: 14px;
+	box-shadow: 0 22px 50px rgba(0, 0, 0, 0.65);
+	padding: 0.95rem 1rem 1rem;
+	animation: kkAdCardIn 200ms ease-out;
+}
+
+.kk-non-premium-ad-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	font-size: 0.74rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--secondary);
+	margin-bottom: 0.7rem;
+}
+
+.kk-non-premium-ad-close {
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.04);
+	color: var(--text);
+	padding: 0.25rem 0.55rem;
+	line-height: 1.15;
+	font-size: 0.78rem;
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.kk-non-premium-ad-close:hover {
+	color: var(--secondary);
+}
+
+.kk-non-premium-ad-close:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+.kk-non-premium-ad-body {
+	display: grid;
+	grid-template-columns: 44px minmax(0, 1fr);
+	gap: 0.8rem;
+	align-items: start;
+}
+
+.kk-non-premium-ad-icon {
+	width: 44px;
+	height: 44px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 12px;
+	background: rgba(230, 192, 124, 0.16);
+	color: var(--secondary);
+	font-size: 1.2rem;
+}
+
+.kk-non-premium-ad-body h5 {
+	margin: 0 0 0.25rem;
+	font-size: 1.1rem;
+	color: var(--h1Text);
+	line-height: 1.25;
+}
+
+.kk-non-premium-ad-body p {
+	margin: 0;
+	font-size: 0.92rem;
+	line-height: 1.42;
+	color: rgba(255, 255, 255, 0.88);
+}
+
+.kk-non-premium-ad-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.45rem;
+	margin-top: 0.95rem;
+}
+
+@keyframes kkAdOverlayIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes kkAdCardIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px) scale(0.98);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (max-width: 575px) {
+	.kk-non-premium-ad {
+		padding: 0.8rem 0.85rem 0.9rem;
+	}
+
+	.kk-non-premium-ad-body {
+		grid-template-columns: 40px minmax(0, 1fr);
+		gap: 0.65rem;
+	}
+
+	.kk-non-premium-ad-icon {
+		width: 40px;
+		height: 40px;
+		font-size: 1.08rem;
+	}
+
+	.kk-non-premium-ad-body h5 {
+		font-size: 1rem;
+	}
+
+	.kk-non-premium-ad-body p {
+		font-size: 0.87rem;
+	}
+}
