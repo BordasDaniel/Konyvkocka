@@ -21,6 +21,7 @@ namespace KonyvkockaAPI
 
             // Register custom services
             builder.Services.AddSingleton<ICountryService, CountryService>();
+            builder.Services.AddScoped<IChallengeProgressService, ChallengeProgressService>();
             builder.Services.AddHttpClient();
 
             builder.Services.AddControllers().AddJsonOptions(x => 

@@ -373,6 +373,7 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.CurrentAudioPosition).HasColumnType("int(11)");
             entity.Property(e => e.CurrentPage).HasColumnType("int(11)");
             entity.Property(e => e.LastSeen).HasColumnType("datetime");
+            entity.Property(e => e.RemainingCompletions).HasDefaultValueSql("'3'").HasColumnType("int(11)");
             entity.Property(e => e.Rating).HasPrecision(3, 1);
             entity.Property(e => e.Status)
                 .HasColumnType("enum('WATCHING','COMPLETED','PAUSED','DROPPED','PLANNED','ARCHIVED')");
@@ -433,6 +434,7 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.CurrentPosition).HasDefaultValueSql("'0'").HasColumnType("int(11)");
             entity.Property(e => e.LastSeen)
                 .HasColumnType("datetime");
+            entity.Property(e => e.RemainingCompletions).HasDefaultValueSql("'3'").HasColumnType("int(11)");
             entity.Property(e => e.Rating).HasPrecision(3, 1).HasDefaultValueSql("'NULL'");
             entity.Property(e => e.Status)
                 .HasDefaultValueSql("'NULL'")
@@ -464,6 +466,7 @@ public partial class KonyvkockaContext : DbContext
             entity.Property(e => e.CurrentSeason).HasColumnType("int(11)");
             entity.Property(e => e.LastSeen)
                 .HasColumnType("datetime");
+            entity.Property(e => e.RemainingCompletions).HasDefaultValueSql("'3'").HasColumnType("int(11)");
             entity.Property(e => e.Rating).HasPrecision(3, 1).HasDefaultValueSql("'NULL'");
             entity.Property(e => e.Status)
                 .HasDefaultValueSql("'NULL'")

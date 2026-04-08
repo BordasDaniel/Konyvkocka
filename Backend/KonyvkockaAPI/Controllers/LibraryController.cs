@@ -2,6 +2,7 @@
 using KonyvkockaAPI.DTO.Response;
 using KonyvkockaAPI.Extensions;
 using KonyvkockaAPI.Models;
+using KonyvkockaAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +15,14 @@ namespace KonyvkockaAPI.Controllers
     public class LibraryController : ControllerBase
     {
         private readonly KonyvkockaContext _context;
+        private readonly IChallengeProgressService _challengeProgressService;
 
-        public LibraryController(KonyvkockaContext context)
+        public LibraryController(
+            KonyvkockaContext context,
+            IChallengeProgressService challengeProgressService)
         {
             _context = context;
+            _challengeProgressService = challengeProgressService;
         }
 
         // ================================================================
@@ -363,6 +368,7 @@ namespace KonyvkockaAPI.Controllers
                             UserId = userId,
                             BookId = dto.ContentId,
                             Status = normalizedStatus,
+                            RemainingCompletions = 3,
                             AddedAt = DateTime.Now
                         });
                         break;
@@ -378,6 +384,7 @@ namespace KonyvkockaAPI.Controllers
                             UserId = userId,
                             MovieId = dto.ContentId,
                             Status = normalizedStatus,
+                            RemainingCompletions = 3,
                             AddedAt = DateTime.Now
                         });
                         break;
@@ -393,12 +400,14 @@ namespace KonyvkockaAPI.Controllers
                             UserId = userId,
                             SeriesId = dto.ContentId,
                             Status = normalizedStatus,
+                            RemainingCompletions = 3,
                             AddedAt = DateTime.Now
                         });
                         break;
                 }
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
                 return Ok(new MessageResponseDTO { Message = "Tartalom sikeresen hozzáadva a könyvtárhoz." });
             }
             catch (Exception ex)
@@ -488,6 +497,7 @@ namespace KonyvkockaAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
                 return Ok(new MessageResponseDTO { Message = "Haladás sikeresen frissítve." });
             }
             catch (Exception ex)
@@ -665,6 +675,7 @@ namespace KonyvkockaAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
                 return Ok(new MessageResponseDTO { Message = "Tartalom eltávolítva a könyvtárból." });
             }
             catch (Exception ex)

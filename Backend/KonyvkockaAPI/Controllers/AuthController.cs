@@ -22,18 +22,21 @@ namespace KonyvkockaAPI.Controllers
         private readonly IEmailService _emailService;
         private readonly AppUrlSettings _appUrlSettings;
         private readonly ILogger<AuthController> _logger;
+        private readonly IChallengeProgressService _challengeProgressService;
 
         public AuthController(
             KonyvkockaContext context,
             JwtSettings jwtSettings,
             IEmailService emailService,
             AppUrlSettings appUrlSettings,
+            IChallengeProgressService challengeProgressService,
             ILogger<AuthController> logger)
         {
             _context = context;
             _jwtSettings = jwtSettings;
             _emailService = emailService;
             _appUrlSettings = appUrlSettings;
+            _challengeProgressService = challengeProgressService;
             _logger = logger;
         }
 
@@ -124,6 +127,7 @@ namespace KonyvkockaAPI.Controllers
 
                 user.LastLoginDate = DateTime.Now;
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(user.Id, HttpContext.RequestAborted);
 
                 return Ok(new AuthResponseDTO
                 {

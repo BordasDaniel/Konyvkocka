@@ -1,6 +1,7 @@
 using KonyvkockaAPI.DTO.Request;
 using KonyvkockaAPI.DTO.Response;
 using KonyvkockaAPI.Models;
+using KonyvkockaAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,14 @@ namespace KonyvkockaAPI.Controllers
     public class HistoryController : ControllerBase
     {
         private readonly KonyvkockaContext _context;
+        private readonly IChallengeProgressService _challengeProgressService;
 
-        public HistoryController(KonyvkockaContext context)
+        public HistoryController(
+            KonyvkockaContext context,
+            IChallengeProgressService challengeProgressService)
         {
             _context = context;
+            _challengeProgressService = challengeProgressService;
         }
 
         // ================================================================
@@ -300,6 +305,7 @@ namespace KonyvkockaAPI.Controllers
                                 Status = "WATCHING",
                                 AddedAt = now,
                                 LastSeen = now,
+                                RemainingCompletions = 3,
                                 CurrentPage = 0,
                                 CurrentAudioPosition = 0
                             });
@@ -336,6 +342,7 @@ namespace KonyvkockaAPI.Controllers
                                 Status = "WATCHING",
                                 AddedAt = now,
                                 LastSeen = now,
+                                RemainingCompletions = 3,
                                 CurrentPosition = 0
                             });
                             created = true;
@@ -371,6 +378,7 @@ namespace KonyvkockaAPI.Controllers
                                 Status = "WATCHING",
                                 AddedAt = now,
                                 LastSeen = now,
+                                RemainingCompletions = 3,
                                 CurrentSeason = 1,
                                 CurrentEpisode = 1,
                                 CurrentPosition = 0
@@ -400,6 +408,7 @@ namespace KonyvkockaAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
 
                 return Ok(new
                 {
@@ -481,6 +490,7 @@ namespace KonyvkockaAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
                 return Ok(new MessageResponseDTO { Message = "A LastSeen sikeresen frissítve" });
             }
             catch (Exception ex)
@@ -629,6 +639,7 @@ namespace KonyvkockaAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
 
                 return Ok(new MessageResponseDTO { Message = "Az előzmény sikeresen frissítve" });
             }
@@ -698,6 +709,7 @@ namespace KonyvkockaAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
                 return Ok(new MessageResponseDTO { Message = "Az előzmény sikeresen törölve" });
             }
             catch (Exception ex)
@@ -729,6 +741,7 @@ namespace KonyvkockaAPI.Controllers
                 _context.UserSeries.RemoveRange(userSeries);
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
 
                 return Ok(new MessageResponseDTO { Message = "Az összes előzmény sikeresen törölve" });
             }
@@ -755,9 +768,22 @@ namespace KonyvkockaAPI.Controllers
             if (!previousLastSeen.HasValue)
                 return 0;
 
-            // We cap each increment window to reduce inflated jumps from stale clients.
-            const int maxMinutesPerUpdate = 5;
-            var elapsedMinutes = (int)Math.Floor((nextLastSeen - previousLastSeen.Value).TotalMinutes);
+            // A 60 mp-es heartbeat kis jitterrel gyakran 59.xx mp-et ad,
+            // ezért nearest-minute kerekítést használunk floor helyett.
+            const int maxMinutesPerUpdate = 20;
+            var elapsedSeconds = (nextLastSeen - previousLastSeen.Value).TotalSeconds;
+            if (elapsedSeconds <= 0)
+                return 0;
+
+            // 45 mp alatt még nem tekintjük jóváírható nézési/olvasási időnek,
+            // ezzel kizárjuk a túl sűrű pingekből adódó túlbecslést.
+            if (elapsedSeconds < 45)
+                return 0;
+
+            var elapsedMinutes = (int)Math.Round(
+                elapsedSeconds / 60d,
+                MidpointRounding.AwayFromZero);
+
             if (elapsedMinutes <= 0)
                 return 0;
 
