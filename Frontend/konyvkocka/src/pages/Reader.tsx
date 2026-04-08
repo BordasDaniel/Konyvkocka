@@ -64,7 +64,6 @@ const Reader: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [bookTitle, setBookTitle] = useState<string>('Könyv címe');
-  const [bookAuthor, setBookAuthor] = useState<string>('Szerző neve');
   const [bookCover, setBookCover] = useState<string>('');
   const [totalPages, setTotalPages] = useState<number>(0);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -180,7 +179,6 @@ const Reader: React.FC = () => {
           const dbPdfUrl = (detail.watchUrl ?? '').trim();
           setBookTitle(detail.title || 'Könyv címe');
           setBookCover(detail.img || '');
-          setBookAuthor('Szerző ismeretlen');
           setActiveBookId(resolvedId);
 
           if (dbPdfUrl) {
@@ -508,7 +506,6 @@ const Reader: React.FC = () => {
       const metadata = await pdf.getMetadata();
       if (metadata.info) {
         setBookTitle(metadata.info.Title || 'Ismeretlen cím');
-        setBookAuthor(metadata.info.Author || 'Ismeretlen szerző');
       }
       
       // A borító URL-t a backend fog majd szolgáltatni
@@ -789,7 +786,6 @@ const Reader: React.FC = () => {
             )}
           </div>
           <h3 className="book-title">{bookTitle}</h3>
-          <p className="book-author">{bookAuthor}</p>
         </div>
 
         <div className="reader-controls">

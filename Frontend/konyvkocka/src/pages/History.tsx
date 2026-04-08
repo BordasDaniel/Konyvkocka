@@ -7,6 +7,7 @@ import {
   buildContentKey,
   getHistory,
   recordContentView,
+  restartLibraryItem,
   touchHistoryItem,
   toContentImageSrc,
   type HistoryItemResponse,
@@ -97,6 +98,7 @@ const History: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [actionInProgressKey, setActionInProgressKey] = useState<string | null>(null);
   const pageSize = 5;
 
   useEffect(() => {
@@ -257,9 +259,23 @@ const History: React.FC = () => {
     return date.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' });
   };
 
+  const openContent = (item: HistoryItem) => {
+    const contentKey = buildContentKey(item.type, item.id);
+
+    if (item.type === 'book') {
+      navigate(`/olvaso?content=${encodeURIComponent(contentKey)}`);
+      return;
+    }
+
+    navigate(`/nezes?content=${encodeURIComponent(contentKey)}`);
+  };
+
   // Folytatás kezelése
   const handleContinue = async (item: HistoryItem) => {
-    const contentKey = buildContentKey(item.type, item.id);
+    if (item.progress >= 100) {
+      openContent(item);
+      return;
+    }
 
     // Only LastSeen frissítése meglévő rekordra; ha hiányzik, fallbackként létrehozzuk/upserteljük.
     try {
@@ -279,12 +295,29 @@ const History: React.FC = () => {
       }
     }
 
-    if (item.type === 'book') {
-      navigate(`/olvaso?content=${encodeURIComponent(contentKey)}`);
-      return;
-    }
+    openContent(item);
+  };
 
-    navigate(`/nezes?content=${encodeURIComponent(contentKey)}`);
+  const handleRestartAndOpen = async (item: HistoryItem) => {
+    const key = `${item.type}:${item.id}`;
+    setActionInProgressKey(key);
+    setError(null);
+
+    try {
+      await restartLibraryItem(item.type, item.id);
+      openContent(item);
+    } catch (restartError) {
+      console.error('Restart from history failed:', restartError);
+      if (restartError instanceof ApiHttpError && restartError.status === 401) {
+        setError('A művelethez be kell jelentkezned.');
+      } else if (restartError instanceof ApiHttpError && restartError.message) {
+        setError(restartError.message);
+      } else {
+        setError('Az újraindítás sikertelen. Kérlek próbáld újra.');
+      }
+    } finally {
+      setActionInProgressKey(null);
+    }
   };
 
   // Folytatásban lévő elemek száma
@@ -372,6 +405,8 @@ const History: React.FC = () => {
                   {group.items.map(item => {
                     const typeInfo = getTypeInfo(item.type);
                     const isCompleted = item.progress === 100;
+                    const actionKey = `${item.type}:${item.id}`;
+                    const isActionBusy = actionInProgressKey === actionKey;
 
                     return (
                       <div
@@ -452,23 +487,35 @@ const History: React.FC = () => {
                         </div>
 
                         {/* Akciók */}
-                        <div className="item-actions">
+                        <div className={`item-actions ${isCompleted ? 'completed-actions' : ''}`}>
                           {!isCompleted ? (
                             <button
                               className="btn-continue"
                               onClick={() => handleContinue(item)}
+                              disabled={isActionBusy}
                             >
                               <i className="bi bi-play-fill"></i>
                               Folytatás
                             </button>
                           ) : (
-                            <button
-                              className="btn-rewatch"
-                              onClick={() => handleContinue(item)}
-                            >
-                              <i className="bi bi-arrow-repeat"></i>
-                              Újra
-                            </button>
+                            <>
+                              <button
+                                className="btn-rewatch"
+                                onClick={() => void handleRestartAndOpen(item)}
+                                disabled={isActionBusy}
+                              >
+                                <i className="bi bi-arrow-repeat"></i>
+                                {isActionBusy ? 'Újraindítás...' : 'Újra'}
+                              </button>
+                              <button
+                                className="btn-open-completed"
+                                onClick={() => openContent(item)}
+                                disabled={isActionBusy}
+                              >
+                                <i className="bi bi-box-arrow-up-right"></i>
+                                Megnyitás
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>

@@ -507,6 +507,117 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
+        // PATCH /api/library/{type}/{contentId}/restart
+        // Tartalom újrakezdése: státusz WATCHING + pozíció nullázása
+        // CompletedAt mező változatlan marad.
+        // ================================================================
+        [HttpPatch("{type}/{contentId}/restart")]
+        public async Task<IActionResult> RestartContent(string type, int contentId)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var now = DateTime.Now;
+                int affectedRows;
+
+                switch (type.ToLower())
+                {
+                    case "book":
+                        affectedRows = await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                            REPLACE INTO user_book
+                                (UserId, BookId, Status, Favorite, Rating, AddedAt, CompletedAt, RemainingCompletions, LastSeen, CurrentPage, CurrentAudioPosition)
+                            SELECT
+                                UserId,
+                                BookId,
+                                {"WATCHING"},
+                                Favorite,
+                                Rating,
+                                AddedAt,
+                                CompletedAt,
+                                RemainingCompletions,
+                                {now},
+                                {0},
+                                {0}
+                            FROM user_book
+                            WHERE UserId = {userId} AND BookId = {contentId}");
+                        break;
+
+                    case "movie":
+                        affectedRows = await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                            REPLACE INTO user_movie
+                                (UserId, MovieId, Status, Favorite, Rating, AddedAt, CompletedAt, RemainingCompletions, LastSeen, CurrentPosition)
+                            SELECT
+                                UserId,
+                                MovieId,
+                                {"WATCHING"},
+                                Favorite,
+                                Rating,
+                                AddedAt,
+                                CompletedAt,
+                                RemainingCompletions,
+                                {now},
+                                {0}
+                            FROM user_movie
+                            WHERE UserId = {userId} AND MovieId = {contentId}");
+                        break;
+
+                    case "series":
+                        affectedRows = await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                            REPLACE INTO user_series
+                                (UserId, SeriesId, Status, Favorite, Rating, AddedAt, CompletedAt, RemainingCompletions, LastSeen, CurrentSeason, CurrentEpisode, CurrentPosition)
+                            SELECT
+                                UserId,
+                                SeriesId,
+                                {"WATCHING"},
+                                Favorite,
+                                Rating,
+                                AddedAt,
+                                CompletedAt,
+                                RemainingCompletions,
+                                {now},
+                                {1},
+                                {1},
+                                {0}
+                            FROM user_series
+                            WHERE UserId = {userId} AND SeriesId = {contentId}");
+                        break;
+
+                    default:
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidParameter",
+                            Message = "A type értéke csak 'book', 'movie' vagy 'series' lehet."
+                        });
+                }
+
+                if (affectedRows <= 0)
+                    return NotFound(new ErrorResponseDTO
+                    {
+                        Error = "NotFound",
+                        Message = "A tartalom nem szerepel a könyvtáradban."
+                    });
+
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
+                return Ok(new MessageResponseDTO { Message = "Tartalom sikeresen újraindítva." });
+            }
+            catch (DbUpdateException dbEx)
+            {
+                var innerMessage = dbEx.InnerException?.Message;
+                return StatusCode(500, new ErrorResponseDTO
+                {
+                    Error = "DatabaseError",
+                    Message = string.IsNullOrWhiteSpace(innerMessage)
+                        ? dbEx.Message
+                        : $"{dbEx.Message} | Inner: {innerMessage}"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
         // PATCH /api/library/{type}/{contentId}/rate
         // Tartalom értékelése (user saját értékelése)
         // Body: RateContentDTO

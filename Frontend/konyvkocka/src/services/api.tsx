@@ -567,6 +567,15 @@ export const updateLibraryProgress = async (
 		body: payload,
 	});
 
+export const restartLibraryItem = async (
+	type: LibraryContentType,
+	contentId: number,
+): Promise<{ message: string }> =>
+	request<{ message: string }>(`/api/library/${type}/${contentId}/restart`, {
+		auth: true,
+		method: 'PATCH',
+	});
+
 export interface HistoryItemResponse {
 	contentType: string;
 	contentId: number;

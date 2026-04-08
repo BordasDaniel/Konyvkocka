@@ -7,6 +7,7 @@ import {
 	applyContentImageFallback,
 	getLibraryItemState,
 	parseContentKey,
+	restartLibraryItem,
 	toggleLibraryFavorite,
 	updateLibraryProgress,
 	type LibraryStatus,
@@ -316,6 +317,47 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 		}
 	};
 
+	const handleRestartContent = async () => {
+		if (!isAuthenticated) {
+			handleLoginRedirect();
+			return;
+		}
+
+		if (!parsedKey || libraryActionLoading || selectedStatus !== 'COMPLETED') return;
+
+		setLibraryActionLoading(true);
+		setLibraryError(null);
+
+		try {
+			await ensureLibraryEntry('WATCHING');
+			await restartLibraryItem(parsedKey.type, parsedKey.id);
+
+			const refreshedState = await getLibraryItemState(parsedKey.type, parsedKey.id);
+			setIsInLibrary(refreshedState.exists);
+			setIsFavorite(refreshedState.favorite);
+			setSelectedStatus(toLibraryStatus(refreshedState.status));
+
+			if ((refreshedState.status ?? '').toUpperCase() === 'COMPLETED') {
+				setLibraryError('Az újraindítás nem sikerült, a tartalom státusza továbbra is Befejezett.');
+			} else {
+				setSelectedStatus('WATCHING');
+			}
+		} catch (error) {
+			console.error('Restart content failed:', error);
+			if (error instanceof ApiHttpError && (error.status === 401 || error.status === 403)) {
+				handleLoginRedirect();
+				return;
+			}
+			if (error instanceof ApiHttpError && error.message) {
+				setLibraryError(error.message);
+			} else {
+				setLibraryError('Az újraindítás sikertelen.');
+			}
+		} finally {
+			setLibraryActionLoading(false);
+		}
+	};
+
 	const selectedStatusLabel =
 		selectedStatus === 'COMPLETED'
 			? 'Befejezett'
@@ -362,6 +404,18 @@ export default function Modal({ open, card, onClose }: ModalProps) {
 													>
 														<i className={`bi ${isFavorite ? 'bi-heart-fill' : 'bi-heart'}`}></i>
 													</button>
+													{selectedStatus === 'COMPLETED' && (
+														<button
+															type="button"
+															className="modal-restart-btn"
+															onClick={() => void handleRestartContent()}
+															disabled={libraryStateLoading || libraryActionLoading}
+															title="Újrakezdés: pozíció nullázása és állapot visszaállítása"
+														>
+															<i className="bi bi-arrow-repeat"></i>
+															<span>Újra</span>
+														</button>
+													)}
 													<div className="modal-status-dropdown" ref={statusMenuRef}>
 														<button
 															type="button"

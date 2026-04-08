@@ -122,6 +122,35 @@
       cursor: not-allowed;
     }
 
+    .modal-restart-btn {
+      min-height: 2.25rem;
+      border-radius: 999px;
+      border: 1px solid rgba(194,157,89,0.38);
+      background: linear-gradient(180deg, rgba(70,56,28,0.5), rgba(44,35,18,0.4));
+      color: rgba(236,217,173,0.95);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.4rem 0.72rem;
+      font-size: 0.84rem;
+      font-weight: 700;
+      transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .modal-restart-btn:hover:not(:disabled),
+    .modal-restart-btn:focus-visible:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(230,192,124,0.64);
+      background: linear-gradient(180deg, rgba(96,76,38,0.56), rgba(66,52,27,0.5));
+      outline: none;
+    }
+
+    .modal-restart-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     .modal-status-dropdown {
       position: relative;
       min-width: 11.2rem;
