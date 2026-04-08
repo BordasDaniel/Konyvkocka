@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 import showMoreCardImage from '../../assets/img/carousel.jpg';
+import { applyContentImageFallback } from '../../services/api';
 
 export interface CardData {
   id: string;
   img: string;
   title: string;
+  ageRating?: {
+    name: string;
+    minAge?: number | null;
+  };
   tags: string[];
   rating: number;
   desc: string;
@@ -60,9 +65,7 @@ const Card: React.FC<CardProps> = ({
 
   const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>, cardId: string) => {
     const img = event.currentTarget;
-    if (img.dataset.fallbackApplied === 'true') return;
-    img.dataset.fallbackApplied = 'true';
-    img.src = showMoreCardImage;
+    applyContentImageFallback(img);
     setLoadedImages((prev) => ({ ...prev, [cardId]: true }));
   };
 

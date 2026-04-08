@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import NewsArticle, { type NewsArticleData } from '../components/features/NewsArticle';
 import { getNews } from '../services/api';
 
@@ -132,11 +132,21 @@ const DEFAULT_ARTICLES: NewsArticleData[] = [
 export default function News() {
   const [activeFilter, setActiveFilter] = useState<NewsFilter>('all');
   const [articles, setArticles] = useState<NewsArticleData[]>(DEFAULT_ARTICLES);
+  const [selectedArticle, setSelectedArticle] = useState<NewsArticleData | null>(null);
+  const [newsModalVisible, setNewsModalVisible] = useState(false);
+  const [newsModalClosing, setNewsModalClosing] = useState(false);
   const [totalCount, setTotalCount] = useState<number>(DEFAULT_ARTICLES.length);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const lastSelectedArticle = useRef<NewsArticleData | null>(null);
+  if (selectedArticle) lastSelectedArticle.current = selectedArticle;
   const pageSize = 6;
+
+  const truncateText = (value: string, maxLength = 220): string => {
+    if (value.length <= maxLength) return value;
+    return `${value.slice(0, maxLength).trimEnd()}...`;
+  };
 
   useEffect(() => {
     // Initial filter from URL query params or hash
@@ -153,6 +163,42 @@ export default function News() {
   useEffect(() => {
     setCurrentPage(1);
   }, [activeFilter]);
+
+  useEffect(() => {
+    if (selectedArticle) {
+      setNewsModalClosing(false);
+      setNewsModalVisible(true);
+      return;
+    }
+
+    if (newsModalVisible) {
+      setNewsModalClosing(true);
+      const timeout = setTimeout(() => {
+        setNewsModalVisible(false);
+        setNewsModalClosing(false);
+      }, 290);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [selectedArticle, newsModalVisible]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedArticle(null);
+    };
+
+    if (newsModalVisible) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      document.addEventListener('keydown', onKeyDown);
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [newsModalVisible]);
 
   useEffect(() => {
     void fetchArticles(activeFilter, currentPage);
@@ -204,7 +250,8 @@ export default function News() {
           title: article.title,
           date: article.date,
           tags: getTagLabel(mappedType),
-          excerpt: article.description,
+          excerpt: truncateText(article.description),
+          fullDescription: article.description,
           link: '/hirek',
           linkText: 'Részletek',
         } satisfies NewsArticleData;
@@ -292,6 +339,7 @@ export default function News() {
   };
 
   const filters: NewsFilter[] = ['all', 'update', 'feature', 'info', 'event'];
+  const modalArticle = selectedArticle ?? lastSelectedArticle.current;
 
   return (
     <main className="mt-5">
@@ -339,7 +387,7 @@ export default function News() {
           )}
 
           {!loading && !error && articles.map(article => (
-            <NewsArticle key={article.id} article={article} />
+            <NewsArticle key={article.id} article={article} onReadMore={setSelectedArticle} />
           ))}
         </div>
 
@@ -363,6 +411,47 @@ export default function News() {
           </nav>
         )}
       </div>
+
+      {newsModalVisible && modalArticle && (
+        <div className={`news-modal-backdrop${newsModalClosing ? ' closing' : ''}`} onClick={() => setSelectedArticle(null)}>
+          <div
+            className={`news-modal${newsModalClosing ? ' closing' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="news-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="news-modal-header">
+              <div>
+                <h2 id="news-modal-title" className="news-modal-title">{modalArticle.title}</h2>
+                <div className="news-modal-meta">
+                  <span>
+                    <i className="bi bi-calendar3 me-1"></i>
+                    {modalArticle.date}
+                  </span>
+                  <span className={`news-type-chip news-type-${modalArticle.type}`}>
+                    {modalArticle.tags}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-close btn-close-white"
+                aria-label="Bezár"
+                onClick={() => setSelectedArticle(null)}
+              ></button>
+            </div>
+            <div className="news-modal-body">
+              {modalArticle.fullDescription ?? modalArticle.excerpt}
+            </div>
+            <div className="news-modal-footer">
+              <button type="button" className="btn-read" onClick={() => setSelectedArticle(null)}>
+                Rendben
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -37,6 +37,9 @@ const mapDetailToCard = (detail: ContentDetailResponse): CardData => ({
   id: buildContentKey(detail.type, detail.id),
   img: toContentImageSrc(detail.img),
   title: detail.title,
+  ageRating: detail.ageRating
+    ? { name: detail.ageRating.name, minAge: detail.ageRating.minAge }
+    : undefined,
   tags: detail.tags ?? [],
   rating: Number(detail.rating ?? 0),
   desc: detail.description,

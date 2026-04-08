@@ -1,6 +1,7 @@
 using KonyvkockaAPI.DTO.Request;
 using KonyvkockaAPI.DTO.Response;
 using KonyvkockaAPI.Models;
+using KonyvkockaAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,14 @@ namespace KonyvkockaAPI.Controllers
     public class HistoryController : ControllerBase
     {
         private readonly KonyvkockaContext _context;
+        private readonly IChallengeProgressService _challengeProgressService;
 
-        public HistoryController(KonyvkockaContext context)
+        public HistoryController(
+            KonyvkockaContext context,
+            IChallengeProgressService challengeProgressService)
         {
             _context = context;
+            _challengeProgressService = challengeProgressService;
         }
 
         // ================================================================
@@ -130,7 +135,8 @@ namespace KonyvkockaAPI.Controllers
                 {
                     var seriesQuery = _context.UserSeries
                         .Where(us => us.UserId == userId)
-                        .Include(us => us.Series);
+                        .Include(us => us.Series)
+                        .ThenInclude(s => s.Episodes);
 
                     if (normalized == "series")
                     {
@@ -185,6 +191,315 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
+        // GET /api/history/{contentType}/{contentId}
+        // Egy konkrét előzmény elem lekérése (folytatáshoz)
+        // ================================================================
+        [HttpGet("{contentType}/{contentId}")]
+        public async Task<IActionResult> GetHistoryItem(string contentType, int contentId)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var normalizedType = contentType.Trim().ToLowerInvariant() switch
+                {
+                    "books" => "book",
+                    "movies" => "movie",
+                    _ => contentType.Trim().ToLowerInvariant()
+                };
+
+                switch (normalizedType)
+                {
+                    case "book":
+                    {
+                        var userBook = await _context.UserBooks
+                            .Where(ub => ub.UserId == userId && ub.BookId == contentId)
+                            .Include(ub => ub.Book)
+                            .FirstOrDefaultAsync();
+
+                        if (userBook == null)
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
+
+                        return Ok(MapBook(userBook));
+                    }
+
+                    case "movie":
+                    {
+                        var userMovie = await _context.UserMovies
+                            .Where(um => um.UserId == userId && um.MovieId == contentId)
+                            .Include(um => um.Movie)
+                            .FirstOrDefaultAsync();
+
+                        if (userMovie == null)
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
+
+                        return Ok(MapMovie(userMovie));
+                    }
+
+                    case "series":
+                    {
+                        var userSeries = await _context.UserSeries
+                            .Where(us => us.UserId == userId && us.SeriesId == contentId)
+                            .Include(us => us.Series)
+                            .ThenInclude(s => s.Episodes)
+                            .FirstOrDefaultAsync();
+
+                        if (userSeries == null)
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
+
+                        return Ok(MapSeries(userSeries));
+                    }
+
+                    default:
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidType",
+                            Message = "Érvénytelen tartalom típus. Lehetséges: book, series, movie"
+                        });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // POST /api/history/view
+        // Automatikus megtekintés/olvasás rögzítése
+        //
+        // Ha a tartalom még nincs a user könyvtárában/előzményeiben,
+        // létrejön egy rekord WATCHING státusszal.
+        // Ha már létezik, LastSeen frissül és bármely nem-WATCHING
+        // státusz WATCHING-ra vált.
+        // ================================================================
+        [HttpPost("view")]
+        public async Task<IActionResult> RecordView([FromBody] RecordViewDTO dto)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                    return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
+
+                var normalizedType = dto.ContentType.Trim().ToLowerInvariant();
+                var now = DateTime.Now;
+                var created = false;
+
+                switch (normalizedType)
+                {
+                    case "book":
+                    {
+                        if (!await _context.Books.AnyAsync(b => b.Id == dto.ContentId))
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A könyv nem található" });
+
+                        var userBook = await _context.UserBooks
+                            .FirstOrDefaultAsync(ub => ub.UserId == userId && ub.BookId == dto.ContentId);
+
+                        if (userBook == null)
+                        {
+                            _context.UserBooks.Add(new UserBook
+                            {
+                                UserId = userId,
+                                BookId = dto.ContentId,
+                                Status = "WATCHING",
+                                AddedAt = now,
+                                LastSeen = now,
+                                RemainingCompletions = 3,
+                                CurrentPage = 0,
+                                CurrentAudioPosition = 0
+                            });
+                            created = true;
+                        }
+                        else
+                        {
+                            var nextLastSeen = GetNextLastSeen(userBook.LastSeen);
+                            AddReadMinutes(user, userBook.LastSeen, nextLastSeen);
+                            userBook.LastSeen = nextLastSeen;
+                            if (!string.Equals(userBook.Status, "WATCHING", StringComparison.OrdinalIgnoreCase))
+                            {
+                                userBook.Status = "WATCHING";
+                            }
+                        }
+
+                        break;
+                    }
+
+                    case "movie":
+                    {
+                        if (!await _context.Movies.AnyAsync(m => m.Id == dto.ContentId))
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A film nem található" });
+
+                        var userMovie = await _context.UserMovies
+                            .FirstOrDefaultAsync(um => um.UserId == userId && um.MovieId == dto.ContentId);
+
+                        if (userMovie == null)
+                        {
+                            _context.UserMovies.Add(new UserMovie
+                            {
+                                UserId = userId,
+                                MovieId = dto.ContentId,
+                                Status = "WATCHING",
+                                AddedAt = now,
+                                LastSeen = now,
+                                RemainingCompletions = 3,
+                                CurrentPosition = 0
+                            });
+                            created = true;
+                        }
+                        else
+                        {
+                            var nextLastSeen = GetNextLastSeen(userMovie.LastSeen);
+                            AddWatchMinutes(user, userMovie.LastSeen, nextLastSeen);
+                            userMovie.LastSeen = nextLastSeen;
+                            if (!string.Equals(userMovie.Status, "WATCHING", StringComparison.OrdinalIgnoreCase))
+                            {
+                                userMovie.Status = "WATCHING";
+                            }
+                        }
+
+                        break;
+                    }
+
+                    case "series":
+                    {
+                        if (!await _context.Series.AnyAsync(s => s.Id == dto.ContentId))
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A sorozat nem található" });
+
+                        var userSeries = await _context.UserSeries
+                            .FirstOrDefaultAsync(us => us.UserId == userId && us.SeriesId == dto.ContentId);
+
+                        if (userSeries == null)
+                        {
+                            _context.UserSeries.Add(new UserSeries
+                            {
+                                UserId = userId,
+                                SeriesId = dto.ContentId,
+                                Status = "WATCHING",
+                                AddedAt = now,
+                                LastSeen = now,
+                                RemainingCompletions = 3,
+                                CurrentSeason = 1,
+                                CurrentEpisode = 1,
+                                CurrentPosition = 0
+                            });
+                            created = true;
+                        }
+                        else
+                        {
+                            var nextLastSeen = GetNextLastSeen(userSeries.LastSeen);
+                            AddWatchMinutes(user, userSeries.LastSeen, nextLastSeen);
+                            userSeries.LastSeen = nextLastSeen;
+                            if (!string.Equals(userSeries.Status, "WATCHING", StringComparison.OrdinalIgnoreCase))
+                            {
+                                userSeries.Status = "WATCHING";
+                            }
+                        }
+
+                        break;
+                    }
+
+                    default:
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidType",
+                            Message = "Érvénytelen tartalom típus. Lehetséges: book, series, movie"
+                        });
+                }
+
+                await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
+
+                return Ok(new
+                {
+                    message = created
+                        ? "A tartalom bekerült a könyvtárba és az előzményekbe."
+                        : "A tartalom előzménye frissítve.",
+                    created
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // POST /api/history/touch
+        // Csak a LastSeen frissítése meglévő előzmény rekordra
+        // ================================================================
+        [HttpPost("touch")]
+        public async Task<IActionResult> TouchHistoryItem([FromBody] RecordViewDTO dto)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                    return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
+
+                var normalizedType = dto.ContentType.Trim().ToLowerInvariant();
+
+                switch (normalizedType)
+                {
+                    case "book":
+                    {
+                        var userBook = await _context.UserBooks
+                            .FirstOrDefaultAsync(ub => ub.UserId == userId && ub.BookId == dto.ContentId);
+                        if (userBook == null)
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
+
+                        var nextLastSeen = GetNextLastSeen(userBook.LastSeen);
+                        AddReadMinutes(user, userBook.LastSeen, nextLastSeen);
+                        userBook.LastSeen = nextLastSeen;
+                        break;
+                    }
+
+                    case "movie":
+                    {
+                        var userMovie = await _context.UserMovies
+                            .FirstOrDefaultAsync(um => um.UserId == userId && um.MovieId == dto.ContentId);
+                        if (userMovie == null)
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
+
+                        var nextLastSeen = GetNextLastSeen(userMovie.LastSeen);
+                        AddWatchMinutes(user, userMovie.LastSeen, nextLastSeen);
+                        userMovie.LastSeen = nextLastSeen;
+                        break;
+                    }
+
+                    case "series":
+                    {
+                        var userSeries = await _context.UserSeries
+                            .FirstOrDefaultAsync(us => us.UserId == userId && us.SeriesId == dto.ContentId);
+                        if (userSeries == null)
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
+
+                        var nextLastSeen = GetNextLastSeen(userSeries.LastSeen);
+                        AddWatchMinutes(user, userSeries.LastSeen, nextLastSeen);
+                        userSeries.LastSeen = nextLastSeen;
+                        break;
+                    }
+
+                    default:
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidType",
+                            Message = "Érvénytelen tartalom típus. Lehetséges: book, series, movie"
+                        });
+                }
+
+                await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
+                return Ok(new MessageResponseDTO { Message = "A LastSeen sikeresen frissítve" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
         // POST /api/history
         // Előzmény frissítése: progress, status, rating
         // Body: UpdateHistoryDTO
@@ -198,10 +513,14 @@ namespace KonyvkockaAPI.Controllers
             try
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (user == null)
+                    return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Felhasználó nem található" });
 
                 var validStatuses = new[] { "WATCHING", "COMPLETED", "PAUSED", "DROPPED", "PLANNED", "ARCHIVED" };
+                var normalizedStatus = dto.Status?.Trim().ToUpperInvariant();
 
-                if (!string.IsNullOrEmpty(dto.Status) && !validStatuses.Contains(dto.Status.ToUpper()))
+                if (!string.IsNullOrEmpty(normalizedStatus) && !validStatuses.Contains(normalizedStatus))
                     return BadRequest(new ErrorResponseDTO
                     {
                         Error   = "InvalidStatus",
@@ -213,20 +532,53 @@ namespace KonyvkockaAPI.Controllers
                     case "book":
                     {
                         var userBook = await _context.UserBooks
+                            .Include(ub => ub.Book)
                             .FirstOrDefaultAsync(ub => ub.UserId == userId && ub.BookId == dto.ContentId);
 
                         if (userBook == null)
                             return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
 
-                        if (dto.Progress.HasValue) userBook.CurrentPage = dto.Progress.Value;
-                        if (!string.IsNullOrEmpty(dto.Status)) userBook.Status = dto.Status.ToUpper();
+                        if (dto.Progress.HasValue)
+                        {
+                            var normalizedProgress = Math.Max(0, dto.Progress.Value);
+                            var maxPage = Math.Max(1, userBook.Book.PageNum);
+                            userBook.CurrentPage = Math.Min(normalizedProgress, maxPage);
+                        }
+
+                        var currentPage = Math.Max(0, userBook.CurrentPage ?? 0);
+                        var totalPages = Math.Max(1, userBook.Book.PageNum);
+                        var isAlreadyCompleted = string.Equals(userBook.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase);
+
+                        if (!string.IsNullOrEmpty(normalizedStatus))
+                        {
+                            if (normalizedStatus == "COMPLETED" && currentPage < totalPages)
+                            {
+                                return BadRequest(new ErrorResponseDTO
+                                {
+                                    Error = "InvalidProgress",
+                                    Message = "A könyv csak teljes előrehaladásnál állítható COMPLETED státuszra."
+                                });
+                            }
+
+                            if (!(isAlreadyCompleted && normalizedStatus != "COMPLETED"))
+                            {
+                                userBook.Status = normalizedStatus;
+                            }
+                        }
+                        else if (!isAlreadyCompleted && currentPage >= totalPages)
+                        {
+                            userBook.Status = "COMPLETED";
+                        }
+
                         if (dto.Rating.HasValue)
                         {
                             if (dto.Rating < 0 || dto.Rating > 10)
                                 return BadRequest(new ErrorResponseDTO { Error = "InvalidRating", Message = "Az értékelés 0 és 10 között kell legyen" });
                             userBook.Rating = dto.Rating.Value;
                         }
-                        userBook.LastSeen = DateTime.Now;
+                        var nextLastSeen = GetNextLastSeen(userBook.LastSeen);
+                        AddReadMinutes(user, userBook.LastSeen, nextLastSeen);
+                        userBook.LastSeen = nextLastSeen;
                         break;
                     }
 
@@ -239,14 +591,18 @@ namespace KonyvkockaAPI.Controllers
                             return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
 
                         if (dto.Progress.HasValue) userSeries.CurrentEpisode = dto.Progress.Value;
-                        if (!string.IsNullOrEmpty(dto.Status)) userSeries.Status = dto.Status.ToUpper();
+                        var seriesCompleted = string.Equals(userSeries.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase);
+                        if (!string.IsNullOrEmpty(normalizedStatus) && !(seriesCompleted && normalizedStatus != "COMPLETED"))
+                            userSeries.Status = normalizedStatus;
                         if (dto.Rating.HasValue)
                         {
                             if (dto.Rating < 0 || dto.Rating > 10)
                                 return BadRequest(new ErrorResponseDTO { Error = "InvalidRating", Message = "Az értékelés 0 és 10 között kell legyen" });
                             userSeries.Rating = dto.Rating.Value;
                         }
-                        userSeries.LastSeen = DateTime.Now;
+                        var nextLastSeen = GetNextLastSeen(userSeries.LastSeen);
+                        AddWatchMinutes(user, userSeries.LastSeen, nextLastSeen);
+                        userSeries.LastSeen = nextLastSeen;
                         break;
                     }
 
@@ -259,14 +615,18 @@ namespace KonyvkockaAPI.Controllers
                             return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "Az előzmény nem található" });
 
                         if (dto.Progress.HasValue) userMovie.CurrentPosition = dto.Progress.Value;
-                        if (!string.IsNullOrEmpty(dto.Status)) userMovie.Status = dto.Status.ToUpper();
+                        var movieCompleted = string.Equals(userMovie.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase);
+                        if (!string.IsNullOrEmpty(normalizedStatus) && !(movieCompleted && normalizedStatus != "COMPLETED"))
+                            userMovie.Status = normalizedStatus;
                         if (dto.Rating.HasValue)
                         {
                             if (dto.Rating < 0 || dto.Rating > 10)
                                 return BadRequest(new ErrorResponseDTO { Error = "InvalidRating", Message = "Az értékelés 0 és 10 között kell legyen" });
                             userMovie.Rating = dto.Rating.Value;
                         }
-                        userMovie.LastSeen = DateTime.Now;
+                        var nextLastSeen = GetNextLastSeen(userMovie.LastSeen);
+                        AddWatchMinutes(user, userMovie.LastSeen, nextLastSeen);
+                        userMovie.LastSeen = nextLastSeen;
                         break;
                     }
 
@@ -279,8 +639,18 @@ namespace KonyvkockaAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
 
                 return Ok(new MessageResponseDTO { Message = "Az előzmény sikeresen frissítve" });
+            }
+            catch (DbUpdateException ex)
+            {
+                var dbMessage = ex.InnerException?.Message ?? ex.Message;
+                return BadRequest(new ErrorResponseDTO
+                {
+                    Error = "InvalidStateTransition",
+                    Message = dbMessage
+                });
             }
             catch (Exception ex)
             {
@@ -339,6 +709,7 @@ namespace KonyvkockaAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
                 return Ok(new MessageResponseDTO { Message = "Az előzmény sikeresen törölve" });
             }
             catch (Exception ex)
@@ -370,6 +741,7 @@ namespace KonyvkockaAPI.Controllers
                 _context.UserSeries.RemoveRange(userSeries);
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
 
                 return Ok(new MessageResponseDTO { Message = "Az összes előzmény sikeresen törölve" });
             }
@@ -377,6 +749,59 @@ namespace KonyvkockaAPI.Controllers
             {
                 return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
             }
+        }
+
+        private static DateTime GetNextLastSeen(DateTime? currentLastSeen)
+        {
+            var now = DateTime.Now;
+            if (!currentLastSeen.HasValue)
+                return now;
+
+            // DATETIME mező másodperces pontosságú, ezért gyors frissítésnél
+            // legalább +1 mp-cel biztosan előre léptetjük az értéket.
+            var minNext = currentLastSeen.Value.AddSeconds(1);
+            return now <= minNext ? minNext : now;
+        }
+
+        private static int CalculateCreditableMinutes(DateTime? previousLastSeen, DateTime nextLastSeen)
+        {
+            if (!previousLastSeen.HasValue)
+                return 0;
+
+            // A 60 mp-es heartbeat kis jitterrel gyakran 59.xx mp-et ad,
+            // ezért nearest-minute kerekítést használunk floor helyett.
+            const int maxMinutesPerUpdate = 20;
+            var elapsedSeconds = (nextLastSeen - previousLastSeen.Value).TotalSeconds;
+            if (elapsedSeconds <= 0)
+                return 0;
+
+            // 45 mp alatt még nem tekintjük jóváírható nézési/olvasási időnek,
+            // ezzel kizárjuk a túl sűrű pingekből adódó túlbecslést.
+            if (elapsedSeconds < 45)
+                return 0;
+
+            var elapsedMinutes = (int)Math.Round(
+                elapsedSeconds / 60d,
+                MidpointRounding.AwayFromZero);
+
+            if (elapsedMinutes <= 0)
+                return 0;
+
+            return Math.Min(elapsedMinutes, maxMinutesPerUpdate);
+        }
+
+        private static void AddReadMinutes(User user, DateTime? previousLastSeen, DateTime nextLastSeen)
+        {
+            var deltaMinutes = CalculateCreditableMinutes(previousLastSeen, nextLastSeen);
+            if (deltaMinutes > 0)
+                user.ReadTimeMin += deltaMinutes;
+        }
+
+        private static void AddWatchMinutes(User user, DateTime? previousLastSeen, DateTime nextLastSeen)
+        {
+            var deltaMinutes = CalculateCreditableMinutes(previousLastSeen, nextLastSeen);
+            if (deltaMinutes > 0)
+                user.WatchTimeMin += deltaMinutes;
         }
 
         // ================================================================
@@ -391,6 +816,7 @@ namespace KonyvkockaAPI.Controllers
             Cover       = ub.Book.CoverApiName,
             Status      = ub.Status,
             Progress    = ub.CurrentPage,
+            TotalUnits  = ub.Book.PageNum,
             Rating      = ub.Rating,
             LastSeen    = ub.LastSeen,
             AddedAt     = ub.AddedAt
@@ -404,6 +830,7 @@ namespace KonyvkockaAPI.Controllers
             Poster      = um.Movie.PosterApiName,
             Status      = um.Status,
             Progress    = um.CurrentPosition,
+            TotalUnits  = um.Movie.Length,
             Rating      = um.Rating,
             LastSeen    = um.LastSeen,
             AddedAt     = um.AddedAt
@@ -417,6 +844,7 @@ namespace KonyvkockaAPI.Controllers
             Poster      = us.Series.PosterApiName,
             Status      = us.Status,
             Progress    = us.CurrentEpisode,
+            TotalUnits  = us.Series.Episodes.Count,
             Rating      = us.Rating,
             LastSeen    = us.LastSeen,
             AddedAt     = us.AddedAt

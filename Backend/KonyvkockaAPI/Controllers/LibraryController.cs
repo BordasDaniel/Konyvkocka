@@ -2,6 +2,7 @@
 using KonyvkockaAPI.DTO.Response;
 using KonyvkockaAPI.Extensions;
 using KonyvkockaAPI.Models;
+using KonyvkockaAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +15,14 @@ namespace KonyvkockaAPI.Controllers
     public class LibraryController : ControllerBase
     {
         private readonly KonyvkockaContext _context;
+        private readonly IChallengeProgressService _challengeProgressService;
 
-        public LibraryController(KonyvkockaContext context)
+        public LibraryController(
+            KonyvkockaContext context,
+            IChallengeProgressService challengeProgressService)
         {
             _context = context;
+            _challengeProgressService = challengeProgressService;
         }
 
         // ================================================================
@@ -250,6 +255,75 @@ namespace KonyvkockaAPI.Controllers
         }
 
         // ================================================================
+        // GET /api/library/{type}/{contentId}/state
+        // Egy tartalom könyvtárbeli állapotának lekérése
+        // ================================================================
+        [HttpGet("{type}/{contentId}/state")]
+        public async Task<IActionResult> GetLibraryItemState(string type, int contentId)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+
+                switch (type.ToLower())
+                {
+                    case "book":
+                        if (!await _context.Books.AnyAsync(b => b.Id == contentId))
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A könyv nem található." });
+
+                        var userBook = await _context.UserBooks
+                            .FirstOrDefaultAsync(ub => ub.UserId == userId && ub.BookId == contentId);
+
+                        return Ok(new
+                        {
+                            exists = userBook != null,
+                            status = userBook?.Status,
+                            favorite = userBook?.Favorite ?? false
+                        });
+
+                    case "movie":
+                        if (!await _context.Movies.AnyAsync(m => m.Id == contentId))
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A film nem található." });
+
+                        var userMovie = await _context.UserMovies
+                            .FirstOrDefaultAsync(um => um.UserId == userId && um.MovieId == contentId);
+
+                        return Ok(new
+                        {
+                            exists = userMovie != null,
+                            status = userMovie?.Status,
+                            favorite = userMovie?.Favorite ?? false
+                        });
+
+                    case "series":
+                        if (!await _context.Series.AnyAsync(s => s.Id == contentId))
+                            return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A sorozat nem található." });
+
+                        var userSeries = await _context.UserSeries
+                            .FirstOrDefaultAsync(us => us.UserId == userId && us.SeriesId == contentId);
+
+                        return Ok(new
+                        {
+                            exists = userSeries != null,
+                            status = userSeries?.Status,
+                            favorite = userSeries?.Favorite ?? false
+                        });
+
+                    default:
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidParameter",
+                            Message = "A type értéke csak 'book', 'movie' vagy 'series' lehet."
+                        });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
         // POST /api/library
         // Tartalom hozzáadása a könyvtárhoz
         // Body: AddToLibraryDTO
@@ -269,10 +343,17 @@ namespace KonyvkockaAPI.Controllers
                         Message = "A type értéke csak 'book', 'movie' vagy 'series' lehet."
                     });
 
-                var validStatuses = new[] { "WATCHING", "PLANNED" };
-                var normalizedStatus = dto.Status?.ToUpper() ?? "PLANNED";
-                if (!validStatuses.Contains(normalizedStatus))
-                    normalizedStatus = "PLANNED";
+                var validStatuses = new[] { "WATCHING", "COMPLETED", "PAUSED", "DROPPED", "PLANNED", "ARCHIVED" };
+                var normalizedStatus = string.IsNullOrWhiteSpace(dto.Status)
+                    ? null
+                    : dto.Status.Trim().ToUpperInvariant();
+
+                if (normalizedStatus != null && !validStatuses.Contains(normalizedStatus))
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidParameter",
+                        Message = $"Érvénytelen státusz: '{dto.Status}'. Lehetséges értékek: {string.Join(", ", validStatuses)}"
+                    });
 
                 switch (dto.Type.ToLower())
                 {
@@ -287,6 +368,7 @@ namespace KonyvkockaAPI.Controllers
                             UserId = userId,
                             BookId = dto.ContentId,
                             Status = normalizedStatus,
+                            RemainingCompletions = 3,
                             AddedAt = DateTime.Now
                         });
                         break;
@@ -302,6 +384,7 @@ namespace KonyvkockaAPI.Controllers
                             UserId = userId,
                             MovieId = dto.ContentId,
                             Status = normalizedStatus,
+                            RemainingCompletions = 3,
                             AddedAt = DateTime.Now
                         });
                         break;
@@ -317,12 +400,14 @@ namespace KonyvkockaAPI.Controllers
                             UserId = userId,
                             SeriesId = dto.ContentId,
                             Status = normalizedStatus,
+                            RemainingCompletions = 3,
                             AddedAt = DateTime.Now
                         });
                         break;
                 }
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
                 return Ok(new MessageResponseDTO { Message = "Tartalom sikeresen hozzáadva a könyvtárhoz." });
             }
             catch (Exception ex)
@@ -347,13 +432,26 @@ namespace KonyvkockaAPI.Controllers
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
 
                 var validStatuses = new[] { "WATCHING", "COMPLETED", "PAUSED", "DROPPED", "PLANNED", "ARCHIVED" };
-                var newStatus = dto.Status?.ToUpper();
-                if (newStatus != null && !validStatuses.Contains(newStatus))
-                    return BadRequest(new ErrorResponseDTO
+                var hasStatusUpdate = dto.Status != null;
+                string? newStatus = null;
+
+                if (hasStatusUpdate)
+                {
+                    if (string.IsNullOrWhiteSpace(dto.Status))
                     {
-                        Error = "InvalidParameter",
-                        Message = $"Érvénytelen státusz: '{dto.Status}'. Lehetséges értékek: {string.Join(", ", validStatuses)}"
-                    });
+                        newStatus = null;
+                    }
+                    else
+                    {
+                        newStatus = dto.Status.Trim().ToUpperInvariant();
+                        if (!validStatuses.Contains(newStatus))
+                            return BadRequest(new ErrorResponseDTO
+                            {
+                                Error = "InvalidParameter",
+                                Message = $"Érvénytelen státusz: '{dto.Status}'. Lehetséges értékek: {string.Join(", ", validStatuses)}"
+                            });
+                    }
+                }
 
                 switch (type.ToLower())
                 {
@@ -365,7 +463,7 @@ namespace KonyvkockaAPI.Controllers
 
                         if (dto.CurrentPage.HasValue) ub.CurrentPage = dto.CurrentPage;
                         if (dto.CurrentAudioPosition.HasValue) ub.CurrentAudioPosition = dto.CurrentAudioPosition;
-                        if (newStatus != null) ub.Status = newStatus;
+                        if (hasStatusUpdate) ub.Status = newStatus;
                         break;
 
                     case "movie":
@@ -375,7 +473,7 @@ namespace KonyvkockaAPI.Controllers
                             return NotFound(new ErrorResponseDTO { Error = "NotFound", Message = "A film nem szerepel a könyvtáradban." });
 
                         if (dto.CurrentPosition.HasValue) um.CurrentPosition = dto.CurrentPosition;
-                        if (newStatus != null) um.Status = newStatus;
+                        if (hasStatusUpdate) um.Status = newStatus;
                         break;
 
                     case "series":
@@ -387,7 +485,7 @@ namespace KonyvkockaAPI.Controllers
                         if (dto.CurrentSeason.HasValue) us.CurrentSeason = dto.CurrentSeason;
                         if (dto.CurrentEpisode.HasValue) us.CurrentEpisode = dto.CurrentEpisode;
                         if (dto.CurrentEpisodePosition.HasValue) us.CurrentPosition = dto.CurrentEpisodePosition;
-                        if (newStatus != null) us.Status = newStatus;
+                        if (hasStatusUpdate) us.Status = newStatus;
                         break;
 
                     default:
@@ -399,7 +497,119 @@ namespace KonyvkockaAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
                 return Ok(new MessageResponseDTO { Message = "Haladás sikeresen frissítve." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // PATCH /api/library/{type}/{contentId}/restart
+        // Tartalom újrakezdése: státusz WATCHING + pozíció nullázása
+        // CompletedAt mező változatlan marad.
+        // ================================================================
+        [HttpPatch("{type}/{contentId}/restart")]
+        public async Task<IActionResult> RestartContent(string type, int contentId)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var now = DateTime.Now;
+                int affectedRows;
+
+                switch (type.ToLower())
+                {
+                    case "book":
+                        affectedRows = await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                            REPLACE INTO user_book
+                                (UserId, BookId, Status, Favorite, Rating, AddedAt, CompletedAt, RemainingCompletions, LastSeen, CurrentPage, CurrentAudioPosition)
+                            SELECT
+                                UserId,
+                                BookId,
+                                {"WATCHING"},
+                                Favorite,
+                                Rating,
+                                AddedAt,
+                                CompletedAt,
+                                RemainingCompletions,
+                                {now},
+                                {0},
+                                {0}
+                            FROM user_book
+                            WHERE UserId = {userId} AND BookId = {contentId}");
+                        break;
+
+                    case "movie":
+                        affectedRows = await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                            REPLACE INTO user_movie
+                                (UserId, MovieId, Status, Favorite, Rating, AddedAt, CompletedAt, RemainingCompletions, LastSeen, CurrentPosition)
+                            SELECT
+                                UserId,
+                                MovieId,
+                                {"WATCHING"},
+                                Favorite,
+                                Rating,
+                                AddedAt,
+                                CompletedAt,
+                                RemainingCompletions,
+                                {now},
+                                {0}
+                            FROM user_movie
+                            WHERE UserId = {userId} AND MovieId = {contentId}");
+                        break;
+
+                    case "series":
+                        affectedRows = await _context.Database.ExecuteSqlInterpolatedAsync($@"
+                            REPLACE INTO user_series
+                                (UserId, SeriesId, Status, Favorite, Rating, AddedAt, CompletedAt, RemainingCompletions, LastSeen, CurrentSeason, CurrentEpisode, CurrentPosition)
+                            SELECT
+                                UserId,
+                                SeriesId,
+                                {"WATCHING"},
+                                Favorite,
+                                Rating,
+                                AddedAt,
+                                CompletedAt,
+                                RemainingCompletions,
+                                {now},
+                                {1},
+                                {1},
+                                {0}
+                            FROM user_series
+                            WHERE UserId = {userId} AND SeriesId = {contentId}");
+                        break;
+
+                    default:
+                        return BadRequest(new ErrorResponseDTO
+                        {
+                            Error = "InvalidParameter",
+                            Message = "A type értéke csak 'book', 'movie' vagy 'series' lehet."
+                        });
+                }
+
+                if (affectedRows <= 0)
+                    return NotFound(new ErrorResponseDTO
+                    {
+                        Error = "NotFound",
+                        Message = "A tartalom nem szerepel a könyvtáradban."
+                    });
+
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
+                return Ok(new MessageResponseDTO { Message = "Tartalom sikeresen újraindítva." });
+            }
+            catch (DbUpdateException dbEx)
+            {
+                var innerMessage = dbEx.InnerException?.Message;
+                return StatusCode(500, new ErrorResponseDTO
+                {
+                    Error = "DatabaseError",
+                    Message = string.IsNullOrWhiteSpace(innerMessage)
+                        ? dbEx.Message
+                        : $"{dbEx.Message} | Inner: {innerMessage}"
+                });
             }
             catch (Exception ex)
             {
@@ -576,6 +786,7 @@ namespace KonyvkockaAPI.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
                 return Ok(new MessageResponseDTO { Message = "Tartalom eltávolítva a könyvtárból." });
             }
             catch (Exception ex)

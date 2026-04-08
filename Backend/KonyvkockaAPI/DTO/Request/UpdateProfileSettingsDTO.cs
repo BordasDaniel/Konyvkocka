@@ -8,7 +8,7 @@ namespace KonyvkockaAPI.DTO.Request
         public string? Avatar { get; set; }
 
         /// <summary>
-        /// Országkód (pl. "HU"), null ha nem változik
+        /// Országkód (pl. "HU"), null/üres esetén nincs ország beállítva
         /// </summary>
         public string? CountryCode { get; set; }
 

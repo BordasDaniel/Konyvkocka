@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 function About(): React.JSX.Element {
-    const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
     return (
         <>
@@ -83,7 +83,11 @@ function About(): React.JSX.Element {
         </div>
         <div className="pricing-cta">
           {isAuthenticated ? (
-            <Link to="/fizetes" className="btn fw-bold">Előfizetek</Link>
+            user?.isSubscriber ? (
+              <button className="btn fw-bold" disabled>Már előfizető vagy</button>
+            ) : (
+              <Link to="/fizetes" className="btn fw-bold">Előfizetek</Link>
+            )
           ) : (
             <button className="btn fw-bold" disabled>Bejelentkezés szükséges</button>
           )}

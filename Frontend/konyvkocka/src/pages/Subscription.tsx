@@ -18,7 +18,7 @@ interface SubscriptionInfo {
   name: string;
   startDate: string | null;
   endDate: string | null;
-  autoRenew: boolean | null;
+  autoRenew: boolean;
   price: string;
 }
 
@@ -78,19 +78,22 @@ const Subscription: React.FC = () => {
 
         if (!isMounted) return;
 
-        const successfulPurchases = purchaseData.purchases
-          .filter((item) => item.purchaseStatus === 'SUCCESS')
-          .sort((a, b) => (new Date(b.purchaseDate ?? 0).getTime() - new Date(a.purchaseDate ?? 0).getTime()));
+        const mappedPurchases = purchaseData.purchases.map(mapPurchase);
+        const purchasesByDateDesc = [...mappedPurchases].sort(
+          (a, b) => new Date(b.purchaseDate ?? 0).getTime() - new Date(a.purchaseDate ?? 0).getTime(),
+        );
+        const latestPurchase = purchasesByDateDesc[0] ?? null;
+        const latestSuccessfulPurchase = purchasesByDateDesc.find((item) => item.purchaseStatus === 'SUCCESS') ?? null;
 
         setSubscription({
           type: subData.type,
           name: subData.name,
-          startDate: successfulPurchases[0]?.purchaseDate ?? null,
+          startDate: latestSuccessfulPurchase?.purchaseDate ?? null,
           endDate: subData.expiresAt,
-          autoRenew: null,
-          price: 'Nincs adat',
+          autoRenew: false,
+          price: latestPurchase ? formatHuf(latestPurchase.price) : 'Nincs adat',
         });
-        setPurchases(purchaseData.purchases.map(mapPurchase));
+        setPurchases(mappedPurchases);
       } catch (error) {
         if (!isMounted) return;
         console.error('Hiba az adatok betöltésekor:', error);
@@ -308,7 +311,7 @@ const Subscription: React.FC = () => {
                 <div>
                   <span className="detail-label">Automatikus megújítás</span>
                   <span className={`detail-value ${subscription?.autoRenew ? 'text-success' : 'text-danger'}`}>
-                    {subscription?.autoRenew === null ? 'Nincs adat' : subscription?.autoRenew ? 'Bekapcsolva' : 'Kikapcsolva'}
+                    {subscription?.autoRenew ? 'Bekapcsolva' : 'Kikapcsolva'}
                   </span>
                 </div>
               </div>
@@ -328,16 +331,10 @@ const Subscription: React.FC = () => {
                   Váltás Premiumra
                 </button>
               ) : (
-                <>
-                  <button className="btn-upgrade" onClick={() => navigate('/fizetes')}>
-                    <i className="bi bi-arrow-up-circle"></i>
-                    Csomag váltás
-                  </button>
-                  <button className="btn-cancel" onClick={() => navigate('/tamogatas')}>
-                    <i className="bi bi-life-preserver"></i>
-                    Lemondas ugyfelszolgalaton
-                  </button>
-                </>
+                <button className="btn-cancel" onClick={() => navigate('/tamogatas')}>
+                  <i className="bi bi-life-preserver"></i>
+                  Lemondas ugyfelszolgalaton
+                </button>
               )}
             </div>
           </div>

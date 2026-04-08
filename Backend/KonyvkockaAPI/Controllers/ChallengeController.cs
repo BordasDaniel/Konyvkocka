@@ -1,5 +1,6 @@
 using KonyvkockaAPI.DTO.Response;
 using KonyvkockaAPI.Models;
+using KonyvkockaAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +13,14 @@ namespace KonyvkockaAPI.Controllers
     public class ChallengeController : ControllerBase
     {
         private readonly KonyvkockaContext _context;
+        private readonly IChallengeProgressService _challengeProgressService;
 
-        public ChallengeController(KonyvkockaContext context)
+        public ChallengeController(
+            KonyvkockaContext context,
+            IChallengeProgressService challengeProgressService)
         {
             _context = context;
+            _challengeProgressService = challengeProgressService;
         }
 
         // ================================================================
@@ -34,6 +39,7 @@ namespace KonyvkockaAPI.Controllers
             try
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
 
                 var allChallenges = await _context.Challenges
                     .Where(c => c.IsActive == true)
@@ -130,6 +136,7 @@ namespace KonyvkockaAPI.Controllers
             try
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                await _challengeProgressService.RecalculateForUserAsync(userId, HttpContext.RequestAborted);
 
                 var challenge = await _context.Challenges.FindAsync(id);
                 if (challenge == null)

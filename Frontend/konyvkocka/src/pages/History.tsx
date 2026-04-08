@@ -1,7 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/history.css';
-import { ApiHttpError, getHistory, toContentImageSrc, type HistoryItemResponse } from '../services/api';
+import {
+  ApiHttpError,
+  applyContentImageFallback,
+  buildContentKey,
+  getHistory,
+  recordContentView,
+  restartLibraryItem,
+  touchHistoryItem,
+  toContentImageSrc,
+  type HistoryItemResponse,
+} from '../services/api';
 
 // Előzmény elem típus
 interface HistoryItem {
@@ -11,22 +21,42 @@ interface HistoryItem {
   type: 'book' | 'movie' | 'series';
   progress: number; // 0-100
   lastPosition: string; // pl. "124. oldal" vagy "S2 E5 - 23:45"
-  totalDuration: string; // pl. "320 oldal" vagy "45 perc"
+  totalDuration: string; // pl. "320 oldal" vagy "1 óra 34 perc"
   viewedAt: Date;
   rating?: number;
 }
 
+const formatMinutesAsDuration = (value: number): string => {
+  const totalMinutes = Math.max(0, Math.floor(value));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours <= 0) return `${minutes} perc`;
+  if (minutes === 0) return `${hours} óra`;
+  return `${hours} óra ${minutes} perc`;
+};
+
 const mapHistoryItem = (item: HistoryItemResponse): HistoryItem => {
   const status = item.status?.toUpperCase() ?? '';
-  const rawProgress = item.progress ?? 0;
+  const rawProgress = Math.max(0, Math.floor(item.progress ?? 0));
+
+  const totalUnits = typeof item.totalUnits === 'number' && item.totalUnits > 0
+    ? item.totalUnits
+    : null;
+
+  const percentFromUnits = totalUnits
+    ? Math.round((rawProgress / totalUnits) * 100)
+    : null;
 
   const progress = status === 'COMPLETED'
     ? 100
-    : rawProgress <= 0
-      ? 0
-      : rawProgress <= 100
-        ? Math.max(1, Math.min(99, rawProgress))
-        : Math.max(1, Math.min(99, Math.round(rawProgress / 2)));
+    : percentFromUnits != null
+      ? Math.max(0, Math.min(99, percentFromUnits))
+      : rawProgress <= 0
+        ? 0
+        : rawProgress <= 100
+          ? Math.max(1, Math.min(99, rawProgress))
+          : 99;
 
   const normalizedType: HistoryItem['type'] = item.contentType.toLowerCase() === 'movie'
     ? 'movie'
@@ -40,7 +70,7 @@ const mapHistoryItem = (item: HistoryItemResponse): HistoryItem => {
       ? `${rawProgress || 0}. oldal`
       : normalizedType === 'series'
         ? `Epizód ${rawProgress || 0}`
-        : `${rawProgress || 0}. perc`;
+        : formatMinutesAsDuration(rawProgress || 0);
 
   return {
     id: item.contentId,
@@ -51,10 +81,10 @@ const mapHistoryItem = (item: HistoryItemResponse): HistoryItem => {
     lastPosition,
     totalDuration:
       normalizedType === 'book'
-        ? 'Ismeretlen oldalszám'
+        ? `${totalUnits ?? Math.max(0, rawProgress)} oldal`
         : normalizedType === 'series'
-          ? 'Ismeretlen epizódszám'
-          : 'Ismeretlen hossz',
+          ? `${totalUnits ?? Math.max(0, rawProgress)} epizód`
+          : formatMinutesAsDuration(totalUnits ?? Math.max(0, rawProgress)),
     viewedAt: new Date(item.lastSeen ?? item.addedAt ?? Date.now()),
     rating: item.rating == null ? undefined : Number(item.rating),
   };
@@ -68,6 +98,7 @@ const History: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [actionInProgressKey, setActionInProgressKey] = useState<string | null>(null);
   const pageSize = 5;
 
   useEffect(() => {
@@ -85,7 +116,12 @@ const History: React.FC = () => {
         });
 
         if (!isMounted) return;
-        setHistoryItems(response.history.map(mapHistoryItem));
+
+        const mappedItems = response.history
+          .map(mapHistoryItem)
+          .sort((a, b) => b.viewedAt.getTime() - a.viewedAt.getTime());
+
+        setHistoryItems(mappedItems);
       } catch (loadError) {
         if (!isMounted) return;
 
@@ -223,12 +259,64 @@ const History: React.FC = () => {
     return date.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' });
   };
 
-  // Folytatás kezelése
-  const handleContinue = (item: HistoryItem) => {
+  const openContent = (item: HistoryItem) => {
+    const contentKey = buildContentKey(item.type, item.id);
+
     if (item.type === 'book') {
-      navigate('/olvaso', { state: { bookId: item.id } });
-    } else {
-      navigate('/nezes', { state: { contentId: item.id, contentType: item.type } });
+      navigate(`/olvaso?content=${encodeURIComponent(contentKey)}`);
+      return;
+    }
+
+    navigate(`/nezes?content=${encodeURIComponent(contentKey)}`);
+  };
+
+  // Folytatás kezelése
+  const handleContinue = async (item: HistoryItem) => {
+    if (item.progress >= 100) {
+      openContent(item);
+      return;
+    }
+
+    // Only LastSeen frissítése meglévő rekordra; ha hiányzik, fallbackként létrehozzuk/upserteljük.
+    try {
+      await touchHistoryItem({
+        contentType: item.type,
+        contentId: item.id,
+      });
+    } catch (recordError) {
+      if (recordError instanceof ApiHttpError && recordError.status === 404) {
+        try {
+          await recordContentView({ contentType: item.type, contentId: item.id });
+        } catch (fallbackError) {
+          console.warn('History fallback view tracking failed:', fallbackError);
+        }
+      } else {
+        console.warn('History pre-navigation update failed:', recordError);
+      }
+    }
+
+    openContent(item);
+  };
+
+  const handleRestartAndOpen = async (item: HistoryItem) => {
+    const key = `${item.type}:${item.id}`;
+    setActionInProgressKey(key);
+    setError(null);
+
+    try {
+      await restartLibraryItem(item.type, item.id);
+      openContent(item);
+    } catch (restartError) {
+      console.error('Restart from history failed:', restartError);
+      if (restartError instanceof ApiHttpError && restartError.status === 401) {
+        setError('A művelethez be kell jelentkezned.');
+      } else if (restartError instanceof ApiHttpError && restartError.message) {
+        setError(restartError.message);
+      } else {
+        setError('Az újraindítás sikertelen. Kérlek próbáld újra.');
+      }
+    } finally {
+      setActionInProgressKey(null);
     }
   };
 
@@ -317,15 +405,23 @@ const History: React.FC = () => {
                   {group.items.map(item => {
                     const typeInfo = getTypeInfo(item.type);
                     const isCompleted = item.progress === 100;
+                    const actionKey = `${item.type}:${item.id}`;
+                    const isActionBusy = actionInProgressKey === actionKey;
 
                     return (
                       <div
-                        key={item.id}
+                        key={`${item.type}-${item.id}`}
                         className={`history-item ${isCompleted ? 'completed' : ''}`}
                       >
                         {/* Borító */}
                         <div className="item-cover">
-                          <img src={item.cover} alt={item.title} />
+                          <img
+                            src={item.cover}
+                            alt={item.title}
+                            onError={(event) => {
+                              applyContentImageFallback(event.currentTarget);
+                            }}
+                          />
                           <div className="item-type-badge" style={{ backgroundColor: typeInfo.color }}>
                             <i className={`bi ${typeInfo.icon}`}></i>
                           </div>
@@ -391,23 +487,35 @@ const History: React.FC = () => {
                         </div>
 
                         {/* Akciók */}
-                        <div className="item-actions">
+                        <div className={`item-actions ${isCompleted ? 'completed-actions' : ''}`}>
                           {!isCompleted ? (
                             <button
                               className="btn-continue"
                               onClick={() => handleContinue(item)}
+                              disabled={isActionBusy}
                             >
                               <i className="bi bi-play-fill"></i>
                               Folytatás
                             </button>
                           ) : (
-                            <button
-                              className="btn-rewatch"
-                              onClick={() => handleContinue(item)}
-                            >
-                              <i className="bi bi-arrow-repeat"></i>
-                              Újra
-                            </button>
+                            <>
+                              <button
+                                className="btn-rewatch"
+                                onClick={() => void handleRestartAndOpen(item)}
+                                disabled={isActionBusy}
+                              >
+                                <i className="bi bi-arrow-repeat"></i>
+                                {isActionBusy ? 'Újraindítás...' : 'Újra'}
+                              </button>
+                              <button
+                                className="btn-open-completed"
+                                onClick={() => openContent(item)}
+                                disabled={isActionBusy}
+                              >
+                                <i className="bi bi-box-arrow-up-right"></i>
+                                Megnyitás
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>

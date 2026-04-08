@@ -31,6 +31,11 @@ namespace KonyvkockaAPI.DTO.Response
         /// </summary>
         public int? Progress { get; set; }
 
+        /// <summary>
+        /// Teljes terjedelem: könyv=összoldalszám, sorozat=epizódszám, film=hossz percben
+        /// </summary>
+        public int? TotalUnits { get; set; }
+
         public decimal? Rating { get; set; }
 
         /// <summary>
