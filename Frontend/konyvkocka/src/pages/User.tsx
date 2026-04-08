@@ -14,6 +14,7 @@ import {
 	toAvatarSrc,
 	toContentImageSrc,
 	reportUser,
+	requestAccountDeletion,
 	updateUserSettings,
 	type OwnedUserTitleResponse,
 	type ReportUserReason,
@@ -708,6 +709,9 @@ const User: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [saveModal, setSaveModal] = useState<SaveModalState>(null);
 	const [reportModalOpen, setReportModalOpen] = useState(false);
+	const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
+	const [deleteAccountPassword, setDeleteAccountPassword] = useState('');
+	const [isSubmittingDeleteAccount, setIsSubmittingDeleteAccount] = useState(false);
 	const [reportReason, setReportReason] = useState<ReportUserReason>('SPAM');
 	const [reportDetails, setReportDetails] = useState('');
 	const [isSubmittingReport, setIsSubmittingReport] = useState(false);
@@ -921,6 +925,49 @@ const User: React.FC = () => {
 		};
 	}, [isSubmittingReport, reportModalOpen]);
 
+	useLayoutEffect(() => {
+		if (!deleteAccountModalOpen) return;
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape' && !isSubmittingDeleteAccount) {
+				setDeleteAccountModalOpen(false);
+			}
+		};
+
+		const html = document.documentElement;
+		const body = document.body;
+		const lockCount = Number(body.dataset.kkScrollLocks || '0');
+
+		if (lockCount === 0) {
+			const scrollBarWidth = window.innerWidth - html.clientWidth;
+			html.style.setProperty('--scrollbar-compensation', `${scrollBarWidth}px`);
+			html.style.overflow = 'hidden';
+			body.style.overflow = 'hidden';
+			body.style.paddingRight = `${scrollBarWidth}px`;
+			body.classList.add('kk-scroll-lock');
+		}
+
+		body.dataset.kkScrollLocks = String(lockCount + 1);
+		document.addEventListener('keydown', onKeyDown);
+
+		return () => {
+			const current = Number(body.dataset.kkScrollLocks || '1');
+			const next = Math.max(0, current - 1);
+			if (next === 0) {
+				delete body.dataset.kkScrollLocks;
+				html.style.overflow = '';
+				body.style.overflow = '';
+				body.style.paddingRight = '';
+				html.style.removeProperty('--scrollbar-compensation');
+				body.classList.remove('kk-scroll-lock');
+			} else {
+				body.dataset.kkScrollLocks = String(next);
+			}
+
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, [deleteAccountModalOpen, isSubmittingDeleteAccount]);
+
 	useEffect(() => {
 		if (medalModal) {
 			setMedalModalClosing(false);
@@ -990,6 +1037,8 @@ const User: React.FC = () => {
 		setReadBooksOpen(false);
 		setFavBooksOpen(false);
 		setReportModalOpen(false);
+		setDeleteAccountModalOpen(false);
+		setDeleteAccountPassword('');
 		setMedalModal(null);
 		setMedalModalVisible(false);
 		setMedalModalClosing(false);
@@ -1448,15 +1497,56 @@ const User: React.FC = () => {
 		URL.revokeObjectURL(url);
 	};
 
-	// Fiók törlése
-	const handleDeleteAccount = () => {
-		if (window.confirm('Biztosan végleg törlöd a fiókodat? Ez nem visszavonható.')) {
+	const handleDeleteAccountSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
+		event.preventDefault();
+
+		const trimmedPassword = deleteAccountPassword.trim();
+		if (!trimmedPassword) {
+			setDeleteAccountModalOpen(false);
 			setSaveModal({
 				type: 'error',
-				title: 'Muvelet nem erheto el',
-				message: 'Fiktores endpoint jelenleg nincs publikusan elerheto. Fordulj az ugyfelszolgalathoz.',
+				title: 'Hiányzó jelszó',
+				message: 'A megerősítéshez add meg a jelszavad.',
 			});
+			return;
 		}
+
+		setIsSubmittingDeleteAccount(true);
+
+		try {
+			const response = await requestAccountDeletion(trimmedPassword);
+			setDeleteAccountModalOpen(false);
+			setDeleteAccountPassword('');
+			setSaveModal({
+				type: 'success',
+				title: 'Megerősítő email elküldve',
+				message: response.message || 'A megerősítő email elküldve. A linkre kattintva törölheted a fiókodat.',
+			});
+		} catch (error) {
+			let message = 'A fióktörlés indítása sikertelen volt.';
+			if (error instanceof ApiHttpError) {
+				message = error.status === 401
+					? 'Hibás jelszó vagy lejárt munkamenet.'
+					: error.message;
+			} else if (error instanceof Error) {
+				message = error.message;
+			}
+
+			setDeleteAccountModalOpen(false);
+			setSaveModal({
+				type: 'error',
+				title: 'Fióktörlés indítása sikertelen',
+				message,
+			});
+		} finally {
+			setIsSubmittingDeleteAccount(false);
+		}
+	};
+
+	// Fiók törlése
+	const handleDeleteAccount = () => {
+		setDeleteAccountPassword('');
+		setDeleteAccountModalOpen(true);
 	};
 
 	// Könyv státusz badge
@@ -2237,6 +2327,59 @@ const User: React.FC = () => {
 						<button className="admin-send-btn" onClick={() => setSaveModal(null)}>
 							Rendben
 						</button>
+					</div>
+				</div>
+			)}
+
+			{deleteAccountModalOpen && (
+				<div
+					className="user-report-modal-backdrop"
+					onClick={() => {
+						if (!isSubmittingDeleteAccount) setDeleteAccountModalOpen(false);
+					}}
+				>
+					<div
+						className="user-report-modal"
+						onClick={(event) => event.stopPropagation()}
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="user-delete-modal-title"
+					>
+						<h4 id="user-delete-modal-title">Fiók törlése megerősítés</h4>
+						<p>
+							A folytatáshoz add meg a jelszavad. Ezután emailben küldünk egy megerősítő linket,
+							és csak arra kattintva törlődik a fiókod.
+						</p>
+
+						<form onSubmit={handleDeleteAccountSubmit}>
+							<div className="mb-3">
+								<label className="form-label" htmlFor="deleteAccountPasswordInput">Jelszó</label>
+								<input
+									id="deleteAccountPasswordInput"
+									type="password"
+									className="form-control"
+									value={deleteAccountPassword}
+									onChange={(event) => setDeleteAccountPassword(event.target.value)}
+									disabled={isSubmittingDeleteAccount}
+									autoComplete="current-password"
+									required
+								/>
+							</div>
+
+							<div className="d-flex justify-content-end gap-2">
+								<button
+									type="button"
+									className="btn btn-outline-light"
+									onClick={() => setDeleteAccountModalOpen(false)}
+									disabled={isSubmittingDeleteAccount}
+								>
+									Mégse
+								</button>
+								<button type="submit" className="btn btn-danger" disabled={isSubmittingDeleteAccount}>
+									{isSubmittingDeleteAccount ? 'Küldés...' : 'Megerősítő email kérése'}
+								</button>
+							</div>
+						</form>
 					</div>
 				</div>
 			)}

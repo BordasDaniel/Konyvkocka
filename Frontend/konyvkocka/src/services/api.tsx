@@ -849,6 +849,16 @@ export const updateUserSettings = async (params: UpdateUserSettingsParams): Prom
 	});
 };
 
+export const requestAccountDeletion = async (plainPassword: string): Promise<{ message: string }> => {
+	const passwordHash = await sha256Hex(plainPassword);
+
+	return request<{ message: string }>('/api/user/settings/delete-request', {
+		method: 'POST',
+		auth: true,
+		body: { passwordHash },
+	});
+};
+
 export interface ChallengeTitleRewardResponse {
 	id: number;
 	name: string;
