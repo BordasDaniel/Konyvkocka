@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ApiHttpError, requestPasswordResetEmail } from '../services/api';
 import '../styles/login.css';
 
 // Declare grecaptcha for TypeScript
@@ -35,10 +36,10 @@ const Login: React.FC = () => {
     setLoginErrorModal({ open: true, title, message, icon: 'error' });
   };
 
-  const openRegisterSuccessModal = (message: string) => {
+  const openEmailInfoModal = (title: string, message: string) => {
     setLoginErrorModal({
       open: true,
-      title: 'Erősítsd meg az email címed',
+      title,
       message,
       icon: 'email',
     });
@@ -231,7 +232,7 @@ const Login: React.FC = () => {
       
       if (result.success) {
         setFormType('login');
-        openRegisterSuccessModal(result.message);
+        openEmailInfoModal('Erősítsd meg az email címed', result.message);
       } else {
         alert(result.message);
       }
@@ -240,13 +241,29 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleForgotPassword = (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const email = (document.getElementById('email') as HTMLInputElement)?.value;
-    if (email) {
-      alert('Jelszó visszaállítási link elküldve!');
-    } else {
-      alert('Kérlek, add meg az email címed!');
+    if (!email || email.trim().length === 0) {
+      openLoginErrorModal('Hiányzó email cím', 'Kérlek, add meg az email címed!');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await requestPasswordResetEmail(email.trim());
+      setFormType('login');
+      openEmailInfoModal('Jelszó-visszaállítás', response.message);
+    } catch (error) {
+      const message =
+        error instanceof ApiHttpError && typeof error.message === 'string' && error.message.trim().length > 0
+          ? error.message
+          : 'A jelszó-visszaállítási kérés nem sikerült. Kérlek, próbáld újra.';
+
+      openLoginErrorModal('Sikertelen kérés', message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -397,7 +414,9 @@ const Login: React.FC = () => {
                         <label htmlFor="email" className="form-label fw-bold">Email cím</label>
                         <input type="email" className="form-control" id="email" placeholder="Írd be az email címed" required />
                       </div>
-                      <button type="submit" className="btn btn-primary w-100 text-white">Jelszó visszaállítása</button>
+                      <button type="submit" className="btn btn-primary w-100 text-white" disabled={isSubmitting}>
+                        {isSubmitting ? 'Küldés...' : 'Jelszó visszaállítása'}
+                      </button>
                     </form>
                     <div className="text-center form-change-links mt-3">
                       <a href="#" onClick={(e) => { e.preventDefault(); setFormType('register'); }} className="text-light">Még nincs fiókod? Regisztrálj!</a>

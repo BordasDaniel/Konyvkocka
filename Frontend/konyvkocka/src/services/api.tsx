@@ -273,6 +273,31 @@ export const authLogout = async (): Promise<void> => {
 	});
 };
 
+export const requestPasswordResetEmail = async (email: string): Promise<{ message: string }> =>
+	request<{ message: string }>('/api/auth/forgot-password', {
+		method: 'POST',
+		body: { email },
+	});
+
+export const confirmPasswordReset = async (params: {
+	userId: number;
+	token: string;
+	plainPassword: string;
+}): Promise<{ message: string }> => {
+	const newPasswordHash = await sha256Hex(params.plainPassword);
+	const newPasswordSalt = createRandomSalt();
+
+	return request<{ message: string }>('/api/auth/reset-password', {
+		method: 'POST',
+		body: {
+			userId: params.userId,
+			token: params.token,
+			newPasswordHash,
+			newPasswordSalt,
+		},
+	});
+};
+
 export interface HomeCardResponse {
 	id: number;
 	type: string;

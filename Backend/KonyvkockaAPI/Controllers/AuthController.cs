@@ -296,6 +296,137 @@ namespace KonyvkockaAPI.Controllers
         }
 
         /// <summary>
+        /// Jelszó-visszaállítási email küldése
+        /// POST /api/auth/forgot-password
+        /// Body: RequestPasswordResetDTO { Email }
+        /// </summary>
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword([FromBody] RequestPasswordResetDTO dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Email))
+            {
+                return BadRequest(new ErrorResponseDTO
+                {
+                    Error = "MissingEmail",
+                    Message = "Az email cím megadása kötelező."
+                });
+            }
+
+            const string genericMessage = "Ha létezik fiók a megadott email címmel, elküldtük a jelszó-visszaállítási linket.";
+
+            try
+            {
+                var email = dto.Email.Trim();
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+                if (user == null || !user.IsEmailVerified)
+                {
+                    return Ok(new MessageResponseDTO { Message = genericMessage });
+                }
+
+                var expiresAtUtc = DateTime.UtcNow.AddMinutes(30);
+                var resetToken = GeneratePasswordResetToken(user, expiresAtUtc);
+                var resetLink = BuildPasswordResetLink(user, resetToken);
+
+                var emailSent = await _emailService.SendEmailAsync(
+                    user.Email,
+                    "Jelszó visszaállítás - Konyvkocka",
+                    BuildPasswordResetBody(user.Username, resetLink));
+
+                if (!emailSent)
+                {
+                    _logger.LogWarning("Password reset email could not be sent for userId {UserId}", user.Id);
+                }
+
+                return Ok(new MessageResponseDTO { Message = genericMessage });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Password reset request failed for email {Email}", dto.Email);
+                return StatusCode(500, new ErrorResponseDTO
+                {
+                    Error = "InternalError",
+                    Message = "A jelszó-visszaállítás kérése sikertelen volt"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Jelszó-visszaállítás megerősítése email linkből
+        /// POST /api/auth/reset-password
+        /// Body: ConfirmPasswordResetDTO { UserId, Token, NewPasswordHash, NewPasswordSalt }
+        /// </summary>
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ConfirmPasswordResetDTO dto)
+        {
+            try
+            {
+                if (dto == null ||
+                    dto.UserId <= 0 ||
+                    string.IsNullOrWhiteSpace(dto.Token) ||
+                    string.IsNullOrWhiteSpace(dto.NewPasswordHash) ||
+                    string.IsNullOrWhiteSpace(dto.NewPasswordSalt))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "ValidationError",
+                        Message = "Hiányzó vagy hibás adatok a jelszó-visszaállításhoz."
+                    });
+                }
+
+                if (dto.NewPasswordHash.Trim().Length != 64)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "ValidationError",
+                        Message = "Érvénytelen jelszó hash formátum."
+                    });
+                }
+
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.UserId);
+                if (user == null)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidResetToken",
+                        Message = "Érvénytelen vagy lejárt jelszó-visszaállító link."
+                    });
+                }
+
+                if (!TryValidatePasswordResetToken(user, dto.Token, out var validationError))
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidResetToken",
+                        Message = validationError
+                    });
+                }
+
+                var newSalt = dto.NewPasswordSalt.Trim();
+                user.PasswordSalt = newSalt;
+                user.PasswordHash = CreateSHA256(dto.NewPasswordHash.Trim() + newSalt);
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new MessageResponseDTO
+                {
+                    Message = "A jelszó sikeresen megváltozott. Most már be tudsz jelentkezni az új jelszóval."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Password reset confirmation failed for userId {UserId}", dto?.UserId);
+                return StatusCode(500, new ErrorResponseDTO
+                {
+                    Error = "InternalError",
+                    Message = "A jelszó módosítása sikertelen volt"
+                });
+            }
+        }
+
+        /// <summary>
         /// Kijelentkezés – JWT alapú, a token törlése kliens oldalon történik
         /// POST /api/auth/logout
         /// </summary>
@@ -407,6 +538,83 @@ namespace KonyvkockaAPI.Controllers
             return Base64UrlEncoder.Encode(bytes);
         }
 
+        private string GeneratePasswordResetToken(User user, DateTime expiresAtUtc)
+        {
+            var nonce = Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(16));
+            var expiresUnix = new DateTimeOffset(expiresAtUtc).ToUnixTimeSeconds();
+
+            var signatureSource = BuildPasswordResetSignatureSource(user, expiresUnix, nonce);
+            var signatureBytes = ComputeHmac(signatureSource);
+            var signature = Base64UrlEncoder.Encode(signatureBytes);
+
+            return $"{user.Id}.{expiresUnix}.{nonce}.{signature}";
+        }
+
+        private bool TryValidatePasswordResetToken(User user, string token, out string errorMessage)
+        {
+            errorMessage = "Érvénytelen vagy lejárt jelszó-visszaállító link.";
+
+            var parts = token.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (parts.Length != 4)
+                return false;
+
+            if (!int.TryParse(parts[0], out var tokenUserId) || tokenUserId != user.Id)
+                return false;
+
+            if (!long.TryParse(parts[1], out var expiresUnix))
+                return false;
+
+            DateTime expiresAtUtc;
+            try
+            {
+                expiresAtUtc = DateTimeOffset.FromUnixTimeSeconds(expiresUnix).UtcDateTime;
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (expiresAtUtc <= DateTime.UtcNow)
+            {
+                errorMessage = "A jelszó-visszaállító link lejárt. Kérj új linket a bejelentkezési oldalon.";
+                return false;
+            }
+
+            var nonce = parts[2];
+            var providedSignature = parts[3];
+
+            var signatureSource = BuildPasswordResetSignatureSource(user, expiresUnix, nonce);
+            var expectedSignatureBytes = ComputeHmac(signatureSource);
+
+            byte[] providedSignatureBytes;
+            try
+            {
+                providedSignatureBytes = Base64UrlEncoder.DecodeBytes(providedSignature);
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (!CryptographicOperations.FixedTimeEquals(expectedSignatureBytes, providedSignatureBytes))
+                return false;
+
+            return true;
+        }
+
+        private string BuildPasswordResetSignatureSource(User user, long expiresUnix, string nonce)
+        {
+            var normalizedEmail = (user.Email ?? string.Empty).Trim().ToLowerInvariant();
+            return $"{user.Id}|{normalizedEmail}|{expiresUnix}|{nonce}|{user.PasswordHash}|{user.PasswordSalt}";
+        }
+
+        private byte[] ComputeHmac(string input)
+        {
+            var keyBytes = Encoding.UTF8.GetBytes(_jwtSettings.SecurityKey);
+            using var hmac = new HMACSHA256(keyBytes);
+            return hmac.ComputeHash(Encoding.UTF8.GetBytes(input));
+        }
+
         private string BuildEmailVerificationLink(int userId, string token)
         {
             var baseApiUrl = _appUrlSettings.ApiBaseUrl?.TrimEnd('/');
@@ -416,6 +624,20 @@ namespace KonyvkockaAPI.Controllers
             }
 
             return $"{baseApiUrl}/api/auth/verify-email?userId={userId}&token={Uri.EscapeDataString(token)}";
+        }
+
+        private string BuildPasswordResetLink(User user, string token)
+        {
+            var baseFrontendUrl = _appUrlSettings.FrontendBaseUrl?.TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(baseFrontendUrl))
+            {
+                baseFrontendUrl = "http://localhost:5173";
+            }
+
+            var encodedToken = Uri.EscapeDataString(token);
+            var encodedEmail = Uri.EscapeDataString(user.Email);
+
+            return $"{baseFrontendUrl}/#/jelszo-visszaallitas?userId={user.Id}&token={encodedToken}&email={encodedEmail}";
         }
 
         private static string BuildEmailVerificationBody(string username, string verificationLink)
@@ -473,11 +695,60 @@ namespace KonyvkockaAPI.Controllers
                 </html>";
         }
 
+        private static string BuildPasswordResetBody(string username, string resetLink)
+        {
+            var safeUsername = System.Net.WebUtility.HtmlEncode(username);
+            var safeLink = System.Net.WebUtility.HtmlEncode(resetLink);
+
+            return $@"
+                <!doctype html>
+                <html lang='hu'>
+                <head>
+                    <meta charset='utf-8' />
+                    <meta name='viewport' content='width=device-width, initial-scale=1' />
+                </head>
+                <body style='margin:0; padding:24px 12px; background:#0b0f16; font-family:Segoe UI,Arial,sans-serif;'>
+                    <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0'>
+                        <tr>
+                            <td align='center'>
+                                <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='max-width:620px; background:linear-gradient(180deg,#121823 0%,#0d1118 100%); border:1px solid #263247; border-radius:16px; overflow:hidden;'>
+                                    <tr>
+                                        <td style='padding:24px 24px 12px;'>
+                                            <div style='display:inline-block; width:40px; height:40px; line-height:40px; text-align:center; border-radius:50%; background:#c29d59; color:#0f131a; font-weight:700;'>K</div>
+                                            <h1 style='margin:16px 0 8px; color:#f2f3f7; font-size:28px; line-height:1.25;'>Szia {safeUsername}!</h1>
+                                            <p style='margin:0 0 8px; color:#d6dae2; font-size:16px; line-height:1.6;'>
+                                                Jelszó-visszaállítási kérést kaptunk a Konyvkocka fiókodhoz.
+                                            </p>
+                                            <p style='margin:0 0 20px; color:#d6dae2; font-size:16px; line-height:1.6;'>
+                                                Az új jelszó beállításához kattints az alábbi gombra:
+                                            </p>
+                                            <a href='{safeLink}' style='display:inline-block; padding:12px 20px; border-radius:10px; background:#c29d59; color:#0f131a; text-decoration:none; font-weight:700;'>
+                                                Új jelszó beállítása
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding:16px 24px 24px;'>
+                                            <div style='padding:12px; border:1px solid #2a3548; border-radius:10px; background:#0f141f;'>
+                                                <p style='margin:0 0 8px; color:#9da8ba; font-size:13px;'>Ha a gomb nem működik, másold be ezt a linket:</p>
+                                                <a href='{safeLink}' style='color:#7bc4ff; font-size:13px; word-break:break-all; text-decoration:none;'>{safeLink}</a>
+                                            </div>
+                                            <p style='margin:14px 0 0; color:#8390a5; font-size:12px;'>A link 30 percig érvényes.</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+                </html>";
+        }
+
         private IActionResult BuildVerificationHtmlResponse(bool success, string message, int statusCode)
         {
             var color = success ? "#c29d59" : "#f87171";
             var title = success ? "Sikeres aktiválás" : "Aktiválási hiba";
-            var loginUrl = (_appUrlSettings.FrontendBaseUrl ?? string.Empty).TrimEnd('/') + "/belepes";
+            var loginUrl = (_appUrlSettings.FrontendBaseUrl ?? string.Empty).TrimEnd('/') + "/#/belepes";
 
             var safeMessage = System.Net.WebUtility.HtmlEncode(message);
             var safeLoginUrl = System.Net.WebUtility.HtmlEncode(loginUrl);

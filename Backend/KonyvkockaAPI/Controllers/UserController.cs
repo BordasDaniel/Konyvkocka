@@ -1035,7 +1035,7 @@ namespace KonyvkockaAPI.Controllers
         {
             var color = success ? "#c29d59" : "#f87171";
             var title = success ? "Fiók törölve" : "Fióktörlési hiba";
-            var loginUrl = (_appUrlSettings.FrontendBaseUrl ?? string.Empty).TrimEnd('/') + "/belepes";
+            var loginUrl = (_appUrlSettings.FrontendBaseUrl ?? string.Empty).TrimEnd('/') + "/#/belepes";
 
             var safeMessage = System.Net.WebUtility.HtmlEncode(message);
             var safeLoginUrl = System.Net.WebUtility.HtmlEncode(loginUrl);
