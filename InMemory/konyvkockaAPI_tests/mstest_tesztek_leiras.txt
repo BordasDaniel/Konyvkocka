@@ -1,0 +1,121 @@
+MSTEST TESZTELÉS LEÍRÁSA
+
+Projekt: konyvkockaAPI
+Tesztfájl: Test1.cs
+Tesztek osztálya: ContentAndNewsControllerTests
+Tesztelés típusa: Backend unit/integrációs jellegű controller teszt (MSTest + EF Core InMemory)
+
+1) TESZTELÉSI KÖRÜLMÉNYEK
+- Nyelv: C# (.NET 8)
+- Tesztkeretrendszer: MSTest
+- Adatelérés tesztelése: Microsoft.EntityFrameworkCore.InMemory
+- Tesztprojekt: konyvkockaAPI_tests
+- Külső adatbázis: NEM szükséges (in-memory adatbázis használat)
+
+2) KÖZÖS ELŐFELTÉTELEK
+- A megoldás buildelhető állapotban legyen.
+- A konyvkockaAPI_tests projekt hivatkozza a backend projektet.
+- Telepített csomagok:
+  - MSTest
+  - Microsoft.EntityFrameworkCore.InMemory
+- Minden teszt saját, egyedi in-memory adatbázist kap (Guid alapú névvel), így a tesztek izoláltan futnak.
+
+3) TESZT 1: GetNews_ValidFilter_ReturnsFilteredOrderedArticles
+Feladat:
+- Ellenőrizni, hogy a hírek végpont érvényes filterrel csak a megfelelő kategóriájú híreket adja vissza,
+  és csökkenő dátum sorrendben listázza őket.
+
+Bemeneti adat:
+- Filter: "update"
+- Lapozás: page = 1, pageSize = 10
+- Seedelt cikkek:
+  - 2 db UPDATE kategóriás cikk különböző dátummal
+  - 1 db EVENT kategóriás cikk
+
+Lépések:
+1. InMemory context létrehozása.
+2. Teszt adatok beszúrása az Articles táblába.
+3. NewsController példányosítása.
+4. GetNews("update", 1, 10) hívás.
+5. Válasz ellenőrzése (OkObjectResult).
+6. total és articles mezők kiolvasása és ellenőrzése.
+7. Sorrend ellenőrzése (legfrissebb UPDATE cikk legyen az első).
+
+Elvárt eredmény:
+- HTTP 200 (OkObjectResult)
+- total = 2
+- pointszerűen csak UPDATE cikkek
+- csökkenő CreatedAt sorrend
+
+Siker kritérium:
+- A teszt assertionök hibamentesen lefutnak (PASS).
+
+4) TESZT 2: GetNews_InvalidFilter_ReturnsBadRequest
+Feladat:
+- Ellenőrizni, hogy érvénytelen filter esetén a hírek végpont BadRequest választ ad.
+
+Bemeneti adat:
+- Filter: "invalid-filter"
+- Lapozás: page = 1, pageSize = 20
+
+Lépések:
+1. InMemory context létrehozása.
+2. NewsController példányosítása.
+3. GetNews("invalid-filter", 1, 20) hívás.
+4. Válasz típusának ellenőrzése.
+
+Elvárt eredmény:
+- HTTP 400 (BadRequestObjectResult)
+
+Siker kritérium:
+- A teszt assertionök hibamentesen lefutnak (PASS).
+
+5) TESZT 3: SearchContent_ByTypeAndTags_ReturnsOnlyMatchingBooks
+Feladat:
+- Ellenőrizni, hogy a keresés végpont több szűrő együttes használatakor
+  csak a feltételeknek megfelelő könyv találatot adja vissza.
+
+Bemeneti adat:
+- q = "Alma"
+- type = "book"
+- ageRatings = "12+"
+- tags = "Fantasy"
+- sort = "relevancia"
+- limit = 20
+- offset = 0
+- Seedelt adatok:
+  - 1 db megfelelő könyv (Alma könyve, 12+, Fantasy)
+  - 1 db nem megfelelő könyv (más korhatár/tag)
+  - 1 db film (azonos kulcsszóval, de type=book miatt nem lehet a találatban)
+
+Lépések:
+1. InMemory context létrehozása.
+2. Korhatárak és tagek seedelése.
+3. Könyv és film tesztadatok seedelése.
+4. ContentController példányosítása.
+5. SearchContent(...) hívás a fenti paraméterekkel.
+6. Válasz ellenőrzése (OkObjectResult + SearchResponseDTO).
+7. Találatszám és találat tartalmának ellenőrzése.
+
+Elvárt eredmény:
+- HTTP 200 (OkObjectResult)
+- SearchResponseDTO.Total = 1
+- SearchResponseDTO.Items.Count = 1
+- Találat címe: "Alma könyve"
+- Találat típusa: "book"
+
+Siker kritérium:
+- A teszt assertionök hibamentesen lefutnak (PASS).
+
+6) KIMENETEK
+- MSTest eredmény: PASS/FAIL
+- Build eredmény: sikeres fordítás szükséges
+- Futtatott tesztek:
+  - GetNews_ValidFilter_ReturnsFilteredOrderedArticles
+  - GetNews_InvalidFilter_ReturnsBadRequest
+  - SearchContent_ByTypeAndTags_ReturnsOnlyMatchingBooks
+
+7) RÖVID ÉRTELMEZÉS
+- A dokumentált tesztek lefedik a hírek végpont pozitív és negatív szűrési esetét.
+- A keresés teszt több feltétel kombinációját ellenőrzi (típus, kulcsszó, korhatár, tag).
+- Az in-memory megközelítés miatt a tesztek gyorsak, izoláltak és nem függnek külső adatbázistól.

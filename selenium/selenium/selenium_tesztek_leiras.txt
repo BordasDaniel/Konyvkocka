@@ -1,0 +1,76 @@
+SELENIUM TESZTELÉS LEÍRÁSA
+
+Projekt: konyvkocka
+Tesztfájl: tests/selenium/test_search_interstellar.py
+Tesztelés típusa: UI end-to-end (Selenium + Pytest)
+
+1) TESZTELÉSI KÖRÜLMÉNYEK
+- Böngésző: Google Chrome (chromedriverrel)
+- Nyelv: Python
+- Tesztkeretrendszer: pytest
+- Automatizálás: selenium
+- Alap URL: E2E_BASE_URL környezeti változó, ennek hiányában: http://localhost:5174
+- Router típus: hash alapú, ezért a keresés oldal útvonala: #/kereses
+- Képernyőkép mentés: tests/selenium/screenshots mappába, időbélyeggel
+
+2) KÖZÖS ELŐFELTÉTELEK
+- Fusson a frontend alkalmazás (pl. npm run dev -- --port 5174).
+- A keresés oldal legyen elérhető: http://localhost:5174/#/kereses
+- Telepített csomagok: pytest, selenium
+- Működő Chrome és kompatibilis ChromeDriver
+
+3) TESZT 1: test_search_interstellar_from_search_page
+Feladat:
+- Ellenőrizni, hogy a keresőmezőben megadott "Interstellar" keresésre megjelenik az Interstellar találat.
+
+Bemeneti adat:
+- Keresési kifejezés: Interstellar
+
+Lépések:
+1. Megnyitja a keresés oldalt: #/kereses
+2. Megvárja, hogy valóban a keresés oldalon legyen (URL ellenőrzés)
+3. Megkeresi a kereső inputot (input.search-input)
+4. Kiüríti a mezőt, majd beírja: Interstellar
+5. Megvárja, hogy megjelenjen a "Interstellar" című találat
+6. Készít egy screenshotot
+
+Elvárt eredmény:
+- Az "Interstellar" című találat látható a találati listában.
+- A screenshot fájl fizikailag létrejön.
+
+Siker kritérium:
+- A teszt assertionök hibamentesen lefutnak (PASS).
+
+4) TESZT 2: test_search_page_navigation_and_empty_result
+Feladat:
+- Ellenőrizni, hogy nem létező keresés esetén a rendszer az üres találat állapotot jeleníti meg.
+
+Bemeneti adat:
+- Keresési kifejezés: nincs-ilyen-tartalom-123
+
+Lépések:
+1. Megnyitja a keresés oldalt: #/kereses
+2. Megvárja, hogy valóban a keresés oldalon legyen (URL ellenőrzés)
+3. Megkeresi a kereső inputot (input.search-input)
+4. Kiüríti a mezőt, majd beírja: nincs-ilyen-tartalom-123
+5. Megvárja, hogy megjelenjen az üres találat üzenet ("Nincsenek találatok")
+6. Készít egy screenshotot
+
+Elvárt eredmény:
+- A "Nincsenek találatok" üzenet látható.
+- A screenshot fájl fizikailag létrejön.
+
+Siker kritérium:
+- A teszt assertionök hibamentesen lefutnak (PASS).
+
+5) KIMENETEK ÉS ARTIFACTOK
+- Pytest eredmény: PASS/FAIL
+- Képernyőképek:
+  - search_interstellar_YYYYMMDD_HHMMSS.png
+  - search_empty_result_YYYYMMDD_HHMMSS.png
+- Mentési hely: tests/selenium/screenshots
+
+6) RÖVID ÉRTELMEZÉS
+- Az 1. teszt azt igazolja, hogy a keresési funkció alapműködése rendben van konkrét ismert címre.
+- A 2. teszt azt igazolja, hogy a rendszer helyesen kezeli a nulltalálatos keresést.
+- Együtt a két teszt lefedi a pozitív és negatív alap keresési forgatókönyvet.

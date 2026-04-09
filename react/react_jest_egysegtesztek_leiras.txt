@@ -1,0 +1,101 @@
+JEST REACT EGYSÉGTESZTELÉS LEÍRÁSA
+
+Projekt: konyvkocka (Frontend)
+Tesztfájlok:
+- tests/react/pageTitle.test.tsx
+- tests/react/newsArticle.test.tsx
+- tests/react/footer.test.tsx
+Tesztelés típusa: Frontend React unit teszt (Jest + React Testing Library)
+
+1) TESZTELÉSI KÖRÜLMÉNYEK
+- Nyelv: TypeScript + React
+- Tesztkeretrendszer: Jest
+- DOM környezet: jest-environment-jsdom
+- Renderelés és assertion segédcsomagok:
+  - @testing-library/react
+  - @testing-library/jest-dom
+  - @testing-library/user-event
+- JSX/TSX transzformálás: @swc/jest
+- Futtatás helye: Frontend/konyvkocka
+- Futtatási parancs: npm test
+
+2) KÖZÖS ELŐFELTÉTELEK
+- A frontend projektben telepítve legyenek a függőségek (npm install).
+- A Jest konfiguráció és setup fájl elérhető legyen:
+  - Frontend/konyvkocka/jest.config.cjs
+  - Frontend/konyvkocka/jest.setup.ts
+- A tesztfájlok a tests/react mappában legyenek.
+
+3) TESZT 1: pageTitle.test.tsx
+Feladat:
+- Ellenőrizni, hogy a PageTitle komponens helyes dokumentum címet állít be az aktuális útvonal alapján.
+
+Bemeneti adatok:
+- Útvonal 1: /hirek
+- Útvonal 2: /nem-letezo
+
+Lépések:
+1. MemoryRouter-rel rendereli a PageTitle komponenst /hirek útvonallal.
+2. Ellenőrzi, hogy a document.title értéke: "Hírek | KönyvKocka".
+3. MemoryRouter-rel rendereli a komponenst ismeretlen útvonallal.
+4. Ellenőrzi, hogy a document.title visszaáll az alap értékre: "KönyvKocka".
+
+Elvárt eredmény:
+- A címek útvonalfüggően helyesen frissülnek.
+
+Siker kritérium:
+- Mindkét assertion PASS.
+
+4) TESZT 2: newsArticle.test.tsx
+Feladat:
+- Ellenőrizni, hogy a NewsArticle komponens CTA viselkedése helyes mindkét módban.
+
+Bemeneti adatok:
+- Minta cikk objektum (id, típus, cím, dátum, tagek, kivonat, link, gombszöveg).
+
+Lépések:
+1. onReadMore callback nélkül renderelés MemoryRouter-rel.
+2. Ellenőrzés, hogy CTA link jelenik meg és href="/hirek/1".
+3. onReadMore callbackkel renderelés.
+4. CTA gomb kattintás user-eventtel.
+5. Ellenőrzés, hogy a callback pontosan 1x hívódik a teljes cikk objektummal.
+
+Elvárt eredmény:
+- Callback nélkül linkes navigációs CTA látható.
+- Callback esetén gomb látható és a callback megfelelő paraméterrel lefut.
+
+Siker kritérium:
+- Minden assertion PASS.
+
+5) TESZT 3: footer.test.tsx
+Feladat:
+- Ellenőrizni, hogy a Footer komponens megjeleníti a gyors linkeket és aktívvá teszi az aktuális route linkjét.
+
+Bemeneti adatok:
+- Útvonal 1: /
+- Útvonal 2: /kereses
+
+Lépések:
+1. MemoryRouter-rel renderelés / útvonallal.
+2. Ellenőrzés, hogy a gyors linkek látszanak (Kezdőlap, Keresés, Támogatás, Rólunk, ÁSZF).
+3. MemoryRouter-rel renderelés /kereses útvonallal.
+4. Ellenőrzés, hogy a "Keresés" link rendelkezik active osztállyal.
+
+Elvárt eredmény:
+- A footer gyors linkei megjelennek.
+- Az aktuális oldalhoz tartozó link aktív állapotban jelenik meg.
+
+Siker kritérium:
+- Minden assertion PASS.
+
+6) KIMENETEK
+- Jest eredmény: PASS/FAIL
+- Futtatott tesztek összesen: 6
+- Teszt suite-ok száma: 3
+- Verifikált futtatás eredménye: 3 passed, 6 passed
+
+7) RÖVID ÉRTELMEZÉS
+- A tesztek lefedik az útvonalfüggő oldalcím kezelést (PageTitle),
+  a hírcikk CTA kétféle működését (Link vs callback),
+  valamint a footer gyors linkek és aktív navigáció alapműködését.
+- A három tesztfájl együtt jó alap regressziós védelmet ad a közös UI komponensekhez.
