@@ -3,6 +3,7 @@ namespace KonyvkockaAPI.DTO.Request
     public class UpdateAdminUserDTO
     {
         public string PermissionLevel { get; set; } = string.Empty;
+        public bool ResetProfilePicture { get; set; }
         public bool Premium { get; set; }
         public DateTime? PremiumExpiresAt { get; set; }
         public int Level { get; set; }

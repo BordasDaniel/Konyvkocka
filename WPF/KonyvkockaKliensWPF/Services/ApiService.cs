@@ -1,6 +1,7 @@
 using KonyvkockaKliensWPF.Models;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
@@ -54,53 +55,32 @@ namespace KonyvkockaKliensWPF.Services
         // Bejelentkezés
         public async Task<bool> LoginAsync(string email, string password)
         {
-            try
-            {
-                var request = new LoginRequestDto { Email = email, Password = password };
-                var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/Auth/login", request);
+            string passwordHash = ComputeSha256(password);
+            var request = new LoginRequestDto { Email = email, PasswordHash = passwordHash };
+            var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/Auth/login", request);
 
-                if (response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
+            {
+                var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponseDto>(new JsonSerializerOptions
                 {
-                    var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponseDto>(new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    });
+                    PropertyNameCaseInsensitive = true
+                });
 
-                    if (loginResponse != null && !string.IsNullOrEmpty(loginResponse.Token))
-                    {
-                        SetAuthToken(loginResponse.Token);
-                        return true;
-                    }
+                if (loginResponse != null && !string.IsNullOrEmpty(loginResponse.Token))
+                {
+                    SetAuthToken(loginResponse.Token);
+                    return true;
                 }
+            }
 
-                return false;
-            }
-            catch
-            {
-                return false;
-            }
+            return false;
         }
 
-        // Regisztráció
-        public async Task<bool> RegisterAsync(string username, string email, string password)
+        private static string ComputeSha256(string value)
         {
-            try
-            {
-                var request = new RegisterRequestDto 
-                { 
-                    Username = username, 
-                    Email = email, 
-                    Password = password,
-                    CountryCode = "HU"
-                };
-
-            var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/Auth/register", request);
-                return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
-            }
+            byte[] bytes = Encoding.UTF8.GetBytes(value);
+            byte[] hash = SHA256.HashData(bytes);
+            return Convert.ToHexString(hash).ToLowerInvariant();
         }
 
         // Felhasználók listázása (alap DTO)
@@ -108,24 +88,27 @@ namespace KonyvkockaKliensWPF.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync($"{BaseUrl}/Users/MindenFelhasznalo?page={page}&pageSize={pageSize}");
+                var response = await _httpClient.GetAsync($"/api/admin/users?page={page}&pageSize={pageSize}");
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var content = await response.Content.ReadAsStringAsync();
-                    var users = JsonSerializer.Deserialize<List<UserDto>>(content, new JsonSerializerOptions
+                    var payload = await response.Content.ReadFromJsonAsync<UsersListResponseDto>(new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     });
-                    return users ?? new List<UserDto>();
+
+                    return payload?.Users ?? new List<UserDto>();
                 }
+
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException(
+                    $"Felhasználók listázása sikertelen ({(int)response.StatusCode}): {errorContent}");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error fetching users: {ex.Message}");
+                throw;
             }
-
-            return new List<UserDto>();
         }
 
         // Egyedi felhasználó részletes lekérése (teljes DTO)
@@ -156,14 +139,19 @@ namespace KonyvkockaKliensWPF.Services
         {
             try
             {
-                var response = await _httpClient.DeleteAsync($"{BaseUrl}/Users/FelhasznaloTorlese/{id}");
+                var response = await _httpClient.DeleteAsync($"/api/admin/users/{id}");
                 if (response.IsSuccessStatusCode)
                 {
                     MessageBox.Show("Felhasználó sikeresen törölve.", "Siker", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
-                    MessageBox.Show("Hiba történt a felhasználó törlése közben.", "Hiba", MessageBoxButton.OK, MessageBoxImage.Error);
+                    string errorContent = await response.Content.ReadAsStringAsync();
+                    MessageBox.Show(
+                        $"Hiba történt a felhasználó törlése közben.\nStátusz: {(int)response.StatusCode}\n{errorContent}",
+                        "Hiba",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
                 }
 
                 return response.IsSuccessStatusCode;
@@ -175,16 +163,16 @@ namespace KonyvkockaKliensWPF.Services
             }
         }
 
-        // Felhasználó módosítása (teljes DTO-val)
-        public async Task<bool> UpdateUserAsync(int id, UserDetailDto user)
+        // Felhasználó módosítása (admin DTO-val)
+        public async Task<bool> UpdateUserAsync(int id, UpdateAdminUserRequestDto user)
         {
             try
             {
-                string toSend = JsonSerializer.Serialize(user, JsonSerializerOptions.Default);
-                var content = new StringContent(toSend, Encoding.UTF8, "application/json");
-                var response = await _httpClient.PutAsync($"{BaseUrl}/Users/FelhasznaloFrissitese/{id}", content);
+                var response = await _httpClient.PutAsJsonAsync($"/api/admin/users/{id}", user);
                 if (!response.IsSuccessStatusCode)
                 {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"Error updating user {id}: {errorContent}");
                     return false;
                 }
                 else

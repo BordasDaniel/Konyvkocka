@@ -1232,6 +1232,11 @@ namespace KonyvkockaAPI.Controllers
                 }
 
                 user.PermissionLevel = normalizedPermissionLevel;
+                if (dto.ResetProfilePicture)
+                {
+                    // Null profile picture means default avatar should be used by clients.
+                    user.ProfilePic = null;
+                }
                 user.Premium = dto.Premium;
                 user.PremiumExpiresAt = dto.Premium ? dto.PremiumExpiresAt : null;
                 user.Level = dto.Level;
@@ -1266,6 +1271,95 @@ namespace KonyvkockaAPI.Controllers
                     BookPoints = user.BookPoints,
                     SeriesPoints = user.SeriesPoints,
                     MoviePoints = user.MoviePoints
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
+            }
+        }
+
+        // ================================================================
+        // DELETE /api/admin/users/{id}
+        // Felhasználó törlése – admin jogosultság szükséges
+        // ================================================================
+        [HttpDelete("users/{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            try
+            {
+                var permissionLevel = User.FindFirst("permissionLevel")?.Value;
+                if (permissionLevel != "ADMIN")
+                    return Forbid();
+
+                var actorUserId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                if (actorUserId == id)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "SelfDeleteNotAllowed",
+                        Message = "Saját admin fiók törlése ezen a végponton nem engedélyezett"
+                    });
+                }
+
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+                if (user == null)
+                {
+                    return NotFound(new ErrorResponseDTO
+                    {
+                        Error = "NotFound",
+                        Message = "A felhasználó nem található"
+                    });
+                }
+
+                // deleting_user trigger: CountryCode cannot be NULL, PermissionLevel cannot be BANNED
+                var normalizedForDeletionTrigger = false;
+                if (string.IsNullOrWhiteSpace(user.CountryCode))
+                {
+                    user.CountryCode = "ZZ";
+                    normalizedForDeletionTrigger = true;
+                }
+
+                if (string.Equals(user.PermissionLevel, "BANNED", StringComparison.OrdinalIgnoreCase))
+                {
+                    user.PermissionLevel = "USER";
+                    normalizedForDeletionTrigger = true;
+                }
+
+                if (normalizedForDeletionTrigger)
+                    await _context.SaveChangesAsync();
+
+                // mail_sender_fk doesn't cascade; handle sent mails before deleting user
+                var hasSentMails = await _context.Mails.AnyAsync(m => m.SenderId == user.Id);
+                if (hasSentMails)
+                {
+                    var canReassignToSystemSender = user.Id != 1 && await _context.Users.AnyAsync(u => u.Id == 1);
+
+                    if (canReassignToSystemSender)
+                    {
+                        var sentMails = await _context.Mails
+                            .Where(m => m.SenderId == user.Id)
+                            .ToListAsync();
+
+                        foreach (var mail in sentMails)
+                            mail.SenderId = 1;
+                    }
+                    else
+                    {
+                        var sentMails = await _context.Mails
+                            .Where(m => m.SenderId == user.Id)
+                            .ToListAsync();
+
+                        _context.Mails.RemoveRange(sentMails);
+                    }
+                }
+
+                _context.Users.Remove(user);
+                await _context.SaveChangesAsync();
+
+                return Ok(new MessageResponseDTO
+                {
+                    Message = "Felhasználó sikeresen törölve"
                 });
             }
             catch (Exception ex)
