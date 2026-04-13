@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Gép: 127.0.0.1
--- Létrehozás ideje: 2026. Ápr 13. 08:20
+-- Létrehozás ideje: 2026. Ápr 13. 22:16
 -- Kiszolgáló verziója: 10.4.32-MariaDB
 -- PHP verzió: 8.2.12
 
@@ -20,8 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Adatbázis: `konyvkocka`
 --
-CREATE DATABASE IF NOT EXISTS `konyvkocka` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE `konyvkocka`;
 
 -- --------------------------------------------------------
 
@@ -143,21 +141,21 @@ INSERT INTO `book` (`Id`, `Title`, `Released`, `PageNum`, `Rating`, `Description
 (1, 'Egri csillagok', '1901', 584, 9.2, 'Gárdonyi Géza monumentális történelmi regénye az egri vár 1552-es ostromáról.', 'egri_csillagok.jpg', 3, 'BOOK', 'https://www.literart.org.ro/files/Egri-csillagok.pdf', NULL, 'egri_csillagok.epub', NULL, 200, 100, NULL, 1, 'Magyar', '2026-04-09 15:08:57'),
 (2, 'A Pál utcai fiúk', '1906', 232, 8.9, 'Molnár Ferenc ifjúsági regénye a Grund-ról és a pesti utcai csatározásokról.', 'pal_utcai_fiuk.jpg', 2, 'BOOK', 'https://www.literart.org.ro/files/pal_utcai_fiuk.pdf', 'https://www.youtube.com/watch?v=rB66Fx4G1Hw', NULL, 325, 120, 60, 'Sandberg USB Microphone Kit', 0, 'Magyar', '2026-04-12 12:56:12'),
 (3, 'Abigél', '1970', 166, 9.5, 'Szabó Magda regénye egy lányról, aki egy bentlakásos iskolába kerül a háború idején.', 'https://covers.openlibrary.org/b/id/14756391-L.jpg', 3, 'EBOOK', 'http://inlap.jate.u-szeged.hu/bemutat/konyvtar/konyvek/szabo_magda_abigel.pdf', NULL, 'http://inlap.jate.u-szeged.hu/bemutat/konyvtar/konyvek/szabo_magda_abigel.pdf', NULL, 150, 75, NULL, 1, 'Magyar', '2026-04-06 17:17:18'),
-(4, 'Psycho Cute', '2020', 312, 8.1, 'Karalyos Gábor krimisorozatának első része, amely bűnügyi nyomozó és popkulturális elemeket vegyít.', 'psycho_cute.jpg', 5, 'BOOK', NULL, NULL, NULL, NULL, 130, 65, NULL, 0, 'Magyar', '2026-02-05 20:46:10'),
+(4, 'Psycho Cute', '2020', 312, 8.1, 'Karalyos Gábor krimisorozatának első része, amely bűnügyi nyomozó és popkulturális elemeket vegyít.', 'https://i.imgur.com/HNmz6l4.jpeg', 5, 'BOOK', NULL, NULL, NULL, NULL, 130, 65, NULL, 0, 'Magyar', '2026-04-13 22:13:43'),
 (5, 'A rém', '2012', 424, 8.7, 'Krasznahorkai László különleges hangvételű regénye apokaliptikus hangulattal.', 'a_rem.jpg', 4, 'BOOK', NULL, NULL, NULL, NULL, 180, 90, NULL, 0, 'Magyar', '2026-02-05 20:46:10'),
 (6, '1984', '1949', 328, 9.4, 'George Orwell disztópiája a totalitárius rendszerről és a gondolatrendőrségről.', '1984.jpg', 4, 'BOOK', 'https://elso.xyz/konyvek/orwell-1984.pdf', NULL, '1984.epub', NULL, 140, 70, NULL, 1, 'Angol', '2026-04-09 15:12:21'),
-(7, 'Harry Potter és a bölcsek köve', '1997', 336, 9.6, 'J.K. Rowling varázslatos világa, ahol egy fiatal varázsló felfedezi származását.', 'harry_potter_1.jpg', 2, 'BOOK', NULL, NULL, NULL, NULL, 150, 75, NULL, 0, 'Angol', '2026-02-05 20:46:10'),
+(7, 'Harry Potter és a bölcsek köve', '1997', 336, 9.6, 'J.K. Rowling varázslatos világa, ahol egy fiatal varázsló felfedezi származását.', 'https://s01.static.libri.hu/cover/b6/f/716048_4.jpg', 2, 'BOOK', NULL, NULL, NULL, NULL, 150, 75, NULL, 0, 'Angol', '2026-04-13 22:15:43'),
 (8, 'A Gyűrűk Ura: A gyűrű szövetsége', '1954', 423, 9.8, 'J.R.R. Tolkien fantasy eposzának első része Középfölde megmentéséről.', 'lotr_1.jpg', 3, 'BOOK', NULL, NULL, 'lotr_1.epub', NULL, 250, 125, NULL, 1, 'Angol', '2026-02-05 20:46:10'),
-(9, 'Sapiens', '2011', 443, 9.1, 'Yuval Noah Harari könyve az emberiség történetéről és fejlődéséről.', 'sapiens.jpg', 3, 'AUDIOBOOK', NULL, 'sapiens.mp3', NULL, 900, 180, 90, 'Kiss János', 1, 'Héber', '2026-02-05 20:46:10'),
+(9, 'Sapiens', '2011', 443, 9.1, 'Yuval Noah Harari könyve az emberiség történetéről és fejlődéséről.', 'https://marvin.bline.hu/product_images/1496/B1411315.JPG', 3, 'AUDIOBOOK', NULL, 'sapiens.mp3', NULL, 900, 180, 90, 'Kiss János', 1, 'Héber', '2026-04-13 21:40:40'),
 (10, 'A kis herceg', '1943', 96, 9.3, 'Antoine de Saint-Exupéry mesés története egy idegen bolygóról érkező hercegről.', 'kis_herceg.jpg', 1, 'EBOOK', 'https://almabooks.com/wp-content/uploads/2016/10/Little-Prince-final-text.pdf', '', 'https://almabooks.com/wp-content/uploads/2016/10/Little-Prince-final-text.pdf', 120, 100, 50, 'Nagy Péter', 1, 'Francia', '2026-03-26 21:27:39'),
-(11, 'Steve Jobs', '2011', 656, 8.8, 'Walter Isaacson életrajza az Apple alapítójáról.', 'steve_jobs.jpg', 3, 'EBOOK', NULL, NULL, 'steve_jobs.epub', NULL, 200, 100, NULL, 1, 'Angol', '2026-02-05 20:46:10'),
+(11, 'Steve Jobs', '2011', 656, 8.8, 'Walter Isaacson életrajza az Apple alapítójáról.', 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcQrCVJ4pky5OctGuBX1XLJEEnTxQATBtibEhFnXLvUL2-vfD_0L', 3, 'EBOOK', NULL, NULL, 'steve_jobs.epub', NULL, 200, 100, NULL, 1, 'Angol', '2026-04-13 21:34:47'),
 (12, 'Tűzből vár', '2014', 288, 8.4, 'Nádas Péter regénye családi történetekről és társadalmi változásokról.', 'tuzbol_var.jpg', 4, 'EBOOK', NULL, NULL, 'tuzbol_var.epub', NULL, 130, 65, NULL, 0, 'Magyar', '2026-02-05 20:46:10'),
 (13, 'Dűne', '1965', 688, 9.5, 'Frank Herbert sci-fi remekműve egy sivatagi bolygóról és az ottani hatalmi harcokról.', 'dune.jpg', 4, 'BOOK', NULL, NULL, 'dune.epub', NULL, 300, 150, NULL, 1, 'Angol', '2026-02-05 20:46:10'),
 (14, 'Neuromancer', '1984', 271, 8.9, 'William Gibson cyberpunk klasszikusa a kibertérről.', 'neuromancer.jpg', 5, 'BOOK', NULL, NULL, NULL, NULL, 140, 70, NULL, 0, 'Angol', '2026-02-05 20:46:10'),
-(15, 'A lány a vonaton', '2015', 325, 8.2, 'Paula Hawkins thrillere egy nőről, aki tanúja lesz egy rejtélyes eseménynek.', 'lany_vonaton.jpg', 4, 'BOOK', NULL, NULL, 'lany_vonaton.epub', NULL, 140, 70, NULL, 1, 'Angol', '2026-02-05 20:46:10'),
-(16, 'Millennium 1 - Férfiak, akik gyűlölik a nőket', '2005', 533, 9.0, 'Stieg Larsson krimisorozatának első része.', 'millennium_1.jpg', 5, 'BOOK', NULL, NULL, NULL, NULL, 220, 110, NULL, 0, 'Svéd', '2026-02-05 20:46:10'),
+(15, 'A lány a vonaton', '2015', 325, 8.2, 'Paula Hawkins thrillere egy nőről, aki tanúja lesz egy rejtélyes eseménynek.', 'https://marvin.bline.hu/product_images/714/B1318695.JPG', 4, 'BOOK', NULL, NULL, 'lany_vonaton.epub', NULL, 140, 70, NULL, 1, 'Angol', '2026-04-13 21:21:05'),
+(16, 'Millennium 1 - Férfiak, akik gyűlölik a nőket', '2005', 533, 9.0, 'Stieg Larsson krimisorozatának első része.', 'https://moly.hu/system/covers/big/covers_242056.jpg?1395455937', 5, 'BOOK', NULL, NULL, NULL, NULL, 220, 110, NULL, 0, 'Svéd', '2026-04-13 22:06:06'),
 (17, 'Büszkeség és balítélet', '0000', 432, 9.2, 'Jane Austen klasszikus romantikus regénye.', 'buszkeseg_es_balitelet.jpg', 2, 'BOOK', NULL, NULL, 'pride_prejudice.epub', NULL, 160, 80, NULL, 1, 'Angol', '2026-02-05 20:46:10'),
-(18, 'Egy nap', '2009', 435, 8.5, 'David Nicholls romantikus története két ember 20 éves kapcsolatáról.', 'egy_nap.jpg', 3, 'BOOK', NULL, NULL, NULL, NULL, 150, 75, NULL, 0, 'Angol', '2026-02-05 20:46:10'),
+(18, 'Egy nap', '2009', 435, 8.5, 'David Nicholls romantikus története két ember 20 éves kapcsolatáról.', 'https://cdn.antikvarium.hu/foto/eredeti/49690650.jpg', 3, 'BOOK', NULL, NULL, NULL, NULL, 150, 75, NULL, 0, 'Angol', '2026-04-13 21:57:28'),
 (19, 'Tündér Lala', '1920', 176, 8.6, 'Csáth Géza novellái gyermekkorról és fantasztikumról.', 'tunder_lala.jpg', 1, 'BOOK', NULL, NULL, NULL, NULL, 90, 45, NULL, 0, 'Magyar', '2026-02-05 20:46:10'),
 (20, 'A kőszívű ember fiai', '0000', 552, 8.8, 'Jókai Mór történelmi regénye a szabadságharcról.', 'koszivuember.jpg', 3, 'BOOK', NULL, NULL, 'koszivuember.epub', NULL, 190, 95, NULL, 1, 'Magyar', '2026-02-05 20:46:10');
 
@@ -534,20 +532,20 @@ CREATE TABLE `movie` (
 --
 
 INSERT INTO `movie` (`Id`, `Title`, `Released`, `Length`, `Rating`, `Description`, `StreamURL`, `PosterApiName`, `AgeRatingId`, `TrailerURL`, `RewardXP`, `RewardPoints`, `HasSubtitles`, `IsOriginalLanguage`, `IsOfflineAvailable`, `updated_at`) VALUES
-(1, 'The Dark Knight', '2008', 152, 9.0, 'Christopher Nolan Batman-filmje a Jokerre összpontosítva.', 'stream/dark_knight.mp4', 'dark_knight.jpg', 4, 'https://youtube.com/trailer1', 80, 40, 1, 0, 1, '2026-02-05 20:46:10'),
-(2, 'Inception', '2010', 148, 8.8, 'Christopher Nolan sci-fi thrillere álmokról és valóságról.', 'stream/inception.mp4', 'inception.jpg', 4, 'https://youtube.com/trailer2', 80, 40, 1, 0, 1, '2026-02-05 20:46:10'),
-(3, 'Mad Max: Fury Road', '2015', 120, 8.1, 'George Miller posztapokaliptikus akció-remekműve.', 'stream/mad_max.mp4', 'mad_max.jpg', 5, 'https://youtube.com/trailer3', 70, 35, 1, 0, 0, '2026-02-05 20:46:10'),
+(1, 'The Dark Knight', '2008', 152, 9.0, 'Christopher Nolan Batman-filmje a Jokerre összpontosítva.', 'stream/dark_knight.mp4', 'https://i.redd.it/z19ndjd7m2ac1.jpeg', 4, 'https://youtube.com/trailer1', 80, 40, 1, 0, 1, '2026-04-13 22:01:02'),
+(2, 'Inception', '2010', 148, 8.8, 'Christopher Nolan sci-fi thrillere álmokról és valóságról.', 'stream/inception.mp4', 'https://play-lh.googleusercontent.com/buKf27Hxendp3tLNpNtP3E-amP0o4yYV-SGKyS2u-Y3GdGRTyfNCIT5WAVs2OudOz6so5K1jtYdAUKI9nw8=w240-h480-rw', 4, 'https://youtube.com/trailer2', 80, 40, 1, 0, 1, '2026-04-13 21:49:19'),
+(3, 'Mad Max: Fury Road', '2015', 120, 8.1, 'George Miller posztapokaliptikus akció-remekműve.', 'stream/mad_max.mp4', 'https://play-lh.googleusercontent.com/fta1Gk0Cw1TEpkDNc5hr2cmY7kBwdutVVbKHsUSCdiwjQiblwzPFfSKY3Bf-iD_JN9PGpshnfI17edxJJA', 5, 'https://youtube.com/trailer3', 70, 35, 1, 0, 0, '2026-04-13 21:22:55'),
 (4, 'The Shawshank Redemption', '1994', 142, 9.3, 'Frank Darabont börtöndráma-klasszikusa reményről és barátságról.', 'stream/shawshank.mp4', 'shawshank.jpg', 4, 'https://youtube.com/trailer4', 85, 42, 1, 0, 1, '2026-02-05 20:46:10'),
-(5, 'Forrest Gump', '1994', 142, 8.8, 'Robert Zemeckis filmje egy különleges emberről, aki történelmet ír.', 'stream/forrest_gump.mp4', 'forrest_gump.jpg', 3, 'https://youtube.com/trailer5', 80, 40, 1, 0, 1, '2026-02-05 20:46:10'),
-(6, 'The Grand Budapest Hotel', '2014', 99, 8.1, 'Wes Anderson vizuálisan lenyűgöző vígjátéka egy szállodáról.', 'stream/budapest_hotel.mp4', 'budapest_hotel.jpg', 3, 'https://youtube.com/trailer6', 70, 35, 1, 0, 0, '2026-02-05 20:46:10'),
-(7, 'Superbad', '2007', 113, 7.6, 'Greg Mottola tinédzser-vígjátéka barátságról és bulizásról.', 'stream/superbad.mp4', 'superbad.jpg', 5, 'https://youtube.com/trailer7', 65, 32, 1, 0, 0, '2026-02-05 20:46:10'),
-(8, 'Interstellar', '2014', 169, 8.6, 'Christopher Nolan epikus űrutazása az emberiség megmentéséért.', 'stream/interstellar.mp4', 'interstellar.jpg', 3, 'https://youtube.com/trailer8', 90, 45, 1, 0, 1, '2026-02-05 20:46:10'),
+(5, 'Forrest Gump', '1994', 142, 8.8, 'Robert Zemeckis filmje egy különleges emberről, aki történelmet ír.', 'stream/forrest_gump.mp4', 'https://upload.wikimedia.org/wikipedia/en/6/67/Forrest_Gump_poster.jpg', 3, 'https://youtube.com/trailer5', 80, 40, 1, 0, 1, '2026-04-13 22:14:26'),
+(6, 'The Grand Budapest Hotel', '2014', 99, 8.1, 'Wes Anderson vizuálisan lenyűgöző vígjátéka egy szállodáról.', 'stream/budapest_hotel.mp4', 'https://s3.amazonaws.com/nightjarprod/content/uploads/sites/34/2022/10/07133543/eWdyYQreja6JGCzqHWXpWHDrrPo-683x1024.jpg', 3, 'https://youtube.com/trailer6', 70, 35, 1, 0, 0, '2026-04-13 21:26:18'),
+(7, 'Superbad', '2007', 113, 7.6, 'Greg Mottola tinédzser-vígjátéka barátságról és bulizásról.', 'stream/superbad.mp4', 'https://upload.wikimedia.org/wikipedia/en/8/8b/Superbad_Poster.png', 5, 'https://youtube.com/trailer7', 65, 32, 1, 0, 0, '2026-04-13 22:03:00'),
+(8, 'Interstellar', '2014', 169, 8.6, 'Christopher Nolan epikus űrutazása az emberiség megmentéséért.', 'stream/interstellar.mp4', 'https://play-lh.googleusercontent.com/D5FtnFBPO_FitBIqjCffRZrhZf84Xm3mVoqQDUD2ZGq-Z4LftUotgRj4WquMQhDs1nL46NQxu7Rr2ahbFrWM=w240-h480-rw', 3, 'https://youtube.com/trailer8', 90, 45, 1, 0, 1, '2026-04-13 21:27:11'),
 (9, 'The Matrix', '1999', 136, 8.7, 'Wachowski testvérek kultikus sci-fi-je a valóság természetéről.', 'stream/matrix.mp4', 'matrix.jpg', 4, 'https://youtube.com/trailer9', 80, 40, 1, 0, 1, '2026-02-05 20:46:10'),
 (10, 'Spirited Away', '2001', 125, 8.6, 'Hayao Miyazaki anime remekműve egy lány kalandjairól a szellemek világában.', 'stream/spirited_away.mp4', 'spirited_away.jpg', 2, 'https://youtube.com/trailer10', 75, 37, 1, 0, 1, '2026-02-05 20:46:10'),
 (11, 'Toy Story', '1995', 81, 8.3, 'Pixar első nagyjátékfilmje játékok titkos életéről.', 'https://videa.hu/player?v=4589MF2aMJm2reT9&autoplay=1&enableJsApi=1&apiKey=PKeut6dEjAJYKYRp', 'https://image.tmdb.org/t/p/original/4rbcp3ng8n1MKHjpeqW0L7Fnpzz.jpg', 1, 'https://youtu.be/xNWSGRD5CzU', 60, 30, 1, 0, 1, '2026-03-26 20:36:12'),
 (12, 'The Shining', '1980', 146, 8.4, 'Stanley Kubrick horror-klasszikusa egy elszigetelt szállodában.', 'stream/shining.mp4', 'shining.jpg', 5, 'https://youtube.com/trailer12', 80, 40, 1, 0, 0, '2026-02-05 20:46:10'),
 (13, 'Kontroll', '2003', 105, 7.6, 'Antal Nimród thrillere a budapesti metróban.', 'stream/kontroll.mp4', 'kontroll.jpg', 4, 'https://youtube.com/trailer13', 70, 35, 0, 1, 1, '2026-02-05 20:46:10'),
-(14, 'Taxidermia', '2006', 91, 7.0, 'Pálfi György szürreális filmje három generációról.', 'stream/taxidermia.mp4', 'taxidermia.jpg', 5, 'https://youtube.com/trailer14', 65, 32, 0, 1, 0, '2026-02-05 20:46:10'),
+(14, 'Taxidermia', '2006', 91, 7.0, 'Pálfi György szürreális filmje három generációról.', 'stream/taxidermia.mp4', 'https://filmtett.ro/uploads/Filmkepek/taxidermia1.jpg', 5, 'https://youtube.com/trailer14', 65, 32, 0, 1, 0, '2026-04-13 22:04:11'),
 (15, 'The Lion King', '1994', 88, 8.5, 'Disney klasszikus animációs filmje egy oroszlánkölyökről.', 'stream/lion_king.mp4', 'lion_king.jpg', 1, 'https://youtube.com/trailer15', 60, 30, 1, 0, 1, '2026-02-05 20:46:10');
 
 -- --------------------------------------------------------
@@ -742,12 +740,12 @@ CREATE TABLE `series` (
 --
 
 INSERT INTO `series` (`Id`, `Title`, `Released`, `Rating`, `Description`, `PosterApiName`, `AgeRatingId`, `TrailerURL`, `RewardXP`, `RewardPoints`, `HasSubtitles`, `IsOriginalLanguage`, `IsOfflineAvailable`, `updated_at`) VALUES
-(1, 'Breaking Bad', 2008, 9.5, 'Vince Gilligan drámasorozata egy kémiatanárról, aki metamfetamin-főzésbe kezd.', 'breaking_bad.jpg', 5, 'https://youtube.com/bb_trailer', 200, 100, 1, 0, 1, '2026-02-05 20:46:10'),
-(2, 'Game of Thrones', 2011, 9.3, 'HBO fantasy eposzahét királyságokért folyó hatalmi harcról.', 'game_of_thrones.jpg', 5, 'https://youtube.com/got_trailer', 250, 125, 1, 0, 1, '2026-02-05 20:46:10'),
-(3, 'Stranger Things', 2016, 8.7, 'Netflix sci-fi horror sorozata 80-as évekbeli gyerekekről és természetfeletti erőkről.', 'stranger_things.jpg', 4, 'https://youtube.com/st_trailer', 150, 75, 1, 0, 1, '2026-02-05 20:46:10'),
+(1, 'Breaking Bad', 2008, 9.5, 'Vince Gilligan drámasorozata egy kémiatanárról, aki metamfetamin-főzésbe kezd.', 'https://i.ytimg.com/vi/-uJP5uc0AoU/maxresdefault.jpg', 5, 'https://youtube.com/bb_trailer', 200, 100, 1, 0, 1, '2026-04-13 22:01:42'),
+(2, 'Game of Thrones', 2011, 9.3, 'HBO fantasy eposza hét királyságokért folyó hatalmi harcról.', 'https://resizing.flixster.com/-XZAfHZM39UwaGJIFWKAE8fS0ak=/v3/t/assets/p8553063_b_v13_ax.jpg', 5, 'https://youtube.com/got_trailer', 250, 125, 1, 0, 1, '2026-04-13 21:45:43'),
+(3, 'Stranger Things', 2016, 8.7, 'Netflix sci-fi horror sorozata 80-as évekbeli gyerekekről és természetfeletti erőkről.', 'https://image.tmdb.org/t/p/original/rJZMVyILeqJSKeZlUZs7QBe4GYb.jpg', 4, 'https://youtube.com/st_trailer', 150, 75, 1, 0, 1, '2026-04-13 21:18:20'),
 (4, 'The Office (US)', 2005, 9.0, 'Mockumentary stílusú vígjáték egy papírgyár dolgozóiról.', 'office_us.jpg', 3, 'https://youtube.com/office_trailer', 120, 60, 1, 0, 0, '2026-02-05 20:46:10'),
-(5, 'Sherlock', 2010, 9.1, 'BBC modern adaptációja Sherlock Holmes történetekről.', 'sherlock.jpg', 3, 'https://youtube.com/sherlock_trailer', 150, 75, 1, 0, 1, '2026-02-05 20:46:10'),
-(6, 'Black Mirror', 2011, 8.7, 'Brit antológia sorozat a technológia sötét oldaláról.', 'black_mirror.jpg', 5, 'https://youtube.com/bm_trailer', 140, 70, 1, 0, 0, '2026-02-05 20:46:10'),
+(5, 'Sherlock', 2010, 9.1, 'BBC modern adaptációja Sherlock Holmes történetekről.', 'https://m.media-amazon.com/images/M/MV5BNTQzNGZjNDEtOTMwYi00MzFjLWE2ZTYtYzYxYzMwMjZkZDc5XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg', 3, 'https://youtube.com/sherlock_trailer', 150, 75, 1, 0, 1, '2026-04-13 21:51:06'),
+(6, 'Black Mirror', 2011, 8.7, 'Brit antológia sorozat a technológia sötét oldaláról.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ1SOVa0OTa-OF2minpxcDfC5BN5IxfhxXoNA&s', 5, 'https://youtube.com/bm_trailer', 140, 70, 1, 0, 0, '2026-04-13 21:48:02'),
 (7, 'Avatar: The Last Airbender', 2005, 9.3, 'Nickelodeon animációs sorozata egy világ megmentéséről.', 'avatar_tla.jpg', 2, 'https://youtube.com/avatar_trailer', 130, 65, 1, 0, 1, '2026-02-05 20:46:10'),
 (8, 'Barátok közt', 1998, 6.5, 'Magyar szappanopera hétköznapi emberek életéről.', 'baratok_kozt.jpg', 3, NULL, 80, 40, 0, 1, 0, '2026-02-05 20:46:10');
 
@@ -795,6 +793,7 @@ INSERT INTO `series_tag` (`SeriesId`, `TagId`) VALUES
 (6, 10),
 (6, 19),
 (6, 21),
+(6, 24),
 (7, 5),
 (7, 11),
 (7, 14),
