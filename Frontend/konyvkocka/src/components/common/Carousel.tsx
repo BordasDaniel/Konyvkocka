@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { applyContentImageFallback } from '../../services/api'
 
 type Slide = {
   id: string
@@ -172,6 +173,11 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
     resetTimer()
   }
 
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const imageElement = event.currentTarget
+    applyContentImageFallback(imageElement)
+  }
+
   return (
     <section className="hero-carousel">
       <div
@@ -214,6 +220,7 @@ export default function Carousel({ slides: slidesProp, fetchUrl, interval = 5000
                     loading={idx === activeIndex ? 'eager' : 'lazy'}
                     decoding="async"
                     fetchPriority={idx === activeIndex ? 'high' : 'auto'}
+                    onError={handleImageError}
                   />
                 </div>
               </div>

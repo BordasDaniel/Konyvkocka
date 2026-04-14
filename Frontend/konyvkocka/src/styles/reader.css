@@ -160,6 +160,31 @@
   box-shadow: 0 6px 18px rgba(194, 157, 89, 0.28);
 }
 
+.btn-control:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-control:disabled:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.reader-page-lock-hint {
+  margin-top: 0.5rem;
+  color: rgba(255, 224, 163, 0.95);
+  font-size: 0.82rem;
+}
+
+.reader-page-guard-message {
+  margin-top: 0.5rem;
+  color: #ffb4b4;
+  font-size: 0.82rem;
+}
+
 .zoom-controls {
   display: flex;
   align-items: center;
@@ -455,6 +480,20 @@
   text-decoration-line: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 2px;
+}
+
+.btn-nav:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-nav:disabled:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.06);
+  text-decoration: none;
 }
 
 .page-indicator {

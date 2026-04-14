@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.34916.146
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KonyvkockaAPI", "KonyvkockaAPI.csproj", "{68841A29-C903-458D-9054-1AD3BDAB6C53}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KonyvkockaKliensWPF", "..\..\WPF\KonyvkockaKliensWPF\KonyvkockaKliensWPF.csproj", "{9E342567-C372-2989-3360-0CA4F54EE22D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{68841A29-C903-458D-9054-1AD3BDAB6C53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68841A29-C903-458D-9054-1AD3BDAB6C53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68841A29-C903-458D-9054-1AD3BDAB6C53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68841A29-C903-458D-9054-1AD3BDAB6C53}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E342567-C372-2989-3360-0CA4F54EE22D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E342567-C372-2989-3360-0CA4F54EE22D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E342567-C372-2989-3360-0CA4F54EE22D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E342567-C372-2989-3360-0CA4F54EE22D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {44747830-4914-4D95-92B1-4EC7A866E64B}
+	EndGlobalSection
+EndGlobal

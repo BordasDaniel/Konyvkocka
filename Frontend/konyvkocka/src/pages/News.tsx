@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import NewsArticle, { type NewsArticleData } from '../components/features/NewsArticle';
+import { getNews } from '../services/api';
 
 type NewsFilter = 'all' | 'update' | 'feature' | 'info' | 'event';
+type NewsArticleType = Exclude<NewsFilter, 'all'>;
 
 // Alapértelmezett cikkek (fallback, amíg nincs adatbázis)
 const DEFAULT_ARTICLES: NewsArticleData[] = [
@@ -130,10 +132,21 @@ const DEFAULT_ARTICLES: NewsArticleData[] = [
 export default function News() {
   const [activeFilter, setActiveFilter] = useState<NewsFilter>('all');
   const [articles, setArticles] = useState<NewsArticleData[]>(DEFAULT_ARTICLES);
+  const [selectedArticle, setSelectedArticle] = useState<NewsArticleData | null>(null);
+  const [newsModalVisible, setNewsModalVisible] = useState(false);
+  const [newsModalClosing, setNewsModalClosing] = useState(false);
+  const [totalCount, setTotalCount] = useState<number>(DEFAULT_ARTICLES.length);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const lastSelectedArticle = useRef<NewsArticleData | null>(null);
+  if (selectedArticle) lastSelectedArticle.current = selectedArticle;
   const pageSize = 6;
+
+  const truncateText = (value: string, maxLength = 220): string => {
+    if (value.length <= maxLength) return value;
+    return `${value.slice(0, maxLength).trimEnd()}...`;
+  };
 
   useEffect(() => {
     // Initial filter from URL query params or hash
@@ -148,41 +161,115 @@ export default function News() {
   }, []);
 
   useEffect(() => {
-    // Fetch articles when filter changes
-    fetchArticles(activeFilter);
-  }, [activeFilter]);
-
-  useEffect(() => {
     setCurrentPage(1);
   }, [activeFilter]);
 
-  const fetchArticles = async (filter: NewsFilter) => {
+  useEffect(() => {
+    if (selectedArticle) {
+      setNewsModalClosing(false);
+      setNewsModalVisible(true);
+      return;
+    }
+
+    if (newsModalVisible) {
+      setNewsModalClosing(true);
+      const timeout = setTimeout(() => {
+        setNewsModalVisible(false);
+        setNewsModalClosing(false);
+      }, 290);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [selectedArticle, newsModalVisible]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedArticle(null);
+    };
+
+    if (newsModalVisible) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      document.addEventListener('keydown', onKeyDown);
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [newsModalVisible]);
+
+  useEffect(() => {
+    void fetchArticles(activeFilter, currentPage);
+  }, [activeFilter, currentPage]);
+
+  const mapApiCategoryToFilter = (category: string): NewsArticleType => {
+    const normalized = category.toUpperCase();
+    if (normalized === 'UPDATE') return 'update';
+    if (normalized === 'FUNCTION') return 'feature';
+    if (normalized === 'ANNOUNCEMENT') return 'info';
+    if (normalized === 'EVENT') return 'event';
+    return 'info';
+  };
+
+  const getTagLabel = (filter: NewsArticleType): string => {
+    switch (filter) {
+      case 'update': return 'Frissítés';
+      case 'feature': return 'Új funkció';
+      case 'event': return 'Esemény';
+      case 'info':
+      default:
+        return 'Közlemény';
+    }
+  };
+
+  const fetchArticles = async (filter: NewsFilter, page: number) => {
     setLoading(true);
     setError(null);
 
     try {
-      // TODO: Replace with actual API endpoint when database is ready
-      // const endpoint = filter === 'all' 
-      //   ? '/api/news/articles' 
-      //   : `/api/news/articles?type=${filter}`;
-      // const response = await fetch(endpoint);
-      // if (!response.ok) throw new Error('Failed to fetch articles');
-      // const data = await response.json();
-      // setArticles(data);
+      const apiFilter = filter === 'feature'
+        ? 'function'
+        : filter === 'info'
+          ? 'announcement'
+          : filter;
 
-      // Jelenleg: alapértelmezett cikkek használata szűréssel
-      await new Promise(resolve => setTimeout(resolve, 300)); // Simulate network delay
-      
-      if (filter === 'all') {
-        setArticles(DEFAULT_ARTICLES);
-      } else {
-        const filtered = DEFAULT_ARTICLES.filter(article => article.type === filter);
-        setArticles(filtered);
-      }
+      const response = await getNews({
+        filter: apiFilter,
+        page,
+        pageSize,
+      });
+
+      const mapped = response.articles.map((article) => {
+        const mappedType = mapApiCategoryToFilter(article.category);
+
+        return {
+          id: article.id,
+          type: mappedType,
+          title: article.title,
+          date: article.date,
+          tags: getTagLabel(mappedType),
+          excerpt: truncateText(article.description),
+          fullDescription: article.description,
+          link: '/hirek',
+          linkText: 'Részletek',
+        } satisfies NewsArticleData;
+      });
+
+      setArticles(mapped);
+      setTotalCount(response.total);
     } catch (err) {
       console.error('Error fetching articles:', err);
       setError('Hiba történt a cikkek betöltése során.');
-      setArticles(DEFAULT_ARTICLES); // Fallback to default articles
+
+      const fallbackFiltered = filter === 'all'
+        ? DEFAULT_ARTICLES
+        : DEFAULT_ARTICLES.filter((article) => article.type === filter);
+      setTotalCount(fallbackFiltered.length);
+
+      const start = (page - 1) * pageSize;
+      setArticles(fallbackFiltered.slice(start, start + pageSize));
     } finally {
       setLoading(false);
     }
@@ -201,12 +288,7 @@ export default function News() {
     setActiveFilter(filter);
   };
 
-  const totalPages = Math.max(1, Math.ceil(articles.length / pageSize));
-
-  const pagedArticles = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return articles.slice(start, start + pageSize);
-  }, [articles, currentPage]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -257,6 +339,7 @@ export default function News() {
   };
 
   const filters: NewsFilter[] = ['all', 'update', 'feature', 'info', 'event'];
+  const modalArticle = selectedArticle ?? lastSelectedArticle.current;
 
   return (
     <main className="mt-5">
@@ -303,8 +386,8 @@ export default function News() {
             </div>
           )}
 
-          {!loading && !error && pagedArticles.map(article => (
-            <NewsArticle key={article.id} article={article} />
+          {!loading && !error && articles.map(article => (
+            <NewsArticle key={article.id} article={article} onReadMore={setSelectedArticle} />
           ))}
         </div>
 
@@ -328,6 +411,47 @@ export default function News() {
           </nav>
         )}
       </div>
+
+      {newsModalVisible && modalArticle && (
+        <div className={`news-modal-backdrop${newsModalClosing ? ' closing' : ''}`} onClick={() => setSelectedArticle(null)}>
+          <div
+            className={`news-modal${newsModalClosing ? ' closing' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="news-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="news-modal-header">
+              <div>
+                <h2 id="news-modal-title" className="news-modal-title">{modalArticle.title}</h2>
+                <div className="news-modal-meta">
+                  <span>
+                    <i className="bi bi-calendar3 me-1"></i>
+                    {modalArticle.date}
+                  </span>
+                  <span className={`news-type-chip news-type-${modalArticle.type}`}>
+                    {modalArticle.tags}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-close btn-close-white"
+                aria-label="Bezár"
+                onClick={() => setSelectedArticle(null)}
+              ></button>
+            </div>
+            <div className="news-modal-body">
+              {modalArticle.fullDescription ?? modalArticle.excerpt}
+            </div>
+            <div className="news-modal-footer">
+              <button type="button" className="btn-read" onClick={() => setSelectedArticle(null)}>
+                Rendben
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

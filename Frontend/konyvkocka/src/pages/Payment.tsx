@@ -1,5 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { ApiHttpError, createPurchase } from '../services/api'
 
 type PlanId = 'monthly' | 'quarterly' | 'yearly'
 
@@ -20,6 +22,12 @@ const PLANS: Record<PlanId, Plan> = {
     monthly: { id: 'monthly', label: '1 hónap', price: 2990, discount: 0, note: 'Rugalmas előfizetés' },
     quarterly: { id: 'quarterly', label: '3 hónap', price: 7490, discount: 0.16, note: 'Kedvezőbb havidíj' },
     yearly: { id: 'yearly', label: '12 hónap', price: 24990, discount: 0.30, note: 'Legjobb ár hosszú távra' },
+}
+
+const PLAN_TO_TIER: Record<PlanId, string> = {
+    monthly: 'ONE_M',
+    quarterly: 'QUARTER_Y',
+    yearly: 'FULL_Y',
 }
 
 const COUNTRY_GROUPS: CountryGroup[] = [
@@ -52,6 +60,7 @@ const generateTxId = () => `TX-${Date.now()}-${Math.random().toString(36).substr
 
 function Payment(): React.JSX.Element {
     const navigate = useNavigate()
+    const { isAuthenticated } = useAuth()
     const [step, setStep] = useState<number>(1)
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(() => {
         try {
@@ -80,6 +89,7 @@ function Payment(): React.JSX.Element {
     const [showValidation, setShowValidation] = useState(false)
     const [countryOpen, setCountryOpen] = useState(false)
     const [modalState, setModalState] = useState({ open: false, success: true, method: '', txId: '' })
+    const [isProcessing, setIsProcessing] = useState(false)
 
     const formRef = useRef<HTMLFormElement>(null)
     const countryRef = useRef<HTMLDivElement>(null)
@@ -147,16 +157,53 @@ function Payment(): React.JSX.Element {
         goToStep(3)
     }
 
-    const showPaymentModal = (success: boolean, method: string) => {
-        setModalState({ open: true, success, method, txId: generateTxId() })
+    const showPaymentModal = (success: boolean, method: string, txId?: string) => {
+        setModalState({ open: true, success, method, txId: txId ?? generateTxId() })
+    }
+
+    const processPurchase = async (method: string) => {
+        if (!selectedPlan || isProcessing) return
+        setIsProcessing(true)
+        try {
+            const tier = PLAN_TO_TIER[selectedPlan.id]
+            const result = await createPurchase({
+                tier,
+                lastName: billing.lastName.trim(),
+                firstName: billing.firstName.trim(),
+                billingEmail: billing.email.trim(),
+                phone: billing.phone.trim() || undefined,
+                country: countryNameMap[billing.country] ?? billing.country,
+                zip: billing.zip.trim(),
+                city: billing.city.trim(),
+                address: billing.address.trim(),
+            })
+            showPaymentModal(true, method, `TRX-${result.purchaseId}`)
+        } catch (error) {
+            if (error instanceof ApiHttpError && error.status === 409) {
+                showPaymentModal(false, method, 'ALREADY_SUBSCRIBED')
+            } else if (error instanceof ApiHttpError && error.status === 401) {
+                showPaymentModal(false, method, 'UNAUTHORIZED')
+            } else {
+                showPaymentModal(false, method, generateTxId())
+            }
+        } finally {
+            setIsProcessing(false)
+        }
     }
 
     const handleModalButton = () => {
         if (modalState.success) {
-            localStorage.setItem('kk_session', 'demo')
-            navigate('/profil')
+            if (isAuthenticated) {
+                navigate('/vasarlas')
+            } else {
+                navigate('/belepes')
+            }
         } else {
-            setModalState(prev => ({ ...prev, open: false }))
+            if (modalState.txId === 'UNAUTHORIZED') {
+                navigate('/belepes')
+            } else {
+                setModalState(prev => ({ ...prev, open: false }))
+            }
         }
     }
 
@@ -178,10 +225,10 @@ function Payment(): React.JSX.Element {
             return
         }
 
-        showPaymentModal(true, 'kártya')
+        void processPurchase('kártya')
     }
 
-    const success = (method: string) => showPaymentModal(true, method)
+    const success = (method: string) => void processPurchase(method)
 
     const emailValid = billing.email ? /^\S+@\S+\.\S+$/.test(billing.email) : false
 
@@ -383,7 +430,9 @@ function Payment(): React.JSX.Element {
                                         <input className="form-control" id="cardCvc" name="cvc" placeholder="123" value={card.cvc} onChange={handleCardChange} />
                                     </div>
                                 </div>
-                                <button id="pay-card" className="btn btn-kk w-100 mt-3" type="button" onClick={payWithCard}>Fizetés kártyával</button>
+                                <button id="pay-card" className="btn btn-kk w-100 mt-3" type="button" onClick={payWithCard} disabled={isProcessing}>
+                                    {isProcessing ? 'Feldolgozás...' : 'Fizetés kártyával'}
+                                </button>
                                 <div className="mt-2 text-center security-note mx-auto"><i className="bi bi-shield-lock me-1" /> Titkosított kapcsolat • PCI-DSS</div>
                             </div>
                         </div>
@@ -392,10 +441,10 @@ function Payment(): React.JSX.Element {
                             <div className="about-panel p-3 alt-methods">
                                 <h5 className="mb-3"><i className="bi bi-wallet2 me-1" /> Alternatív lehetőségek</h5>
                                 <div className="d-grid gap-2">
-                                    <button className="btn btn-outline-light" type="button" id="pay-apple" onClick={() => success('Apple Pay')}><i className="bi bi-apple me-1" /> Apple Pay</button>
-                                    <button className="btn btn-outline-light" type="button" id="pay-google" onClick={() => success('Google Pay')}><i className="bi bi-phone me-1" /> Google Pay</button>
-                                    <button className="btn btn-outline-light" type="button" id="pay-paypal" onClick={() => success('PayPal')}><i className="bi bi-paypal me-1" /> PayPal</button>
-                                    <button className="btn btn-outline-light" type="button" id="pay-transfer" onClick={() => success('Átutalás')}><i className="bi bi-bank me-1" /> Banki átutalás</button>
+                                    <button className="btn btn-outline-light" type="button" id="pay-apple" onClick={() => success('Apple Pay')} disabled={isProcessing}><i className="bi bi-apple me-1" /> Apple Pay</button>
+                                    <button className="btn btn-outline-light" type="button" id="pay-google" onClick={() => success('Google Pay')} disabled={isProcessing}><i className="bi bi-phone me-1" /> Google Pay</button>
+                                    <button className="btn btn-outline-light" type="button" id="pay-paypal" onClick={() => success('PayPal')} disabled={isProcessing}><i className="bi bi-paypal me-1" /> PayPal</button>
+                                    <button className="btn btn-outline-light" type="button" id="pay-transfer" onClick={() => success('Átutalás')} disabled={isProcessing}><i className="bi bi-bank me-1" /> Banki átutalás</button>
                                 </div>
                             </div>
                             <div className="about-panel p-3 mt-3">
@@ -427,7 +476,11 @@ function Payment(): React.JSX.Element {
                     <p className="payment-modal-message" id="modalMessage">
                         {modalState.success
                             ? `Köszönjük az előfizetést ${modalState.method} módszerrel. Hamarosan emailben kapsz egy visszaigazolást.`
-                            : 'A fizetés feldolgozása sikertelen volt. Kérjük, ellenőrizd az adatokat és próbáld újra.'}
+                            : modalState.txId === 'ALREADY_SUBSCRIBED'
+                                ? 'Már rendelkezel aktív prémium előfizetéssel. Nem tudsz újra előfizetni, amíg a jelenlegi el nem jár.'
+                                : modalState.txId === 'UNAUTHORIZED'
+                                    ? 'A vásárláshoz be kell jelentkezned. Kérjük, jelentkezz be és próbáld újra.'
+                                    : 'A fizetés feldolgozása sikertelen volt. Kérjük, ellenőrizd az adatokat és próbáld újra.'}
                     </p>
                     <div className="payment-modal-transaction" id="modalTransaction">
                         {modalState.success ? (

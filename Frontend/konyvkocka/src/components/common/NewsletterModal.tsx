@@ -17,7 +17,6 @@ function setCookie(name: string, value: string, days: number) {
 export default function NewsletterModal() {
   const [visible, setVisible] = useState(false);
   const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -68,14 +67,7 @@ export default function NewsletterModal() {
       return;
     }
 
-    // TODO: API hívás a feliratkozáshoz
-    // await fetch('/api/newsletter', { method: 'POST', body: JSON.stringify({ email: trimmed }) });
-
-    setSubscribed(true);
-    setCookie(COOKIE_NAME, '1', COOKIE_DAYS);
-
-    // 3 mp után automatikusan bezárul
-    setTimeout(() => setVisible(false), 3000);
+    setError('A hírlevél-feliratkozás jelenleg nem érhető el. Kérjük, próbáld meg később.');
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -94,8 +86,7 @@ export default function NewsletterModal() {
           <i className="bi bi-x-lg"></i>
         </button>
 
-        {!subscribed ? (
-          <>
+        <>
             {/* Ikon */}
             <div className="newsletter-icon">
               <i className="bi bi-envelope-paper-heart-fill"></i>
@@ -150,19 +141,7 @@ export default function NewsletterModal() {
               <i className="bi bi-shield-lock-fill me-1"></i>
               Bármikor leiratkozhatsz. Adataidat bizalmasan kezeljük.
             </p>
-          </>
-        ) : (
-          /* Sikeres feliratkozás */
-          <div className="newsletter-success">
-            <div className="newsletter-success-icon">
-              <i className="bi bi-check-circle-fill"></i>
-            </div>
-            <h2 className="newsletter-title">Köszönjük a feliratkozást!</h2>
-            <p className="newsletter-desc">
-              Hamarosan megkapod az első hírlevelünket a megadott e-mail címre.
-            </p>
-          </div>
-        )}
+        </>
       </div>
     </div>
   );

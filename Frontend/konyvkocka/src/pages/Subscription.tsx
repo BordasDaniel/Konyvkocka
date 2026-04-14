@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import {
+  ApiHttpError,
+  getSubscriptionInfo,
+  getSubscriptionPurchases,
+  type PurchaseItemResponse,
+} from '../services/api';
 import '../styles/subscription.css';
 
 // ========================
@@ -8,56 +14,31 @@ import '../styles/subscription.css';
 // ========================
 
 interface SubscriptionInfo {
-  type: 'free' | 'premium' | 'premium-plus';
+  type: 'free' | 'premium';
   name: string;
-  startDate: string;
-  endDate: string;
+  startDate: string | null;
+  endDate: string | null;
   autoRenew: boolean;
   price: string;
 }
 
 interface PurchaseItem {
   id: number;
-  purchaseDate: string;
-  tier: 'ONE_M' | 'QUARTER_Y' | 'FULL_Y';
+  purchaseDate: string | null;
+  tier: string;
   purchaseStatus: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
   price: number;
   transactionId: string;
 }
 
-// ========================
-// MOCK ADATOK
-// ========================
-
-const fetchSubscriptionInfo = async (): Promise<SubscriptionInfo> => {
-  // TODO: API hívásra cserélni
-  return {
-    type: 'premium',
-    name: 'Premium előfizetés',
-    startDate: '2026-02-15',
-    endDate: '2026-05-15',
-    autoRenew: true,
-    price: '2.990 Ft/hó',
-  };
-};
-
-const fetchPurchaseHistory = async (): Promise<PurchaseItem[]> => {
-  // TODO: API hívásra cserélni
-  return [
-    { id: 1, purchaseDate: '2026-03-12', tier: 'ONE_M', purchaseStatus: 'SUCCESS', price: 2990, transactionId: 'TX-20260312-A1H4K2' },
-    { id: 2, purchaseDate: '2026-02-15', tier: 'ONE_M', purchaseStatus: 'SUCCESS', price: 2990, transactionId: 'TX-20260215-Z8M1P9' },
-    { id: 3, purchaseDate: '2026-01-15', tier: 'ONE_M', purchaseStatus: 'SUCCESS', price: 2990, transactionId: 'TX-20260115-X2N7Q5' },
-    { id: 4, purchaseDate: '2025-12-20', tier: 'QUARTER_Y', purchaseStatus: 'SUCCESS', price: 7490, transactionId: 'TX-20251220-L4S9B3' },
-    { id: 5, purchaseDate: '2025-11-18', tier: 'ONE_M', purchaseStatus: 'FAILED', price: 2990, transactionId: 'TX-20251118-R5V2D8' },
-    { id: 6, purchaseDate: '2025-10-15', tier: 'ONE_M', purchaseStatus: 'REFUNDED', price: 2990, transactionId: 'TX-20251015-J7W3T1' },
-    { id: 7, purchaseDate: '2025-09-03', tier: 'FULL_Y', purchaseStatus: 'SUCCESS', price: 24990, transactionId: 'TX-20250903-K9C2M4' },
-    { id: 8, purchaseDate: '2025-08-11', tier: 'ONE_M', purchaseStatus: 'PENDING', price: 2990, transactionId: 'TX-20250811-N6F3H7' },
-    { id: 9, purchaseDate: '2025-07-14', tier: 'QUARTER_Y', purchaseStatus: 'SUCCESS', price: 7490, transactionId: 'TX-20250714-U2G8Y4' },
-    { id: 10, purchaseDate: '2025-06-10', tier: 'ONE_M', purchaseStatus: 'SUCCESS', price: 2990, transactionId: 'TX-20250610-P4E6L2' },
-    { id: 11, purchaseDate: '2025-05-16', tier: 'ONE_M', purchaseStatus: 'FAILED', price: 2990, transactionId: 'TX-20250516-Q8A1R6' },
-    { id: 12, purchaseDate: '2025-04-09', tier: 'FULL_Y', purchaseStatus: 'SUCCESS', price: 24990, transactionId: 'TX-20250409-H3D7N5' },
-  ];
-};
+const mapPurchase = (item: PurchaseItemResponse): PurchaseItem => ({
+  id: item.id,
+  purchaseDate: item.purchaseDate,
+  tier: item.tier,
+  purchaseStatus: (item.purchaseStatus ?? 'PENDING') as PurchaseItem['purchaseStatus'],
+  price: item.price ?? 0,
+  transactionId: `TRX-${item.id}`,
+});
 
 const formatHuf = (value: number): string => `${value.toLocaleString('hu-HU')} Ft`;
 
@@ -71,33 +52,72 @@ const Subscription: React.FC = () => {
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [purchases, setPurchases] = useState<PurchaseItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'SUCCESS' | 'PENDING' | 'FAILED' | 'REFUNDED'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
 
   // Adatok betöltése
   useEffect(() => {
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
     const loadData = async () => {
       setIsLoading(true);
+      setError(null);
+
       try {
         const [subData, purchaseData] = await Promise.all([
-          fetchSubscriptionInfo(),
-          fetchPurchaseHistory(),
+          getSubscriptionInfo(),
+          getSubscriptionPurchases({ page: 1, pageSize: 200 }),
         ]);
-        setSubscription(subData);
-        setPurchases(purchaseData);
+
+        if (!isMounted) return;
+
+        const mappedPurchases = purchaseData.purchases.map(mapPurchase);
+        const purchasesByDateDesc = [...mappedPurchases].sort(
+          (a, b) => new Date(b.purchaseDate ?? 0).getTime() - new Date(a.purchaseDate ?? 0).getTime(),
+        );
+        const latestPurchase = purchasesByDateDesc[0] ?? null;
+        const latestSuccessfulPurchase = purchasesByDateDesc.find((item) => item.purchaseStatus === 'SUCCESS') ?? null;
+
+        setSubscription({
+          type: subData.type,
+          name: subData.name,
+          startDate: latestSuccessfulPurchase?.purchaseDate ?? null,
+          endDate: subData.expiresAt,
+          autoRenew: false,
+          price: latestPurchase ? formatHuf(latestPurchase.price) : 'Nincs adat',
+        });
+        setPurchases(mappedPurchases);
       } catch (error) {
+        if (!isMounted) return;
         console.error('Hiba az adatok betöltésekor:', error);
+        if (error instanceof ApiHttpError && error.status === 401) {
+          setError('Az elofizetes adatok megtekintesehez be kell jelentkezned.');
+        } else {
+          setError('Az elofizetes adatok betoltese sikertelen.');
+        }
+        setSubscription(null);
+        setPurchases([]);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
-    loadData();
-  }, []);
+    void loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated]);
 
   // Hátralévő napok számítása
   const daysRemaining = useMemo(() => {
-    if (!subscription) return 0;
+    if (!subscription?.endDate) return 0;
     const end = new Date(subscription.endDate);
     const now = new Date();
     const diff = end.getTime() - now.getTime();
@@ -160,13 +180,15 @@ const Subscription: React.FC = () => {
 
   // Csomag badge (purchase.Tier)
   const getTierBadge = (tier: PurchaseItem['tier']) => {
-    switch (tier) {
+    switch (tier?.toUpperCase()) {
       case 'ONE_M':
         return <span className="badge bg-info text-dark">1 hónap</span>;
       case 'QUARTER_Y':
         return <span className="badge bg-primary">3 hónap</span>;
       case 'FULL_Y':
         return <span className="badge bg-warning text-dark">12 hónap</span>;
+      default:
+        return <span className="badge bg-secondary">Egyeb</span>;
     }
   };
 
@@ -181,45 +203,15 @@ const Subscription: React.FC = () => {
         return <span className="badge bg-danger">Sikertelen</span>;
       case 'REFUNDED':
         return <span className="badge bg-secondary">Visszatérítve</span>;
+      default:
+        return <span className="badge bg-secondary">Ismeretlen</span>;
     }
-  };
-
-  // Számla letöltése
-  const handleDownloadInvoice = (purchase: PurchaseItem) => {
-    // TODO: Valódi API hívás a számlához: const response = await fetch(`/api/invoices/${purchase.id}`);
-    // Dummy számla generálás szöveges fájlként
-    const invoiceContent = `
-KÖNYVKOCKA - SZÁMLA
-
-Számlaszám: INV-${purchase.id}-${new Date(purchase.purchaseDate).getFullYear()}
-Dátum: ${new Date(purchase.purchaseDate).toLocaleDateString('hu-HU')}
-
-Termék: Premium előfizetés
-Csomag (Tier): ${purchase.tier}
-Ár: ${formatHuf(purchase.price)}
-Státusz: ${purchase.purchaseStatus}
-Tranzakció azonosító: ${purchase.transactionId}
-
-Köszönjük a vásárlást!
-    `;
-    
-    const blob = new Blob([invoiceContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `szamla-${purchase.id}-${new Date(purchase.purchaseDate).getTime()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   // Előfizetés típus infó
   const getSubscriptionBadge = () => {
     if (!subscription) return null;
     switch (subscription.type) {
-      case 'premium-plus':
-        return { color: '#FFD700', icon: 'bi-gem', label: 'Premium+' };
       case 'premium':
         return { color: 'var(--secondary)', icon: 'bi-star-fill', label: 'Premium' };
       default:
@@ -272,6 +264,11 @@ Köszönjük a vásárlást!
         <div className="container-fluid px-4 px-lg-5">
           {/* Jelenlegi előfizetés státusz */}
           <div className="subscription-status-card">
+            {error && (
+              <div className="alert alert-warning mb-3" role="alert">
+                {error}
+              </div>
+            )}
             <div className="status-header">
               <div className="status-icon" style={{ backgroundColor: subBadge?.color }}>
                 <i className={`bi ${subBadge?.icon}`}></i>
@@ -296,7 +293,7 @@ Köszönjük a vásárlást!
                 <div>
                   <span className="detail-label">Kezdés dátuma</span>
                   <span className="detail-value">
-                    {new Date(subscription?.startDate || '').toLocaleDateString('hu-HU')}
+                    {subscription?.startDate ? new Date(subscription.startDate).toLocaleDateString('hu-HU') : 'Nincs adat'}
                   </span>
                 </div>
               </div>
@@ -305,7 +302,7 @@ Köszönjük a vásárlást!
                 <div>
                   <span className="detail-label">Lejárat</span>
                   <span className="detail-value">
-                    {new Date(subscription?.endDate || '').toLocaleDateString('hu-HU')}
+                    {subscription?.endDate ? new Date(subscription.endDate).toLocaleDateString('hu-HU') : 'Nincs adat'}
                   </span>
                 </div>
               </div>
@@ -334,21 +331,10 @@ Köszönjük a vásárlást!
                   Váltás Premiumra
                 </button>
               ) : (
-                <>
-                  <button className="btn-upgrade" onClick={() => navigate('/fizetes')}>
-                    <i className="bi bi-arrow-up-circle"></i>
-                    Csomag váltás
-                  </button>
-                  {subscription?.autoRenew && (
-                    <button 
-                      className="btn-cancel"
-                      onClick={() => setSubscription(prev => prev ? { ...prev, autoRenew: false } : null)}
-                    >
-                      <i className="bi bi-x-circle"></i>
-                      Előfizetés lemondása
-                    </button>
-                  )}
-                </>
+                <button className="btn-cancel" onClick={() => navigate('/tamogatas')}>
+                  <i className="bi bi-life-preserver"></i>
+                  Lemondas ugyfelszolgalaton
+                </button>
               )}
             </div>
           </div>
@@ -404,7 +390,7 @@ Köszönjük a vásárlást!
                   ) : (
                     pagedPurchases.map(purchase => (
                       <tr key={purchase.id}>
-                        <td>{new Date(purchase.purchaseDate).toLocaleDateString('hu-HU')}</td>
+                        <td>{purchase.purchaseDate ? new Date(purchase.purchaseDate).toLocaleDateString('hu-HU') : 'Nincs adat'}</td>
                         <td>
                           <div className="product-cell">
                             <span>Premium előfizetés</span>
@@ -415,12 +401,8 @@ Köszönjük a vásárlást!
                         <td>{getStatusBadge(purchase.purchaseStatus)}</td>
                         <td><code>{purchase.transactionId}</code></td>
                         <td>
-                          <button 
-                            className="btn-invoice" 
-                            title="Számla letöltése"
-                            onClick={() => handleDownloadInvoice(purchase)}
-                          >
-                            <i className="bi bi-download"></i>
+                          <button className="btn-invoice" title="Szamla endpoint nincs bekotve" disabled>
+                            <i className="bi bi-dash-circle"></i>
                           </button>
                         </td>
                       </tr>
@@ -482,7 +464,7 @@ Köszönjük a vásárlást!
               </div>
               <p className="coupon-hint">
                 <i className="bi bi-info-circle me-1"></i>
-                A kuponok a következő vásárlásnál kerülnek felhasználásra.
+                Kupon beváltas endpoint jelenleg nem erheto el.
               </p>
             </div>
           </div>

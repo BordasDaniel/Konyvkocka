@@ -1,8 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Modal from '../components/common/Modal.tsx';
-import type { CardData } from '../components/common/Card.tsx';
 import '../styles/history.css';
+import {
+  ApiHttpError,
+  applyContentImageFallback,
+  buildContentKey,
+  getHistory,
+  recordContentView,
+  restartLibraryItem,
+  touchHistoryItem,
+  toContentImageSrc,
+  type HistoryItemResponse,
+} from '../services/api';
 
 // Előzmény elem típus
 interface HistoryItem {
@@ -12,113 +21,133 @@ interface HistoryItem {
   type: 'book' | 'movie' | 'series';
   progress: number; // 0-100
   lastPosition: string; // pl. "124. oldal" vagy "S2 E5 - 23:45"
-  totalDuration: string; // pl. "320 oldal" vagy "45 perc"
+  totalDuration: string; // pl. "320 oldal" vagy "1 óra 34 perc"
   viewedAt: Date;
   rating?: number;
 }
 
-// Mock előzmények adatok
-const mockHistoryItems: HistoryItem[] = [
-  {
-    id: 1,
-    title: 'Inception',
-    cover: 'https://image.tmdb.org/t/p/w500/ljsZTbVsrQSqZgWeep2B1QiDKuh.jpg',
-    type: 'movie',
-    progress: 65,
-    lastPosition: '1:23:45',
-    totalDuration: '2:28:00',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 30), // 30 perce
-    rating: 9.2,
-  },
-  {
-    id: 2,
-    title: 'A kis herceg',
-    cover: 'https://moly.hu/system/covers/big/covers_535498.jpg',
-    type: 'book',
-    progress: 78,
-    lastPosition: '89. oldal',
-    totalDuration: '114 oldal',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 órája
-    rating: 9.5,
-  },
-  {
-    id: 3,
-    title: 'Interstellar',
-    cover: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    type: 'movie',
-    progress: 100,
-    lastPosition: 'Befejezve',
-    totalDuration: '2:49:00',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 órája
-    rating: 9.8,
-  },
-  {
-    id: 4,
-    title: 'Breaking Bad',
-    cover: 'https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg',
-    type: 'series',
-    progress: 45,
-    lastPosition: 'S3 E7 - 34:12',
-    totalDuration: '5 évad',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // tegnap
-    rating: 9.5,
-  },
-  {
-    id: 5,
-    title: '1984',
-    cover: 'https://moly.hu/system/covers/big/covers_227576.jpg',
-    type: 'book',
-    progress: 23,
-    lastPosition: '67. oldal',
-    totalDuration: '328 oldal',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // tegnap
-  },
-  {
-    id: 6,
-    title: 'A Gyűrűk Ura: A király visszatér',
-    cover: 'https://image.tmdb.org/t/p/w500/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg',
-    type: 'movie',
-    progress: 33,
-    lastPosition: '1:12:30',
-    totalDuration: '3:21:00',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 napja
-    rating: 9.0,
-  },
-  {
-    id: 7,
-    title: 'The Witcher',
-    cover: 'https://image.tmdb.org/t/p/w500/7vjaCdMw15FEbXyLQTVa04URsPm.jpg',
-    type: 'series',
-    progress: 100,
-    lastPosition: 'Befejezve',
-    totalDuration: '3 évad',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5), // 5 napja
-    rating: 8.2,
-  },
-  {
-    id: 8,
-    title: 'Dűne',
-    cover: 'https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg',
-    type: 'movie',
-    progress: 100,
-    lastPosition: 'Befejezve',
-    totalDuration: '2:35:00',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7), // 1 hete
-    rating: 8.8,
-  },
-];
+const formatMinutesAsDuration = (value: number): string => {
+  const totalMinutes = Math.max(0, Math.floor(value));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours <= 0) return `${minutes} perc`;
+  if (minutes === 0) return `${hours} óra`;
+  return `${hours} óra ${minutes} perc`;
+};
+
+const mapHistoryItem = (item: HistoryItemResponse): HistoryItem => {
+  const status = item.status?.toUpperCase() ?? '';
+  const rawProgress = Math.max(0, Math.floor(item.progress ?? 0));
+
+  const totalUnits = typeof item.totalUnits === 'number' && item.totalUnits > 0
+    ? item.totalUnits
+    : null;
+
+  const percentFromUnits = totalUnits
+    ? Math.round((rawProgress / totalUnits) * 100)
+    : null;
+
+  const progress = status === 'COMPLETED'
+    ? 100
+    : percentFromUnits != null
+      ? Math.max(0, Math.min(99, percentFromUnits))
+      : rawProgress <= 0
+        ? 0
+        : rawProgress <= 100
+          ? Math.max(1, Math.min(99, rawProgress))
+          : 99;
+
+  const normalizedType: HistoryItem['type'] = item.contentType.toLowerCase() === 'movie'
+    ? 'movie'
+    : item.contentType.toLowerCase() === 'series'
+      ? 'series'
+      : 'book';
+
+  const lastPosition = status === 'COMPLETED'
+    ? 'Befejezve'
+    : normalizedType === 'book'
+      ? `${rawProgress || 0}. oldal`
+      : normalizedType === 'series'
+        ? `Epizód ${rawProgress || 0}`
+        : formatMinutesAsDuration(rawProgress || 0);
+
+  return {
+    id: item.contentId,
+    title: item.title,
+    cover: toContentImageSrc(item.cover ?? item.poster),
+    type: normalizedType,
+    progress,
+    lastPosition,
+    totalDuration:
+      normalizedType === 'book'
+        ? `${totalUnits ?? Math.max(0, rawProgress)} oldal`
+        : normalizedType === 'series'
+          ? `${totalUnits ?? Math.max(0, rawProgress)} epizód`
+          : formatMinutesAsDuration(totalUnits ?? Math.max(0, rawProgress)),
+    viewedAt: new Date(item.lastSeen ?? item.addedAt ?? Date.now()),
+    rating: item.rating == null ? undefined : Number(item.rating),
+  };
+};
 
 const History: React.FC = () => {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState<'all' | 'book' | 'movie' | 'series'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'in-progress'>('all');
-  const [selectedCard, setSelectedCard] = useState<CardData | null>(null);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [actionInProgressKey, setActionInProgressKey] = useState<string | null>(null);
   const pageSize = 5;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadHistory = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await getHistory({
+          type: activeFilter,
+          page: 1,
+          pageSize: 100,
+        });
+
+        if (!isMounted) return;
+
+        const mappedItems = response.history
+          .map(mapHistoryItem)
+          .sort((a, b) => b.viewedAt.getTime() - a.viewedAt.getTime());
+
+        setHistoryItems(mappedItems);
+      } catch (loadError) {
+        if (!isMounted) return;
+
+        console.error('Failed to load history:', loadError);
+        if (loadError instanceof ApiHttpError && loadError.status === 401) {
+          setError('Az előzmények megtekintéséhez be kell jelentkezned.');
+          setHistoryItems([]);
+        } else {
+          setError('Az előzmények betöltése sikertelen.');
+          setHistoryItems([]);
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    void loadHistory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeFilter]);
 
   // Szűrt elemek
   const filteredItems = useMemo(() => {
-    let items = mockHistoryItems;
+    let items = historyItems;
 
     // Típus szűrés
     if (activeFilter !== 'all') {
@@ -133,7 +162,7 @@ const History: React.FC = () => {
     }
 
     return items;
-  }, [activeFilter, statusFilter]);
+  }, [historyItems, activeFilter, statusFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -230,17 +259,69 @@ const History: React.FC = () => {
     return date.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' });
   };
 
-  // Folytatás kezelése
-  const handleContinue = (item: HistoryItem) => {
+  const openContent = (item: HistoryItem) => {
+    const contentKey = buildContentKey(item.type, item.id);
+
     if (item.type === 'book') {
-      navigate('/olvaso', { state: { bookId: item.id } });
-    } else {
-      navigate('/nezes', { state: { mediaId: item.id } });
+      navigate(`/olvaso?content=${encodeURIComponent(contentKey)}`);
+      return;
+    }
+
+    navigate(`/nezes?content=${encodeURIComponent(contentKey)}`);
+  };
+
+  // Folytatás kezelése
+  const handleContinue = async (item: HistoryItem) => {
+    if (item.progress >= 100) {
+      openContent(item);
+      return;
+    }
+
+    // Only LastSeen frissítése meglévő rekordra; ha hiányzik, fallbackként létrehozzuk/upserteljük.
+    try {
+      await touchHistoryItem({
+        contentType: item.type,
+        contentId: item.id,
+      });
+    } catch (recordError) {
+      if (recordError instanceof ApiHttpError && recordError.status === 404) {
+        try {
+          await recordContentView({ contentType: item.type, contentId: item.id });
+        } catch (fallbackError) {
+          console.warn('History fallback view tracking failed:', fallbackError);
+        }
+      } else {
+        console.warn('History pre-navigation update failed:', recordError);
+      }
+    }
+
+    openContent(item);
+  };
+
+  const handleRestartAndOpen = async (item: HistoryItem) => {
+    const key = `${item.type}:${item.id}`;
+    setActionInProgressKey(key);
+    setError(null);
+
+    try {
+      await restartLibraryItem(item.type, item.id);
+      openContent(item);
+    } catch (restartError) {
+      console.error('Restart from history failed:', restartError);
+      if (restartError instanceof ApiHttpError && restartError.status === 401) {
+        setError('A művelethez be kell jelentkezned.');
+      } else if (restartError instanceof ApiHttpError && restartError.message) {
+        setError(restartError.message);
+      } else {
+        setError('Az újraindítás sikertelen. Kérlek próbáld újra.');
+      }
+    } finally {
+      setActionInProgressKey(null);
     }
   };
 
   // Folytatásban lévő elemek száma
-  const inProgressCount = mockHistoryItems.filter(i => i.progress < 100).length;
+  const inProgressCount = historyItems.filter(i => i.progress < 100).length;
 
   return (
     <div className="history-page">
@@ -280,7 +361,7 @@ const History: React.FC = () => {
                 className={`filter-btn ${statusFilter === 'all' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('all')}
               >
-                Összes ({mockHistoryItems.length})
+                Összes ({historyItems.length})
               </button>
               <button
                 className={`filter-btn ${statusFilter === 'in-progress' ? 'active' : ''}`}
@@ -294,7 +375,7 @@ const History: React.FC = () => {
                 onClick={() => setStatusFilter('completed')}
               >
                 <i className="bi bi-check-circle"></i>
-                Befejezett ({mockHistoryItems.filter(i => i.progress === 100).length})
+                Befejezett ({historyItems.filter(i => i.progress === 100).length})
               </button>
             </div>
           </div>
@@ -304,11 +385,17 @@ const History: React.FC = () => {
       {/* Előzmények lista */}
       <section className="history-content">
         <div className="container">
-          {groupedItems.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Betöltés...</span>
+              </div>
+            </div>
+          ) : groupedItems.length === 0 ? (
             <div className="history-empty">
               <i className="bi bi-clock-history"></i>
               <h3>Nincs megjeleníthető előzmény</h3>
-              <p>Kezdj el olvasni vagy nézni valamit, és itt fognak megjelenni az előzményeid.</p>
+              <p>{error ?? 'Kezdj el olvasni vagy nézni valamit, és itt fognak megjelenni az előzményeid.'}</p>
             </div>
           ) : (
             groupedItems.map((group, groupIndex) => (
@@ -318,15 +405,23 @@ const History: React.FC = () => {
                   {group.items.map(item => {
                     const typeInfo = getTypeInfo(item.type);
                     const isCompleted = item.progress === 100;
+                    const actionKey = `${item.type}:${item.id}`;
+                    const isActionBusy = actionInProgressKey === actionKey;
 
                     return (
                       <div
-                        key={item.id}
+                        key={`${item.type}-${item.id}`}
                         className={`history-item ${isCompleted ? 'completed' : ''}`}
                       >
                         {/* Borító */}
                         <div className="item-cover">
-                          <img src={item.cover} alt={item.title} />
+                          <img
+                            src={item.cover}
+                            alt={item.title}
+                            onError={(event) => {
+                              applyContentImageFallback(event.currentTarget);
+                            }}
+                          />
                           <div className="item-type-badge" style={{ backgroundColor: typeInfo.color }}>
                             <i className={`bi ${typeInfo.icon}`}></i>
                           </div>
@@ -392,23 +487,35 @@ const History: React.FC = () => {
                         </div>
 
                         {/* Akciók */}
-                        <div className="item-actions">
+                        <div className={`item-actions ${isCompleted ? 'completed-actions' : ''}`}>
                           {!isCompleted ? (
                             <button
                               className="btn-continue"
                               onClick={() => handleContinue(item)}
+                              disabled={isActionBusy}
                             >
                               <i className="bi bi-play-fill"></i>
                               Folytatás
                             </button>
                           ) : (
-                            <button
-                              className="btn-rewatch"
-                              onClick={() => handleContinue(item)}
-                            >
-                              <i className="bi bi-arrow-repeat"></i>
-                              Újra
-                            </button>
+                            <>
+                              <button
+                                className="btn-rewatch"
+                                onClick={() => void handleRestartAndOpen(item)}
+                                disabled={isActionBusy}
+                              >
+                                <i className="bi bi-arrow-repeat"></i>
+                                {isActionBusy ? 'Újraindítás...' : 'Újra'}
+                              </button>
+                              <button
+                                className="btn-open-completed"
+                                onClick={() => openContent(item)}
+                                disabled={isActionBusy}
+                              >
+                                <i className="bi bi-box-arrow-up-right"></i>
+                                Megnyitás
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -440,12 +547,6 @@ const History: React.FC = () => {
           )}
         </div>
       </section>
-
-      <Modal
-        open={!!selectedCard}
-        card={selectedCard || undefined}
-        onClose={() => setSelectedCard(null)}
-      />
     </div>
   );
 };

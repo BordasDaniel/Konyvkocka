@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ApiHttpError, confirmPasswordReset } from '../services/api';
 import '../styles/login.css';
 
 // Declare grecaptcha for TypeScript
@@ -10,14 +11,35 @@ declare global {
 }
 
 const ResetPassword: React.FC = () => {
+  const recaptchaSiteKey = (import.meta.env.VITE_RECAPTCHA_SITE_KEY ?? '').trim();
+  const recaptchaWidgetId = useRef<number | null>(null);
+
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'danger'>('danger');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  const userIdParam = searchParams.get('userId');
+  const token = (searchParams.get('token') ?? '').trim();
+  const userId = userIdParam ? Number(userIdParam) : NaN;
+  const hasValidLinkParams = Number.isInteger(userId) && userId > 0 && token.length > 0;
+
+  // Get email from query params (display only)
+  const emailFromQuery = searchParams.get('email') || '';
+
   useEffect(() => {
+    if (!hasValidLinkParams) {
+      setMessage('A jelszó-visszaállító link hiányos vagy érvénytelen. Kérj új linket a bejelentkezési oldalon.');
+      setMessageType('danger');
+    }
+  }, [hasValidLinkParams]);
+
+  useEffect(() => {
+    if (!recaptchaSiteKey) return;
+
     // Load reCAPTCHA script
     const existingScript = document.querySelector('script[src*="recaptcha"]');
     
@@ -44,9 +66,11 @@ const ResetPassword: React.FC = () => {
     if (!existingScript) {
       return loadRecaptcha();
     }
-  }, []);
+  }, [recaptchaSiteKey]);
 
   useEffect(() => {
+    if (!recaptchaSiteKey) return;
+
     // Render reCAPTCHA with retry logic
     let retryCount = 0;
     const maxRetries = 10;
@@ -57,9 +81,10 @@ const ResetPassword: React.FC = () => {
         
         if (container && container.childElementCount === 0) {
           try {
-            window.grecaptcha.render('recaptcha-container-register', {
-              'sitekey': '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI' // Test key
+            const widgetId = window.grecaptcha.render('recaptcha-container-register', {
+              'sitekey': recaptchaSiteKey
             });
+            recaptchaWidgetId.current = widgetId;
             console.log('reCAPTCHA rendered');
           } catch (e) {
             console.log('reCAPTCHA render error:', e);
@@ -73,16 +98,18 @@ const ResetPassword: React.FC = () => {
     
     const timer = setTimeout(tryRenderCaptcha, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [recaptchaSiteKey]);
 
-  // Get email from query params
-  const emailFromQuery = searchParams.get('email') || '';
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
 
-    // const emailHidden = (document.getElementById('emailHidden') as HTMLInputElement)?.value.trim();
+    if (!hasValidLinkParams) {
+      setMessage('A jelszó-visszaállító link hiányos vagy érvénytelen. Kérj új linket a bejelentkezési oldalon.');
+      setMessageType('danger');
+      return;
+    }
+
     const newPassword = (document.getElementById('newPassword') as HTMLInputElement)?.value;
     const confirmPassword = (document.getElementById('confirmPassword') as HTMLInputElement)?.value;
 
@@ -104,9 +131,16 @@ const ResetPassword: React.FC = () => {
       return;
     }
 
-    // reCAPTCHA validation
-    if (typeof window.grecaptcha !== 'undefined') {
-      const recaptchaResponse = window.grecaptcha.getResponse();
+    // reCAPTCHA validation (optional)
+    if (recaptchaSiteKey) {
+      if (typeof window.grecaptcha === 'undefined') {
+        setMessage('A robotvédelem még nem töltődött be. Próbáld meg újra pár másodperc múlva.');
+        setMessageType('danger');
+        return;
+      }
+
+      const widgetId = recaptchaWidgetId.current;
+      const recaptchaResponse = widgetId !== null ? window.grecaptcha.getResponse(widgetId) : '';
       if (recaptchaResponse.length === 0) {
         setMessage('Kérlek, erősítsd meg, hogy nem vagy robot!');
         setMessageType('danger');
@@ -114,23 +148,58 @@ const ResetPassword: React.FC = () => {
       }
     }
 
-    // Simulated success
-    setMessage('A jelszó sikeresen megváltozott. Most bejelentkezhetsz az új jelszóval.');
-    setMessageType('success');
+    setIsSubmitting(true);
+    try {
+      const response = await confirmPasswordReset({
+        userId: Number(userId),
+        token,
+        plainPassword: newPassword,
+      });
 
-    // Reset captcha
-    if (typeof window.grecaptcha !== 'undefined' && typeof window.grecaptcha.reset === 'function') {
+      setMessage(response.message || 'A jelszó sikeresen megváltozott. Most bejelentkezhetsz az új jelszóval.');
+      setMessageType('success');
+
+      if (
+        typeof window.grecaptcha !== 'undefined' &&
+        typeof window.grecaptcha.reset === 'function' &&
+        recaptchaWidgetId.current !== null
+      ) {
+        try {
+          window.grecaptcha.reset(recaptchaWidgetId.current);
+        } catch {
+          // noop
+        }
+      }
+
+      // Redirect after 2 seconds
+      setTimeout(() => {
+        navigate('/belepes');
+      }, 2000);
+    } catch (error) {
+      const errorMessage =
+        error instanceof ApiHttpError && typeof error.message === 'string' && error.message.trim().length > 0
+          ? error.message
+          : 'A jelszó módosítása nem sikerült. Kérlek, kérj új visszaállító linket.';
+
+      setMessage(errorMessage);
+      setMessageType('danger');
+    } finally {
+      setIsSubmitting(false);
+    }
+
+    // Reset captcha after submit attempt
+    if (
+      recaptchaSiteKey &&
+      typeof window.grecaptcha !== 'undefined' &&
+      typeof window.grecaptcha.reset === 'function' &&
+      recaptchaWidgetId.current !== null
+    ) {
       try {
-        window.grecaptcha.reset();
-      } catch (e) {
+        window.grecaptcha.reset(recaptchaWidgetId.current);
+      } catch {
         // noop
       }
     }
-
-    // Redirect after 2 seconds
-    setTimeout(() => {
-      navigate('/belepes');
-    }, 2000);
   };
 
   const togglePassword = (field: 'newPassword' | 'confirmPassword') => {
@@ -167,7 +236,7 @@ const ResetPassword: React.FC = () => {
                       className="form-control"
                       id="email"
                       placeholder="email@domain.hu"
-                      value={emailFromQuery || 'ismeretlen@pelda.hu'}
+                      value={emailFromQuery || 'nincs megadva'}
                       disabled
                     />
                     <input
@@ -225,7 +294,11 @@ const ResetPassword: React.FC = () => {
                   </div>
 
                   <div className="mb-3 d-flex justify-content-center">
-                    <div id="recaptcha-container-register"></div>
+                    {recaptchaSiteKey ? (
+                      <div id="recaptcha-container-register"></div>
+                    ) : (
+                      <small className="text-warning">A reCAPTCHA nincs konfigurálva (VITE_RECAPTCHA_SITE_KEY).</small>
+                    )}
                   </div>
 
                   {message && (
@@ -234,8 +307,12 @@ const ResetPassword: React.FC = () => {
                     </div>
                   )}
 
-                  <button type="submit" className="btn btn-kk w-100 text-white">
-                    Jelszó mentése
+                  <button
+                    type="submit"
+                    className="btn btn-kk w-100 text-white"
+                    disabled={isSubmitting || !hasValidLinkParams}
+                  >
+                    {isSubmitting ? 'Mentés...' : 'Jelszó mentése'}
                   </button>
                 </form>
               </div>

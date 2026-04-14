@@ -1,6 +1,27 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import '../styles/user.css';
+import {
+	ApiHttpError,
+	SESSION_STORAGE_KEY,
+	authMe,
+	getUserBadges,
+	getOwnedUserTitles,
+	getUserFavorites,
+	getUserProfile,
+	getUserRecent,
+	applyContentImageFallback,
+	toAvatarSrc,
+	toContentImageSrc,
+	reportUser,
+	requestAccountDeletion,
+	updateUserSettings,
+	type OwnedUserTitleResponse,
+	type ReportUserReason,
+	type UserBadgeCategoryResponse,
+	type UserProfileResponse,
+	type UserRecentFavoriteItemResponse,
+} from '../services/api';
 
 // ========================
 // TÍPUSOK - Adatbázisból fetchelhető típusok
@@ -10,7 +31,7 @@ interface UserProfile {
 	username: string;
 	avatar: string;
 	country: string;
-	countryCode: string;
+	countryCode: string | null;
 	countryFlag: string;
 	level: number;
 	levelProgress: number;
@@ -39,7 +60,6 @@ interface ViewStats {
 	completionRate: string;
 	readBooks: string;
 	longestStreak: string;
-	reviewsSent: string;
 	badges: string[];
 	labels: {
 		labelReadingPoints: string;
@@ -48,7 +68,6 @@ interface ViewStats {
 		labelReadBooks: string;
 		labelMediaViewed: string;
 		labelLongestStreak: string;
-		labelReviewsSent: string;
 	};
 	sections: {
 		readSectionTitle: string;
@@ -96,7 +115,7 @@ interface MedalDetails {
 interface UserSettings {
 	username: string;
 	email: string;
-	countryCode: string;
+	countryCode: string | null;
 	avatarDataUrl: string | null;
 	selectedBadges: string[];
 	profileVisibility: 'public' | 'friends' | 'private';
@@ -119,7 +138,9 @@ interface UserSettings {
 	timezone: string;
 }
 
-const BADGE_OPTIONS = ['Kiemelt olvasó', 'Top 100', 'Fürge Nyúl Kihívás', 'Könyvmoly', 'Filmkritikus', 'Kihívásvadász'];
+const BADGE_FALLBACK_IMAGE = 'https://assets.ppy.sh/medals/web/fruits-hits-20000000.png';
+const RECENT_AND_FAVORITE_LIMIT = 3;
+const MAX_ACTIVE_BADGES = 3;
 const PERMISSION_LEVEL_LABELS: Record<UserProfile['permissionLevel'], string> = {
 	USER: 'Felhasználó',
 	MODERATOR: 'Moderátor',
@@ -127,220 +148,401 @@ const PERMISSION_LEVEL_LABELS: Record<UserProfile['permissionLevel'], string> = 
 	BANNED: 'Korlátozott',
 };
 
-// ========================
-// MOCK ADATOK - Később fetch-ből jönnek
-// ========================
+const COUNTRY_LABELS: Record<string, string> = {
+	HU: 'Magyarország',
+	DE: 'Németország',
+	EN: 'Anglia',
+	GB: 'Egyesült Királyság',
+	FR: 'Franciaország',
+	US: 'Egyesült Államok',
+	ES: 'Spanyolország',
+	IT: 'Olaszország',
+	PL: 'Lengyelország',
+	RO: 'Románia',
+	CZ: 'Csehország',
+	AT: 'Ausztria',
+	SK: 'Szlovákia',
+	NL: 'Hollandia',
+	SE: 'Svédország',
+	NO: 'Norvégia',
+	FI: 'Finnország',
+	DK: 'Dánia',
+	PT: 'Portugália',
+	GR: 'Görögország',
+	HR: 'Horvátország',
+	RS: 'Szerbia',
+	UA: 'Ukrajna',
+};
 
-// Ez a függvény később lecserélhető API hívásra
-const fetchUserProfile = async (): Promise<UserProfile> => {
-	// TODO: Lecserélni API hívásra: const response = await fetch('/api/user/profile');
+const COUNTRY_OPTIONS: Array<{ value: string | null; label: string }> = [
+	{ value: null, label: 'Nincs beállítva' },
+	{ value: 'HU', label: 'Magyarország' },
+	{ value: 'DE', label: 'Németország' },
+	{ value: 'EN', label: 'Anglia' },
+	{ value: 'GB', label: 'Egyesült Királyság' },
+	{ value: 'FR', label: 'Franciaország' },
+	{ value: 'US', label: 'Egyesült Államok' },
+	{ value: 'ES', label: 'Spanyolország' },
+	{ value: 'IT', label: 'Olaszország' },
+	{ value: 'PL', label: 'Lengyelország' },
+	{ value: 'RO', label: 'Románia' },
+	{ value: 'CZ', label: 'Csehország' },
+	{ value: 'AT', label: 'Ausztria' },
+	{ value: 'SK', label: 'Szlovákia' },
+	{ value: 'NL', label: 'Hollandia' },
+	{ value: 'SE', label: 'Svédország' },
+	{ value: 'NO', label: 'Norvégia' },
+	{ value: 'FI', label: 'Finnország' },
+	{ value: 'DK', label: 'Dánia' },
+	{ value: 'PT', label: 'Portugália' },
+	{ value: 'GR', label: 'Görögország' },
+	{ value: 'HR', label: 'Horvátország' },
+	{ value: 'RS', label: 'Szerbia' },
+	{ value: 'UA', label: 'Ukrajna' },
+];
+
+const normalizeCountryCode = (countryCode: string | null | undefined): string | null => {
+	const normalized = countryCode?.trim().toUpperCase() ?? '';
+	if (!normalized || normalized === 'ZZ') return null;
+	return normalized;
+};
+
+const getCountryName = (countryCode: string | null | undefined): string => {
+	const normalized = normalizeCountryCode(countryCode);
+	if (!normalized) return 'Nincs beállítva';
+	return COUNTRY_LABELS[normalized] ?? normalized;
+};
+
+const getCountryFlagUrl = (countryCode: string | null | undefined): string => {
+	const normalized = normalizeCountryCode(countryCode);
+	if (!normalized) return '';
+	return `https://flagcdn.com/w20/${normalized.toLowerCase()}.png`;
+};
+
+const formatDuration = (minutes: number): string => {
+	if (minutes <= 0) return '0p';
+	const days = Math.floor(minutes / (60 * 24));
+	const hours = Math.floor((minutes % (60 * 24)) / 60);
+	const mins = minutes % 60;
+	const chunks: string[] = [];
+	if (days > 0) chunks.push(`${days}n`);
+	if (hours > 0) chunks.push(`${hours}ó`);
+	if (mins > 0 || chunks.length === 0) chunks.push(`${mins}p`);
+	return chunks.join(' ');
+};
+
+const formatRank = (rank: number | null): string => (rank ? `#${rank.toLocaleString('hu-HU')}` : '—');
+
+const formatPercent = (value: number): string => `${(value * 100).toFixed(2)}%`;
+
+const formatDateLabel = (value: string | null | undefined): string => {
+	if (!value) return 'Nincs adat';
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return 'Nincs adat';
+	return date.toLocaleDateString('hu-HU');
+};
+
+const formatDateTimeLabel = (value: string | null | undefined): string | null => {
+	if (!value) return null;
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return null;
+	return `${date.toLocaleDateString('hu-HU')} ${date.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
+const mapPermissionLevel = (permissionLevel: string | undefined): UserProfile['permissionLevel'] => {
+	const normalized = permissionLevel?.toUpperCase();
+	if (normalized === 'ADMIN') return 'ADMIN';
+	if (normalized === 'MODERATOR') return 'MODERATOR';
+	if (normalized === 'BANNED') return 'BANNED';
+	return 'USER';
+};
+
+const normalizeActiveBadges = (badges: string[]): string[] => badges.filter(Boolean).slice(0, MAX_ACTIVE_BADGES);
+
+const buildActiveBadgesFromOwnedTitles = (titles: OwnedUserTitleResponse[]): string[] =>
+	normalizeActiveBadges(titles.filter((title) => title.isActive).map((title) => title.name));
+
+const mapApiStatsToViewStats = (profileData: UserProfileResponse, badges: string[]): Record<string, ViewStats> => {
+	const allCompleted = profileData.all.booksCompleted + profileData.all.mediaCompleted;
+	const allTouched = profileData.books.total + profileData.media.total;
+
 	return {
-		username: 'BordasDaniel',
-		avatar: 'https://i.pinimg.com/236x/5a/bd/98/5abd985735a8fd4adcb0e795de6a1005.jpg',
-		country: 'Magyarország',
-		countryCode: 'HU',
-		countryFlag: 'https://flagcdn.com/w20/hu.png',
-		level: 98,
-		levelProgress: 27,
-		isSubscriber: true,
-		premium: true,
-		premiumExpiresAt: '2026-12-31',
-		permissionLevel: 'USER',
-		email: 'daniel@example.com',
-		creationDate: '2020-03-15',
-		lastLoginDate: '2026-03-14',
-		xp: 840,
-		bookPoints: 8450,
-		seriesPoints: 2160,
-		moviePoints: 980,
-		dayStreak: 47,
-		readTimeMin: 18320,
-		watchTimeMin: 5220,
+	all: {
+		globalRank: formatRank(profileData.all.globalRank),
+		countryRank: formatRank(profileData.all.countryRank),
+		readingTime: formatDuration(profileData.all.timeMin),
+		readingPoints: profileData.all.points.toLocaleString('hu-HU'),
+		mediaViewed: allTouched.toLocaleString('hu-HU'),
+		completionRate: formatPercent(profileData.all.completionRate),
+		readBooks: allCompleted.toLocaleString('hu-HU'),
+		longestStreak: `${profileData.all.dayStreak} nap`,
+		badges,
+		labels: {
+			labelReadingPoints: 'Összes pont',
+			labelReadingTime: 'Összesen eltöltött idő',
+			labelCompletion: 'Befejezési arány:',
+			labelReadBooks: 'Befejezett elemek:',
+			labelMediaViewed: 'Könyvtárban / érintett elemek:',
+			labelLongestStreak: 'Nap sorozat:',
+		},
+		sections: {
+			readSectionTitle: 'Legutóbb megtekintett tartalom',
+			readSectionSubtitle: 'A legfrissebb aktivitásaid könyvekből és médiából.',
+			readSectionActivity: 'Rendezés: legutóbbi aktivitás szerint',
+			readSectionButton: 'Mutasd a tartalmakat',
+			favSectionTitle: 'Legutóbbi kedvenc',
+			favSectionSubtitle: 'A legfrissebben kedvencek közé tett elemek.',
+			favSectionActivity: 'Rendezés: hozzáadás dátuma szerint',
+			favSectionButton: 'Mutasd a kedvenceket',
+		},
+	},
+	book: {
+		globalRank: formatRank(profileData.books.globalRank),
+		countryRank: formatRank(profileData.books.countryRank),
+		readingTime: formatDuration(profileData.books.readTimeMin),
+		readingPoints: profileData.books.points.toLocaleString('hu-HU'),
+		mediaViewed: profileData.books.total.toLocaleString('hu-HU'),
+		completionRate: formatPercent(profileData.books.completionRate),
+		readBooks: profileData.books.completed.toLocaleString('hu-HU'),
+		longestStreak: `${profileData.dayStreak} nap`,
+		badges,
+		labels: {
+			labelReadingPoints: 'Könyv pontok',
+			labelReadingTime: 'Olvasási idő',
+			labelCompletion: 'Befejezési arány:',
+			labelReadBooks: 'Befejezett könyvek:',
+			labelMediaViewed: 'Könyvtárban lévő könyvek:',
+			labelLongestStreak: 'Leghosszabb olvasási sorozat:',
+		},
+		sections: {
+			readSectionTitle: 'Legutóbb olvasott könyvek',
+			readSectionSubtitle: 'Könyves aktivitásaid a könyvtáradból.',
+			readSectionActivity: 'Rendezés: legutóbbi aktivitás szerint',
+			readSectionButton: 'Mutasd a könyveket',
+			favSectionTitle: 'Legutóbbi kedvenc könyvek',
+			favSectionSubtitle: 'A legfrissebb kedvenc könyveid.',
+			favSectionActivity: 'Rendezés: hozzáadás dátuma szerint',
+			favSectionButton: 'Mutasd a kedvenc könyveket',
+		},
+	},
+	media: {
+		globalRank: formatRank(profileData.media.globalRank),
+		countryRank: formatRank(profileData.media.countryRank),
+		readingTime: formatDuration(profileData.media.watchTimeMin),
+		readingPoints: profileData.media.points.toLocaleString('hu-HU'),
+		mediaViewed: profileData.media.total.toLocaleString('hu-HU'),
+		completionRate: formatPercent(profileData.media.completionRate),
+		readBooks: profileData.media.completed.toLocaleString('hu-HU'),
+		longestStreak: `${profileData.dayStreak} nap`,
+		badges,
+		labels: {
+			labelReadingPoints: 'Média pontok',
+			labelReadingTime: 'Nézési idő',
+			labelCompletion: 'Befejezési arány:',
+			labelReadBooks: 'Befejezett média tartalmak:',
+			labelMediaViewed: 'Médiatárban lévő tartalmak:',
+			labelLongestStreak: 'Leghosszabb nézési sorozat:',
+		},
+		sections: {
+			readSectionTitle: 'Legutóbb megtekintett média tartalmak',
+			readSectionSubtitle: 'Filmes és sorozatos aktivitásaid.',
+			readSectionActivity: 'Rendezés: legutóbbi aktivitás szerint',
+			readSectionButton: 'Mutasd a média tartalmakat',
+			favSectionTitle: 'Legutóbbi kedvenc média tartalmak',
+			favSectionSubtitle: 'A legfrissebb kedvenceid filmekből és sorozatokból.',
+			favSectionActivity: 'Rendezés: hozzáadás dátuma szerint',
+			favSectionButton: 'Mutasd a kedvenc média tartalmakat',
+		},
+	},
 	};
 };
 
-const fetchViewStats = async (): Promise<Record<string, ViewStats>> => {
-	// TODO: Lecserélni API hívásra: const response = await fetch('/api/user/stats');
-	return {
-		all: {
-			globalRank: '#1700',
-			countryRank: '#42',
-			readingTime: '11n 4ó 47p',
-			readingPoints: '3,303',
-			mediaViewed: '3,200',
-			completionRate: '98.25%',
-			readBooks: '17,735',
-			longestStreak: '1,636 nap',
-			reviewsSent: '1',
-			badges: ['Kiemelt olvasó', 'Top 100', 'Fürge Nyúl Kihívás'],
-			labels: {
-				labelReadingPoints: 'Összes pont',
-				labelReadingTime: 'Összesen eltöltött idő',
-				labelCompletion: 'Befejezési arány:',
-				labelReadBooks: 'Elolvasott könyvek:',
-				labelMediaViewed: 'Megtekintett sorozatok/filmek:',
-				labelLongestStreak: 'Nap sorozat:',
-				labelReviewsSent: 'Összes vélemény:',
-			},
-			sections: {
-				readSectionTitle: 'Legutóbb megtekintett tartalom',
-				readSectionSubtitle: '124 film, 89 sorozat, 8 könyv teljes • 57 könyv részben • 23 folyamatban',
-				readSectionActivity: 'Utolsó aktivitás: 2 nappal ezelőtt',
-				readSectionButton: 'Mutasd a tartalmakat',
-				favSectionTitle: 'Legutóbbi kedvenc',
-				favSectionSubtitle: '23 kedvenc könyv • 45 kedvenc film • 32 kedvenc sorozat',
-				favSectionActivity: 'Frissítve: ma',
-				favSectionButton: 'Mutasd a kedvenceket',
-			},
-		},
-		book: {
-			globalRank: '#850',
-			countryRank: '#12',
-			readingTime: '7n 18ó 30p',
-			readingPoints: '2,150',
-			mediaViewed: '0',
-			completionRate: '99.5%',
-			readBooks: '12,345',
-			longestStreak: '890 nap',
-			reviewsSent: '87',
-			badges: ['Top Olvasó', 'Könyvmoly', 'Kritikus'],
-			labels: {
-				labelReadingPoints: 'Könyv pontok',
-				labelReadingTime: 'Olvasási idő',
-				labelCompletion: 'Befejezési arány:',
-				labelReadBooks: 'Elolvasott könyvek:',
-				labelMediaViewed: 'Megtekintett sorozatok/filmek:',
-				labelLongestStreak: 'Leghosszabb olvasási sorozat:',
-				labelReviewsSent: 'Könyv vélemények:',
-			},
-			sections: {
-				readSectionTitle: 'Legutóbb olvasott könyvek',
-				readSectionSubtitle: '8 befejezve • 57 olvasás alatt • 7 félbehagyva • 357 tervben • 513 archivált',
-				readSectionActivity: 'Utolsó könyv: 1 nappal ezelőtt',
-				readSectionButton: 'Mutasd a könyveket',
-				favSectionTitle: 'Legutóbbi kedvenc könyvek',
-				favSectionSubtitle: '23 kedvenc könyv a listádon',
-				favSectionActivity: 'Frissítve: 3 nappal ezelőtt',
-				favSectionButton: 'Mutasd a kedvenc könyveket',
-			},
-		},
-		media: {
-			globalRank: '#420',
-			countryRank: '#7',
-			readingTime: '3n 10ó 17p',
-			readingPoints: '1,153',
-			mediaViewed: '3,200',
-			completionRate: '95.0%',
-			readBooks: '0',
-			longestStreak: '746 nap',
-			reviewsSent: '14',
-			badges: ['Színészrajongó', 'Filmfan', 'Sorozatőrült'],
-			labels: {
-				labelReadingPoints: 'Média pontok',
-				labelReadingTime: 'Nézési idő',
-				labelCompletion: 'Befejezési arány:',
-				labelReadBooks: 'Elolvasott könyvek:',
-				labelMediaViewed: 'Megtekintett média tartalmak:',
-				labelLongestStreak: 'Leghosszabb nézési sorozat:',
-				labelReviewsSent: 'Média vélemények:',
-			},
-			sections: {
-				readSectionTitle: 'Legutóbb megtekintett média tartalmak',
-				readSectionSubtitle: '124 film befejezve • 89 sorozat befejezve • 23 folyamatban • 12 félbehagyva',
-				readSectionActivity: 'Utoljára nézett: tegnap',
-				readSectionButton: 'Mutasd a média tartalmakat',
-				favSectionTitle: 'Legutóbbi kedvenc média tartalmak',
-				favSectionSubtitle: '45 kedvenc film • 32 kedvenc sorozat',
-				favSectionActivity: 'Frissítve: ma',
-				favSectionButton: 'Mutasd a kedvenc média tartalmakat',
-			},
-		},
+const mapRecentItemsToBooks = (items: UserRecentFavoriteItemResponse[]): Book[] =>
+	items.map((item) => ({
+		id: item.id,
+		title: item.title,
+		cover: toContentImageSrc(item.img),
+		startDate: '',
+		endDate: '',
+		readingTime: '',
+		score: null,
+		points: item.points,
+		status:
+			item.status?.toUpperCase() === 'COMPLETED'
+				? 'completed'
+				: item.status?.toUpperCase() === 'DROPPED'
+					? 'dropped'
+					: 'partial',
+	}));
+
+	const mapViewTypeToContentType = (viewType: ViewType): 'all' | 'media' | 'books' => {
+		if (viewType === 'book') return 'books';
+		if (viewType === 'media') return 'media';
+		return 'all';
 	};
+
+const mapBadgeCategoryName = (category: string): string => {
+	const normalized = category.toUpperCase();
+	if (normalized === 'EVENT') return 'Események';
+	if (normalized === 'STREAK') return 'Kitartás';
+	if (normalized === 'READING' || normalized === 'WATCHING') return 'Megszerezve';
+	if (normalized === 'SPECIAL') return 'Különlegesek';
+	return category;
 };
 
-const fetchBooks = async (): Promise<Book[]> => {
-	// TODO: Lecserélni API hívásra: const response = await fetch('/api/user/books');
-	return [
-		{
-			id: 1,
-			title: 'A szél árnyéka',
-			cover: 'https://moly.hu/system/covers/big/covers_582574.jpg',
-			startDate: '2024-05-01',
-			endDate: '2024-05-12',
-			readingTime: '12h 35m',
-			score: 9.2,
-			points: 1250,
-			status: 'completed',
-		},
-		{
-			id: 2,
-			title: 'A fény útján',
-			cover: 'https://marvin.bline.hu/product_images/1037/ID250-67170.JPG',
-			startDate: '2025-01-10',
-			endDate: '2025-02-02',
-			readingTime: '18h 2m',
-			score: null,
-			points: 980,
-			status: 'partial',
-		},
-		{
-			id: 3,
-			title: 'Az éjszaka titka',
-			cover: 'https://s01.static.libri.hu/cover/56/3/828911_4.jpg',
-			startDate: '2023-11-02',
-			endDate: '2023-11-15',
-			readingTime: '9h 10m',
-			score: 7.9,
-			points: 420,
-			status: 'dropped',
-		},
-	];
+const mapApiBadgesToMedalGroups = (groups: UserBadgeCategoryResponse[]): MedalGroup[] =>
+	groups.map((group) => ({
+		title: mapBadgeCategoryName(group.category),
+		medals: group.badges.map((badge) => ({
+			id: badge.id,
+			image: badge.iconUrl || BADGE_FALLBACK_IMAGE,
+			label: badge.name,
+			date: badge.earnedAt ? new Date(badge.earnedAt).toISOString().slice(0, 10) : null,
+			isLocked: false,
+		})),
+	}));
+
+const MAX_AVATAR_BYTES = 512 * 1024;
+const MAX_SOURCE_AVATAR_BYTES = 20 * 1024 * 1024;
+const MAX_AVATAR_DIMENSION = 1024;
+
+const decodeBase64Url = (value: string): string => {
+	const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+	const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+	return atob(padded);
 };
 
-const fetchMedalGroups = async (): Promise<MedalGroup[]> => {
-	// TODO: Lecserélni API hívásra: const response = await fetch('/api/user/medals');
-	return [
-		{
-			title: 'Események',
-			medals: [
-				{ id: 1, image: 'https://assets.ppy.sh/medals/web/all-secret-hourbeforethedawn@2x.png', label: 'Tavaszi kihívó', date: '2025-04-12', isLocked: false },
-				{ id: 2, image: 'https://assets.ppy.sh/medals/web/all-secret-lightsout@2x.png', label: 'Nyári maraton', date: '2025-07-22', isLocked: false },
-				{ id: 3, image: 'https://assets.ppy.sh/medals/web/all-secret-deciduousarborist@2x.png', label: 'Őszi fesztivál', date: null, isLocked: true },
-			],
-		},
-		{
-			title: 'Kitartás',
-			medals: [
-				{ id: 4, image: 'https://assets.ppy.sh/medals/web/osu-secret-causality@2x.png', label: 'Vissza a kezdetekhez', date: '2025-09-03', isLocked: false },
-				{ id: 5, image: 'https://assets.ppy.sh/medals/web/all-secret-consolation_prize@2x.png', label: '7 nap', date: '2025-09-01', isLocked: false },
-				{ id: 6, image: 'https://assets.ppy.sh/medals/web/all-secret-improved@2x.png', label: '30 nap', date: '2025-10-25', isLocked: false },
-				{ id: 7, image: 'https://assets.ppy.sh/medals/web/all-secret-dancer@2x.png', label: '100 nap', date: null, isLocked: true },
-			],
-		},
-		{
-			title: 'Megszerezve',
-			medals: [
-				{ id: 8, image: 'https://assets.ppy.sh/medals/web/all-secret-infectiousenthusiasm@2x.png', label: 'Kezdő gyűjtő', date: '2024-12-03', isLocked: false },
-				{ id: 9, image: 'https://assets.ppy.sh/medals/web/all-secret-ourbenefactors@2x.png', label: 'Haladó gyűjtő', date: '2025-06-14', isLocked: false },
-				{ id: 10, image: 'https://assets.ppy.sh/medals/web/all-secret-allgood@2x.png', label: 'Első vélemény', date: '2025-05-10', isLocked: false },
-				{ id: 11, image: 'https://assets.ppy.sh/medals/web/all-secret-persistenceiskey@2x.png', label: 'Zsűri', date: '2025-05-10', isLocked: false },
-				{ id: 12, image: 'https://assets.ppy.sh/medals/web/all-secret-exquisite@2x.png', label: 'Tökéletes', date: '2025-09-12', isLocked: false },
-				{ id: 13, image: 'https://assets.ppy.sh/medals/web/all-secret-prepared@2x.png', label: 'Az első eseményem', date: '2025-09-12', isLocked: false },
-				{ id: 14, image: 'https://assets.ppy.sh/medals/web/all-secret-quickmaffs@2x.png', label: 'Sosem árt a tanulás', date: null, isLocked: true },
-				{ id: 15, image: 'https://assets.ppy.sh/medals/web/all-packs-afterparty@2x.png', label: 'Afterparty', date: null, isLocked: true },
-				{ id: 16, image: 'https://assets.ppy.sh/medals/web/all-packs-VINXIS@2x.png', label: 'Talán majd máskor', date: null, isLocked: true },
-			],
-		},
-		{
-			title: 'Különlegesek',
-			medals: [
-				{ id: 17, image: 'https://assets.ppy.sh/medals/web/osu-secret-supersuperhardhddt@2x.png', label: 'Titokzatos', date: null, isLocked: true },
-				{ id: 18, image: 'https://assets.ppy.sh/medals/web/all-secret-hybrid@2x.png', label: 'Mesteri', date: null, isLocked: true },
-				{ id: 19, image: 'https://assets.ppy.sh/medals/web/all-secret-when-you-see-it@2x.png', label: 'Ő ott biztosúr!', date: null, isLocked: true },
-				{ id: 20, image: 'https://assets.ppy.sh/medals/web/all-secret-toofasttoofurious@2x.png', label: 'Maraton', date: null, isLocked: true },
-			],
-		},
-	];
+const getUserIdFromToken = (): number | null => {
+	try {
+		const token = localStorage.getItem(SESSION_STORAGE_KEY);
+		if (!token) return null;
+
+		const tokenParts = token.split('.');
+		if (tokenParts.length < 2 || !tokenParts[1]) return null;
+
+		const payload = JSON.parse(decodeBase64Url(tokenParts[1])) as { userId?: unknown };
+		if (typeof payload.userId === 'number') return payload.userId;
+		if (typeof payload.userId === 'string') {
+			const parsedId = Number(payload.userId);
+			return Number.isInteger(parsedId) ? parsedId : null;
+		}
+
+		return null;
+	} catch {
+		return null;
+	}
+};
+
+const base64ByteLength = (rawBase64: string): number => {
+	const normalized = rawBase64.trim();
+	if (!normalized) return 0;
+	const padding = normalized.endsWith('==') ? 2 : normalized.endsWith('=') ? 1 : 0;
+	return Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);
+};
+
+const dataUrlByteLength = (dataUrl: string): number => {
+	const commaIndex = dataUrl.indexOf(',');
+	if (commaIndex < 0 || commaIndex >= dataUrl.length - 1) return 0;
+	return base64ByteLength(dataUrl.slice(commaIndex + 1));
+};
+
+const readFileAsDataUrl = (file: File): Promise<string> =>
+	new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => {
+			if (typeof reader.result !== 'string') {
+				reject(new Error('Nem sikerült beolvasni a képet.'));
+				return;
+			}
+			resolve(reader.result);
+		};
+		reader.onerror = () => reject(new Error('Nem sikerült beolvasni a képet.'));
+		reader.readAsDataURL(file);
+	});
+
+const loadImageFromDataUrl = (dataUrl: string): Promise<HTMLImageElement> =>
+	new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => resolve(img);
+		img.onerror = () => reject(new Error('A kép feldolgozása sikertelen.'));
+		img.src = dataUrl;
+	});
+
+const canvasToDataUrl = (canvas: HTMLCanvasElement, mimeType: string, quality?: number): Promise<string> =>
+	new Promise((resolve, reject) => {
+		try {
+			resolve(canvas.toDataURL(mimeType, quality));
+		} catch {
+			reject(new Error('A kép tömörítése sikertelen.'));
+		}
+	});
+
+const normalizeAvatarDataUrl = async (file: File): Promise<string> => {
+	if (file.size > MAX_SOURCE_AVATAR_BYTES) {
+		throw new Error('A kiválasztott kép túl nagy. Maximum 20MB-os forrásfájl tölthető fel.');
+	}
+
+	const initialDataUrl = await readFileAsDataUrl(file);
+	if (dataUrlByteLength(initialDataUrl) <= MAX_AVATAR_BYTES) {
+		return initialDataUrl;
+	}
+
+	const image = await loadImageFromDataUrl(initialDataUrl);
+	const scale = Math.min(1, MAX_AVATAR_DIMENSION / Math.max(image.width, image.height));
+	const width = Math.max(1, Math.round(image.width * scale));
+	const height = Math.max(1, Math.round(image.height * scale));
+
+	const canvas = document.createElement('canvas');
+	canvas.width = width;
+	canvas.height = height;
+	const context = canvas.getContext('2d');
+	if (!context) {
+		throw new Error('A böngésző nem tudta feldolgozni a képet.');
+	}
+
+	context.drawImage(image, 0, 0, width, height);
+
+	let smallestCandidate = initialDataUrl;
+	const mimeTypes = file.type === 'image/png'
+		? ['image/webp', 'image/jpeg', 'image/png']
+		: ['image/webp', 'image/jpeg', file.type];
+
+	for (const mimeType of mimeTypes) {
+		const qualityOptions = mimeType === 'image/png'
+			? [undefined]
+			: [0.9, 0.82, 0.74, 0.66, 0.58, 0.5];
+
+		for (const quality of qualityOptions) {
+			const candidate = await canvasToDataUrl(canvas, mimeType, quality);
+			if (dataUrlByteLength(candidate) < dataUrlByteLength(smallestCandidate)) {
+				smallestCandidate = candidate;
+			}
+
+			if (dataUrlByteLength(candidate) <= MAX_AVATAR_BYTES) {
+				return candidate;
+			}
+		}
+	}
+
+	if (dataUrlByteLength(smallestCandidate) <= MAX_AVATAR_BYTES) {
+		return smallestCandidate;
+	}
+
+	throw new Error('A kép méretét nem sikerült eléggé csökkenteni. Válassz kisebb felbontású képet.');
+};
+
+const getStoredUserId = (): number | null => {
+	try {
+		const raw = localStorage.getItem('kk_user');
+		if (raw) {
+			const parsed = JSON.parse(raw) as { id?: unknown };
+			if (typeof parsed.id === 'number') return parsed.id;
+		}
+
+		return getUserIdFromToken();
+	} catch {
+		return getUserIdFromToken();
+	}
 };
 
 // ========================
@@ -349,8 +551,8 @@ const fetchMedalGroups = async (): Promise<MedalGroup[]> => {
 
 type ViewType = 'all' | 'book' | 'media' | 'settings';
 
-type OpenSelectId = 'profileVisibility' | 'language' | 'badge-0' | 'badge-1' | 'badge-2' | 'notificationFrequency' | 'timezone' | null;
-type SaveModalState = { title: string; message: string } | null;
+type OpenSelectId = 'profileVisibility' | 'language' | 'countryCode' | 'badge-0' | 'badge-1' | 'badge-2' | 'notificationFrequency' | 'timezone' | 'reportReason' | null;
+type SaveModalState = { type: 'success' | 'error'; title: string; message: string } | null;
 type MedalModalState = { medal: Medal; groupTitle: string; details: MedalDetails } | null;
 type MedalRarityKey = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 
@@ -421,29 +623,98 @@ const TIMEZONE_OPTIONS: Array<{ value: string; label: string }> = [
 	{ value: 'America/New_York', label: 'America/New_York (GMT-5)' },
 ];
 
+const REPORT_REASON_OPTIONS: Array<{ value: ReportUserReason; label: string }> = [
+	{ value: 'SPAM', label: 'Spam vagy kéretlen hirdetés' },
+	{ value: 'HARASSMENT', label: 'Zaklatás vagy bántó viselkedés' },
+	{ value: 'FRAUD', label: 'Csalás vagy átverés' },
+	{ value: 'IMPERSONATION', label: 'Más személynek adja ki magát' },
+	{ value: 'HATE_SPEECH', label: 'Gyűlöletkeltő vagy sértő beszéd' },
+	{ value: 'THREAT_VIOLENCE', label: 'Fenyegetés vagy erőszakos viselkedés' },
+	{ value: 'INAPPROPRIATE_CONTENT', label: 'Nem megfelelő tartalom' },
+	{ value: 'FAKE_PROFILE', label: 'Hamis profil' },
+	{ value: 'OTHER', label: 'Egyéb' },
+];
+
+const REPORTED_USERS_STORAGE_KEY = 'kk_reported_users';
+
+const getReportReasonLabel = (value: ReportUserReason): string =>
+	REPORT_REASON_OPTIONS.find((option) => option.value === value)?.label ?? REPORT_REASON_OPTIONS[0].label;
+
+const buildReportedPairKey = (viewerId: number, targetUserId: number): string => `${viewerId}:${targetUserId}`;
+
+const readReportedPairKeys = (): Set<string> => {
+	try {
+		const raw = localStorage.getItem(REPORTED_USERS_STORAGE_KEY);
+		if (!raw) return new Set();
+		const parsed = JSON.parse(raw) as unknown;
+		if (!Array.isArray(parsed)) return new Set();
+		return new Set(parsed.filter((value): value is string => typeof value === 'string'));
+	} catch {
+		return new Set();
+	}
+};
+
+const hasUserAlreadyReported = (viewerId: number, targetUserId: number): boolean =>
+	readReportedPairKeys().has(buildReportedPairKey(viewerId, targetUserId));
+
+const storeReportedPair = (viewerId: number, targetUserId: number): void => {
+	const keys = readReportedPairKeys();
+	keys.add(buildReportedPairKey(viewerId, targetUserId));
+	localStorage.setItem(REPORTED_USERS_STORAGE_KEY, JSON.stringify(Array.from(keys)));
+};
+
 interface LocationState {
 	view?: 'settings';
 }
 
+const parseProfileRouteUserId = (value: string | undefined): number | null => {
+	if (!value) return null;
+	const parsed = Number(value);
+	return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
+interface BadgeOption {
+	id: number;
+	name: string;
+}
+
 const User: React.FC = () => {
+	const { userId: profileRouteParam } = useParams<{ userId?: string }>();
+	const requestedProfileUserId = parseProfileRouteUserId(profileRouteParam);
+	const isReadOnlyProfile = requestedProfileUserId !== null;
 	const location = useLocation();
 	const locationState = location.state as LocationState | null;
 	const [openSelect, setOpenSelect] = useState<OpenSelectId>(null);
 
 	// Állapotok - activeView alapértelmezése a location.state alapján
 	const [activeView, setActiveView] = useState<ViewType>(() => {
+		if (isReadOnlyProfile) {
+			return 'all';
+		}
 		if (locationState?.view === 'settings') {
 			return 'settings';
 		}
 		return 'all';
 	});
 	const [profile, setProfile] = useState<UserProfile | null>(null);
-	const [defaultAvatar, setDefaultAvatar] = useState<string>('');
 	const [allStats, setAllStats] = useState<Record<string, ViewStats>>({});
-	const [books, setBooks] = useState<Book[]>([]);
+	const [recentBooks, setRecentBooks] = useState<Book[]>([]);
+	const [favoriteBooks, setFavoriteBooks] = useState<Book[]>([]);
 	const [medalGroups, setMedalGroups] = useState<MedalGroup[]>([]);
+	const [badgeOptions, setBadgeOptions] = useState<BadgeOption[]>([]);
+	const [profileUserId, setProfileUserId] = useState<number | null>(null);
+	const [viewerUserId, setViewerUserId] = useState<number | null>(null);
+	const [hasReportedCurrentProfile, setHasReportedCurrentProfile] = useState(false);
+	const [authRequired, setAuthRequired] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [saveModal, setSaveModal] = useState<SaveModalState>(null);
+	const [reportModalOpen, setReportModalOpen] = useState(false);
+	const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
+	const [deleteAccountPassword, setDeleteAccountPassword] = useState('');
+	const [isSubmittingDeleteAccount, setIsSubmittingDeleteAccount] = useState(false);
+	const [reportReason, setReportReason] = useState<ReportUserReason>('SPAM');
+	const [reportDetails, setReportDetails] = useState('');
+	const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 	const [medalModal, setMedalModal] = useState<MedalModalState>(null);
 	const [medalModalVisible, setMedalModalVisible] = useState(false);
 	const [medalModalClosing, setMedalModalClosing] = useState(false);
@@ -461,9 +732,9 @@ const User: React.FC = () => {
 	const [settings, setSettings] = useState<UserSettings>({
 		username: '',
 		email: '',
-		countryCode: 'HU',
+		countryCode: null,
 		avatarDataUrl: null,
-		selectedBadges: ['Kiemelt olvasó', 'Top 100', 'Fürge Nyúl Kihívás'],
+		selectedBadges: [],
 		profileVisibility: 'public',
 		showCountryOnProfile: true,
 		showOnlineStatus: true,
@@ -484,6 +755,12 @@ const User: React.FC = () => {
 		timezone: 'Europe/Budapest',
 	});
 
+	const pendingAvatarPreview = (() => {
+		if (settings.avatarDataUrl === '') return toAvatarSrc(null);
+		if (typeof settings.avatarDataUrl === 'string' && settings.avatarDataUrl.length > 0) return settings.avatarDataUrl;
+		return profile?.avatar ?? toAvatarSrc(null);
+	})();
+
 	const updateSetting = <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
 		setSettings(prev => ({
 			...prev,
@@ -494,19 +771,27 @@ const User: React.FC = () => {
 	const handleBadgeSelect = (position: number, badge: string) => {
 		setSettings(prev => {
 			const next = [...prev.selectedBadges];
+			if (!badge) {
+				next[position] = '';
+				return {
+					...prev,
+					selectedBadges: next.slice(0, MAX_ACTIVE_BADGES),
+				};
+			}
+
 			const duplicateIndex = next.findIndex((item, index) => index !== position && item === badge);
 			if (duplicateIndex !== -1) {
-				next[duplicateIndex] = next[position];
+				next[duplicateIndex] = '';
 			}
 			next[position] = badge;
 			return {
 				...prev,
-				selectedBadges: next,
+				selectedBadges: next.slice(0, MAX_ACTIVE_BADGES),
 			};
 		});
 	};
 
-	const handleAvatarFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+	const handleAvatarFileChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
 
@@ -517,45 +802,25 @@ const User: React.FC = () => {
 			return;
 		}
 
-		const maxBytes = 2 * 1024 * 1024; // 2MB
-		if (file.size > maxBytes) {
-			alert('A kép túl nagy. Maximum 2MB lehet.');
-			e.target.value = '';
-			return;
-		}
-
-		const reader = new FileReader();
-		reader.onload = () => {
-			const dataUrl = typeof reader.result === 'string' ? reader.result : null;
-			if (!dataUrl) {
-				alert('Nem sikerült beolvasni a képet.');
-				return;
-			}
+		try {
+			const dataUrl = await normalizeAvatarDataUrl(file);
 			updateSetting('avatarDataUrl', dataUrl);
-			setProfile(prev => (prev ? { ...prev, avatar: dataUrl } : prev));
-		};
-		reader.readAsDataURL(file);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Nem sikerült feldolgozni a képet.';
+			alert(message);
+		} finally {
+			e.target.value = '';
+		}
 	};
 
 	const handleResetAvatar = () => {
-		updateSetting('avatarDataUrl', null);
-		setProfile(prev => (prev ? { ...prev, avatar: defaultAvatar || prev.avatar } : prev));
-		if (defaultAvatar) {
-			syncAuthAvatar(defaultAvatar);
-		}
+		// Empty string marks explicit avatar deletion on next save.
+		updateSetting('avatarDataUrl', '');
 	};
 
 	const syncAuthAvatar = (avatarUrl: string | null) => {
-		try {
-			const savedUser = localStorage.getItem('kk_user');
-			if (!savedUser) return;
-			const parsed = JSON.parse(savedUser) as { avatar?: string } & Record<string, unknown>;
-			const next = { ...parsed, avatar: avatarUrl ?? parsed.avatar };
-			localStorage.setItem('kk_user', JSON.stringify(next));
-			window.dispatchEvent(new Event('kk_user_updated'));
-		} catch (error) {
-			console.error('Failed to sync navbar avatar:', error);
-		}
+		const normalizedAvatar = avatarUrl && avatarUrl.trim().length > 0 ? avatarUrl : toAvatarSrc(null);
+		window.dispatchEvent(new CustomEvent('kk_user_avatar_updated', { detail: { avatar: normalizedAvatar } }));
 	};
 
 	useEffect(() => {
@@ -617,6 +882,92 @@ const User: React.FC = () => {
 		};
 	}, [saveModal]);
 
+	useLayoutEffect(() => {
+		if (!reportModalOpen) return;
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape' && !isSubmittingReport) {
+				setReportModalOpen(false);
+			}
+		};
+
+		const html = document.documentElement;
+		const body = document.body;
+		const lockCount = Number(body.dataset.kkScrollLocks || '0');
+
+		if (lockCount === 0) {
+			const scrollBarWidth = window.innerWidth - html.clientWidth;
+			html.style.setProperty('--scrollbar-compensation', `${scrollBarWidth}px`);
+			html.style.overflow = 'hidden';
+			body.style.overflow = 'hidden';
+			body.style.paddingRight = `${scrollBarWidth}px`;
+			body.classList.add('kk-scroll-lock');
+		}
+
+		body.dataset.kkScrollLocks = String(lockCount + 1);
+		document.addEventListener('keydown', onKeyDown);
+
+		return () => {
+			const current = Number(body.dataset.kkScrollLocks || '1');
+			const next = Math.max(0, current - 1);
+			if (next === 0) {
+				delete body.dataset.kkScrollLocks;
+				html.style.overflow = '';
+				body.style.overflow = '';
+				body.style.paddingRight = '';
+				html.style.removeProperty('--scrollbar-compensation');
+				body.classList.remove('kk-scroll-lock');
+			} else {
+				body.dataset.kkScrollLocks = String(next);
+			}
+
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, [isSubmittingReport, reportModalOpen]);
+
+	useLayoutEffect(() => {
+		if (!deleteAccountModalOpen) return;
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape' && !isSubmittingDeleteAccount) {
+				setDeleteAccountModalOpen(false);
+			}
+		};
+
+		const html = document.documentElement;
+		const body = document.body;
+		const lockCount = Number(body.dataset.kkScrollLocks || '0');
+
+		if (lockCount === 0) {
+			const scrollBarWidth = window.innerWidth - html.clientWidth;
+			html.style.setProperty('--scrollbar-compensation', `${scrollBarWidth}px`);
+			html.style.overflow = 'hidden';
+			body.style.overflow = 'hidden';
+			body.style.paddingRight = `${scrollBarWidth}px`;
+			body.classList.add('kk-scroll-lock');
+		}
+
+		body.dataset.kkScrollLocks = String(lockCount + 1);
+		document.addEventListener('keydown', onKeyDown);
+
+		return () => {
+			const current = Number(body.dataset.kkScrollLocks || '1');
+			const next = Math.max(0, current - 1);
+			if (next === 0) {
+				delete body.dataset.kkScrollLocks;
+				html.style.overflow = '';
+				body.style.overflow = '';
+				body.style.paddingRight = '';
+				html.style.removeProperty('--scrollbar-compensation');
+				body.classList.remove('kk-scroll-lock');
+			} else {
+				body.dataset.kkScrollLocks = String(next);
+			}
+
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, [deleteAccountModalOpen, isSubmittingDeleteAccount]);
+
 	useEffect(() => {
 		if (medalModal) {
 			setMedalModalClosing(false);
@@ -671,14 +1022,23 @@ const User: React.FC = () => {
 
 	// Location state változásának figyelése (pl. navigáció a Beállításokhoz)
 	useEffect(() => {
-		if (locationState?.view === 'settings') {
+		if (!isReadOnlyProfile && locationState?.view === 'settings') {
 			setActiveView('settings');
 		}
-	}, [locationState]);
+	}, [isReadOnlyProfile, locationState]);
+
+	useEffect(() => {
+		if (isReadOnlyProfile && activeView === 'settings') {
+			setActiveView('all');
+		}
+	}, [activeView, isReadOnlyProfile]);
 
 	useEffect(() => {
 		setReadBooksOpen(false);
 		setFavBooksOpen(false);
+		setReportModalOpen(false);
+		setDeleteAccountModalOpen(false);
+		setDeleteAccountPassword('');
 		setMedalModal(null);
 		setMedalModalVisible(false);
 		setMedalModalClosing(false);
@@ -697,46 +1057,117 @@ const User: React.FC = () => {
 	useEffect(() => {
 		const loadData = async () => {
 			setIsLoading(true);
+			setAuthRequired(false);
+			setBadgesLoaded(false);
+			setMedalGroups([]);
+			let serverEmail = '';
 			try {
-				// TODO: Később ezek API hívások lesznek
-				const [profileData, statsData, booksData] = await Promise.all([
-					fetchUserProfile(),
-					fetchViewStats(),
-					fetchBooks(),
-				]);
+				const viewerUserId = getStoredUserId();
+				setViewerUserId(viewerUserId);
+				const targetUserId = requestedProfileUserId ?? viewerUserId;
+				setProfileUserId(targetUserId);
+				setHasReportedCurrentProfile(
+					Boolean(viewerUserId && targetUserId && viewerUserId !== targetUserId && hasUserAlreadyReported(viewerUserId, targetUserId)),
+				);
 
-				setProfile(profileData);
-				setDefaultAvatar(profileData.avatar);
-				setAllStats(statsData);
-				setBooks(booksData);
+				if (targetUserId) {
+					const shouldLoadOwnedTitles = !isReadOnlyProfile && viewerUserId === targetUserId;
+					const [profileResponse, meResponse, recentItems, favoriteItems, ownedTitles] = await Promise.all([
+						getUserProfile(targetUserId),
+						authMe().catch(() => null),
+						getUserRecent(targetUserId, 'all').catch(() => [] as UserRecentFavoriteItemResponse[]),
+						getUserFavorites(targetUserId, 'all').catch(() => [] as UserRecentFavoriteItemResponse[]),
+						shouldLoadOwnedTitles
+							? getOwnedUserTitles().catch(() => [] as OwnedUserTitleResponse[])
+							: Promise.resolve([] as OwnedUserTitleResponse[]),
+					]);
 
-				// Beállítások inicializálása profil adatokból
-				setSettings(prev => ({
-					...prev,
-					username: profileData.username,
-					email: profileData.email,
-					countryCode: profileData.countryCode,
-				}));
+					const ownedBadgeOptions = shouldLoadOwnedTitles
+						? ownedTitles.map((title) => ({ id: title.id, name: title.name }))
+						: [];
+					setBadgeOptions(ownedBadgeOptions);
 
-				// localStorage beállítások betöltése
-				const savedSettings = localStorage.getItem('kk_profile_settings');
-				if (savedSettings) {
-					const parsed = JSON.parse(savedSettings) as Partial<UserSettings>;
-					const legacySelectedTitles = (parsed as { selectedTitles?: string[] }).selectedTitles;
-					const normalizedSelectedBadges = Array.isArray(parsed.selectedBadges)
-						? parsed.selectedBadges.slice(0, 3)
-						: Array.isArray(legacySelectedTitles)
-							? legacySelectedTitles.slice(0, 3)
-							: undefined;
+					const selectedBadges = shouldLoadOwnedTitles
+						? (() => {
+							const activeBadgesFromOwnedTitles = buildActiveBadgesFromOwnedTitles(ownedTitles);
+							return activeBadgesFromOwnedTitles.length > 0
+								? activeBadgesFromOwnedTitles
+								: normalizeActiveBadges(profileResponse.activeTitles);
+						})()
+						: normalizeActiveBadges(profileResponse.activeTitles);
+					const countryCode = normalizeCountryCode(profileResponse.countryCode);
+					const mappedProfile: UserProfile = {
+						username: profileResponse.username,
+						avatar: toAvatarSrc(profileResponse.avatar),
+						country: getCountryName(countryCode),
+						countryCode,
+						countryFlag: getCountryFlagUrl(countryCode),
+						level: profileResponse.level,
+						levelProgress: Math.max(0, Math.min(100, profileResponse.xp % 100)),
+						isSubscriber: profileResponse.isSubscriber,
+						premium: profileResponse.isSubscriber,
+						premiumExpiresAt: formatDateTimeLabel(profileResponse.premiumExpiresAt),
+						permissionLevel: mapPermissionLevel(meResponse?.permissionLevel),
+						email: isReadOnlyProfile ? '' : meResponse?.email ?? profileResponse.email ?? '',
+						creationDate: formatDateLabel(profileResponse.creationDate),
+						lastLoginDate: formatDateLabel(profileResponse.lastLoginDate),
+						xp: profileResponse.xp,
+						bookPoints: profileResponse.bookPoints,
+						seriesPoints: profileResponse.seriesPoints,
+						moviePoints: profileResponse.moviePoints,
+						dayStreak: profileResponse.dayStreak,
+						readTimeMin: profileResponse.books.readTimeMin,
+						watchTimeMin: profileResponse.media.watchTimeMin,
+					};
+					serverEmail = mappedProfile.email;
+
+					setProfile(mappedProfile);
+					setAllStats(mapApiStatsToViewStats(profileResponse, selectedBadges));
+					setRecentBooks(mapRecentItemsToBooks(recentItems.slice(0, RECENT_AND_FAVORITE_LIMIT)));
+					setFavoriteBooks(mapRecentItemsToBooks(favoriteItems.slice(0, RECENT_AND_FAVORITE_LIMIT)));
+
 					setSettings(prev => ({
 						...prev,
-						...parsed,
-						selectedBadges: normalizedSelectedBadges ?? prev.selectedBadges,
-						username: profileData.username,
+						username: mappedProfile.username,
+						email: mappedProfile.email,
+						countryCode,
+						selectedBadges,
 					}));
-					if (parsed.avatarDataUrl && typeof parsed.avatarDataUrl === 'string') {
-						setProfile(prev => (prev ? { ...prev, avatar: parsed.avatarDataUrl as string } : prev));
-						syncAuthAvatar(parsed.avatarDataUrl as string);
+				} else {
+					setAuthRequired(true);
+					setProfile(null);
+					setAllStats({});
+					setRecentBooks([]);
+					setFavoriteBooks([]);
+					setMedalGroups([]);
+					return;
+				}
+
+				// Beállítások inicializálása profil adatokból
+				// localStorage beállítások betöltése
+				if (!isReadOnlyProfile) {
+					const savedSettings = localStorage.getItem('kk_profile_settings');
+					if (savedSettings) {
+						const parsed = JSON.parse(savedSettings) as Partial<UserSettings>;
+						const { email: _ignoredEmail, username: _ignoredUsername, ...safeParsed } = parsed;
+						const { selectedBadges: _ignoredSelectedBadges, selectedTitles: _ignoredSelectedTitles, ...safeParsedWithoutBadges } =
+							safeParsed as Partial<UserSettings> & { selectedTitles?: string[] };
+						setSettings(prev => {
+							const resolvedCountryCode =
+								safeParsedWithoutBadges.countryCode === undefined
+									? prev.countryCode
+									: normalizeCountryCode(safeParsedWithoutBadges.countryCode);
+
+							return {
+								...prev,
+								...safeParsedWithoutBadges,
+								countryCode: resolvedCountryCode,
+								avatarDataUrl: null,
+								selectedBadges: prev.selectedBadges,
+								username: prev.username,
+								email: serverEmail || prev.email,
+							};
+						});
 					}
 				}
 			} catch (error) {
@@ -747,22 +1178,57 @@ const User: React.FC = () => {
 		};
 
 		loadData();
-	}, []);
+	}, [isReadOnlyProfile, requestedProfileUserId]);
 
 	useEffect(() => {
-		if (!badgesExpanded || badgesLoaded || isLoadingBadges) return;
+		if (!profileUserId || activeView === 'settings') return;
+
+		let cancelled = false;
+		const contentType = mapViewTypeToContentType(activeView);
+
+		const loadCurrentViewContent = async () => {
+			try {
+				const [recentItems, favoriteItems] = await Promise.all([
+					getUserRecent(profileUserId, contentType).catch(() => [] as UserRecentFavoriteItemResponse[]),
+					getUserFavorites(profileUserId, contentType).catch(() => [] as UserRecentFavoriteItemResponse[]),
+				]);
+
+				if (cancelled) return;
+				setRecentBooks(mapRecentItemsToBooks(recentItems.slice(0, RECENT_AND_FAVORITE_LIMIT)));
+				setFavoriteBooks(mapRecentItemsToBooks(favoriteItems.slice(0, RECENT_AND_FAVORITE_LIMIT)));
+			} catch {
+				if (!cancelled) {
+					setRecentBooks([]);
+					setFavoriteBooks([]);
+				}
+			}
+		};
+
+		loadCurrentViewContent();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [activeView, profileUserId]);
+
+	useEffect(() => {
+		if (!badgesExpanded || badgesLoaded || !profileUserId) return;
 
 		let cancelled = false;
 
 		const loadBadgeGroups = async () => {
 			setIsLoadingBadges(true);
 			try {
-				const medalsData = await fetchMedalGroups();
+				const medalsData = mapApiBadgesToMedalGroups(await getUserBadges(profileUserId));
 				if (cancelled) return;
 				setMedalGroups(medalsData);
 				setBadgesLoaded(true);
 			} catch (error) {
 				console.error('Hiba a kitűzők betöltésekor:', error);
+				if (!cancelled) {
+					setMedalGroups([]);
+					setBadgesLoaded(true);
+				}
 			} finally {
 				if (!cancelled) {
 					setIsLoadingBadges(false);
@@ -775,13 +1241,128 @@ const User: React.FC = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [badgesExpanded, badgesLoaded, isLoadingBadges]);
+	}, [badgesExpanded, badgesLoaded, profileUserId]);
 
 	// Jelenlegi nézet statisztikái
 	const currentStats = allStats[activeView] || allStats['all'];
 
+	const openReportModal = () => {
+		if (!isReadOnlyProfile || !profileUserId) return;
+
+		if (!viewerUserId) {
+			setSaveModal({
+				type: 'error',
+				title: 'Bejelentkezés szükséges',
+				message: 'Felhasználó jelentéséhez be kell jelentkezned.',
+			});
+			return;
+		}
+
+		if (viewerUserId === profileUserId) {
+			setSaveModal({
+				type: 'error',
+				title: 'Saját profil',
+				message: 'A saját profilodat nem jelentheted.',
+			});
+			return;
+		}
+
+		if (hasReportedCurrentProfile) {
+			setSaveModal({
+				type: 'error',
+				title: 'Már elküldve',
+				message: 'Ezt a felhasználót már jelentetted.',
+			});
+			return;
+		}
+
+		setReportReason('SPAM');
+		setReportDetails('');
+		setOpenSelect(null);
+		setReportModalOpen(true);
+	};
+
+	const handleReportCancel = () => {
+		if (isSubmittingReport) return;
+		setOpenSelect(null);
+		setReportModalOpen(false);
+	};
+
+	const handleReportSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
+		event.preventDefault();
+
+		if (!profileUserId) {
+			setReportModalOpen(false);
+			setSaveModal({
+				type: 'error',
+				title: 'Jelentés sikertelen',
+				message: 'Nem sikerült meghatározni a jelentett felhasználót.',
+			});
+			return;
+		}
+
+		const details = reportDetails.trim();
+		if (details.length < 10) {
+			setReportModalOpen(false);
+			setSaveModal({
+				type: 'error',
+				title: 'Jelentés sikertelen',
+				message: 'A részletes indoklás legalább 10 karakter legyen.',
+			});
+			return;
+		}
+
+		setIsSubmittingReport(true);
+
+		try {
+			const response = await reportUser(profileUserId, {
+				reason: reportReason,
+				details,
+			});
+			if (viewerUserId) {
+				storeReportedPair(viewerUserId, profileUserId);
+				setHasReportedCurrentProfile(true);
+			}
+
+			setReportModalOpen(false);
+			setSaveModal({
+				type: 'success',
+				title: 'Sikeres jelentés küldés',
+				message: response.message || 'Köszönjük! A jelentést továbbítottuk a moderátoroknak.',
+			});
+			setReportDetails('');
+		} catch (error) {
+			let message = 'A jelentés küldése sikertelen volt.';
+			if (error instanceof ApiHttpError) {
+				message = error.status === 401
+					? 'A jelentés küldéséhez be kell jelentkezned.'
+					: error.message;
+			} else if (error instanceof Error) {
+				message = error.message;
+			}
+
+			setReportModalOpen(false);
+			setSaveModal({
+				type: 'error',
+				title: 'Jelentés sikertelen',
+				message,
+			});
+		} finally {
+			setIsSubmittingReport(false);
+		}
+	};
+
 	// Beállítások mentése
-	const handleSaveSettings = () => {
+	const handleSaveSettings = async () => {
+		if (isReadOnlyProfile) {
+			setSaveModal({
+				type: 'error',
+				title: 'Szerkesztés letiltva',
+				message: 'Másik felhasználó profilja csak megtekinthető.',
+			});
+			return;
+		}
+
 		if (settings.newPassword && settings.newPassword !== settings.confirmPassword) {
 			alert('Az új jelszó és megerősítés nem egyezik.');
 			return;
@@ -789,10 +1370,7 @@ const User: React.FC = () => {
 
 		const payload = {
 			username: settings.username,
-			email: settings.email,
 			countryCode: settings.countryCode,
-			avatarDataUrl: settings.avatarDataUrl,
-			selectedBadges: settings.selectedBadges,
 			profileVisibility: settings.profileVisibility,
 			showCountryOnProfile: settings.showCountryOnProfile,
 			showOnlineStatus: settings.showOnlineStatus,
@@ -810,13 +1388,93 @@ const User: React.FC = () => {
 			notificationFrequency: settings.notificationFrequency,
 		};
 
-		// TODO: API hívás: await fetch('/api/user/settings', { method: 'PUT', body: JSON.stringify(payload) });
-		localStorage.setItem('kk_profile_settings', JSON.stringify(payload));
-		syncAuthAvatar(settings.avatarDataUrl);
-		setSaveModal({
-			title: 'Mentés kész',
-			message: 'A beállítások sikeresen elmentésre kerültek.',
-		});
+		const selectedTitleIds = normalizeActiveBadges(settings.selectedBadges)
+			.map((badgeName) => badgeOptions.find((option) => option.name === badgeName)?.id)
+			.filter((id): id is number => typeof id === 'number');
+
+		if (!profileUserId) {
+			setSaveModal({
+				type: 'error',
+				title: 'Mentési hiba',
+				message: 'A beállítások mentéséhez be kell jelentkezned.',
+			});
+			return;
+		}
+
+		try {
+			await updateUserSettings({
+				avatarDataUrl: settings.avatarDataUrl,
+				countryCode: settings.countryCode,
+				newPlainPassword: settings.newPassword,
+				activeTitleIds: selectedTitleIds,
+			});
+
+			if (profileUserId) {
+				try {
+					const refreshedProfile = await getUserProfile(profileUserId);
+					const refreshedOwnedTitles = await getOwnedUserTitles().catch(() => [] as OwnedUserTitleResponse[]);
+					const refreshedOptions = refreshedOwnedTitles.map((title) => ({ id: title.id, name: title.name }));
+					setBadgeOptions(refreshedOptions);
+					const refreshedActiveBadges = buildActiveBadgesFromOwnedTitles(refreshedOwnedTitles);
+					const canonicalBadges = refreshedActiveBadges.length > 0
+						? refreshedActiveBadges
+						: normalizeActiveBadges(refreshedProfile.activeTitles);
+					setAllStats(mapApiStatsToViewStats(refreshedProfile, canonicalBadges));
+					setSettings(prev => ({
+						...prev,
+						selectedBadges: canonicalBadges,
+					}));
+				} catch (refreshProfileError) {
+					console.warn('A mentés utáni jelvény frissítés sikertelen:', refreshProfileError);
+				}
+			}
+
+			let nextAvatar = settings.avatarDataUrl;
+			try {
+				const me = await authMe();
+				nextAvatar = toAvatarSrc(me.avatar);
+			} catch (refreshError) {
+				console.warn('A mentés utáni avatar frissítés sikertelen:', refreshError);
+			}
+
+			try {
+				localStorage.setItem('kk_profile_settings', JSON.stringify(payload));
+			} catch (storageError) {
+				console.error('A helyi beállítások mentése sikertelen:', storageError);
+			}
+
+			syncAuthAvatar(nextAvatar);
+			if (nextAvatar) {
+				setProfile(prev => (prev ? { ...prev, avatar: nextAvatar } : prev));
+			}
+			setSaveModal({
+				type: 'success',
+				title: 'Mentés kész',
+				message: 'A beállítások sikeresen elmentésre kerültek.',
+			});
+			setSettings(prev => ({
+				...prev,
+				avatarDataUrl: null,
+				currentPassword: '',
+				newPassword: '',
+				confirmPassword: '',
+			}));
+		} catch (error) {
+			let message = 'A beállítások mentése sikertelen volt.';
+			if (error instanceof ApiHttpError) {
+				message = error.status === 401
+					? 'A munkamenet lejárt. Jelentkezz be újra, majd próbáld meg ismét.'
+					: error.message;
+			} else if (error instanceof Error) {
+				message = error.message;
+			}
+
+			setSaveModal({
+				type: 'error',
+				title: 'Mentési hiba',
+				message,
+			});
+		}
 	};
 
 	// Adatok exportálása
@@ -824,7 +1482,8 @@ const User: React.FC = () => {
 		const payload = {
 			profile,
 			stats: allStats,
-			books,
+			recentBooks,
+			favoriteBooks,
 		};
 
 		const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -838,15 +1497,56 @@ const User: React.FC = () => {
 		URL.revokeObjectURL(url);
 	};
 
+	const handleDeleteAccountSubmit: React.FormEventHandler<HTMLFormElement> = async (event) => {
+		event.preventDefault();
+
+		const trimmedPassword = deleteAccountPassword.trim();
+		if (!trimmedPassword) {
+			setDeleteAccountModalOpen(false);
+			setSaveModal({
+				type: 'error',
+				title: 'Hiányzó jelszó',
+				message: 'A megerősítéshez add meg a jelszavad.',
+			});
+			return;
+		}
+
+		setIsSubmittingDeleteAccount(true);
+
+		try {
+			const response = await requestAccountDeletion(trimmedPassword);
+			setDeleteAccountModalOpen(false);
+			setDeleteAccountPassword('');
+			setSaveModal({
+				type: 'success',
+				title: 'Megerősítő email elküldve',
+				message: response.message || 'A megerősítő email elküldve. A linkre kattintva törölheted a fiókodat.',
+			});
+		} catch (error) {
+			let message = 'A fióktörlés indítása sikertelen volt.';
+			if (error instanceof ApiHttpError) {
+				message = error.status === 401
+					? 'Hibás jelszó vagy lejárt munkamenet.'
+					: error.message;
+			} else if (error instanceof Error) {
+				message = error.message;
+			}
+
+			setDeleteAccountModalOpen(false);
+			setSaveModal({
+				type: 'error',
+				title: 'Fióktörlés indítása sikertelen',
+				message,
+			});
+		} finally {
+			setIsSubmittingDeleteAccount(false);
+		}
+	};
+
 	// Fiók törlése
 	const handleDeleteAccount = () => {
-		if (window.confirm('Biztosan végleg törlöd a fiókodat? Ez nem visszavonható.')) {
-			// TODO: API hívás: await fetch('/api/user/delete', { method: 'DELETE' });
-			localStorage.removeItem('kk_profile_settings');
-			localStorage.removeItem('kk_session');
-			alert('Fiók törlése szimulálva. Átirányítás a kezdőlapra.');
-			window.location.href = '#/';
-		}
+		setDeleteAccountPassword('');
+		setDeleteAccountModalOpen(true);
 	};
 
 	// Könyv státusz badge
@@ -862,6 +1562,18 @@ const User: React.FC = () => {
 				return null;
 		}
 	};
+
+	if (authRequired) {
+		return (
+			<main className="container">
+				<div className="profile-bar text-center py-5">
+					<i className="bi bi-lock" style={{ fontSize: '3rem', color: 'var(--secondary)' }}></i>
+					<h3 className="mt-3">Bejelentkezes szukseges</h3>
+					<p className="profile-auth-required-message mb-0">A profil oldal megtekintesehez jelentkezz be.</p>
+				</div>
+			</main>
+		);
+	}
 
 	if (isLoading || !profile || !currentStats) {
 		return (
@@ -885,27 +1597,41 @@ const User: React.FC = () => {
 								<img src={profile.avatar} alt="avatar" />
 							</div>
 							<div className="profile-identity">
-								<h2 className="mb-1">
-									{profile.isSubscriber && (
-										<svg
-											className="subscriber-crown"
-											xmlns="http://www.w3.org/2000/svg"
-											viewBox="0 0 24 24"
-											width="20"
-											height="20"
-											role="img"
-											aria-label="Előfizető"
-											focusable="false"
+								<div className="profile-name-row">
+									<h2 className="mb-1">
+										{profile.isSubscriber && (
+											<svg
+												className="subscriber-crown"
+												xmlns="http://www.w3.org/2000/svg"
+												viewBox="0 0 24 24"
+												width="20"
+												height="20"
+												role="img"
+												aria-label="Előfizető"
+												focusable="false"
+											>
+												<title>Előfizető</title>
+												<path fill="currentColor" d="M2 17l2-7 4 4 5-9 5 9 4-4 2 7H2z" />
+											</svg>
+										)}
+										{profile.username}
+									</h2>
+									{isReadOnlyProfile && (
+										<button
+											type="button"
+											className="btn-report-flag"
+											onClick={openReportModal}
+											disabled={isSubmittingReport || hasReportedCurrentProfile}
+											title={hasReportedCurrentProfile ? 'Felhasználó már jelentve' : 'Felhasználó jelentése'}
+											aria-label={hasReportedCurrentProfile ? 'Felhasználó már jelentve' : 'Felhasználó jelentése'}
 										>
-											<title>Előfizető</title>
-											<path fill="currentColor" d="M2 17l2-7 4 4 5-9 5 9 4-4 2 7H2z" />
-										</svg>
+											<i className="bi bi-flag-fill"></i>
+										</button>
 									)}
-									{profile.username}
-								</h2>
+								</div>
 								{settings.showCountryOnProfile && (
 									<div className="d-flex align-items-center gap-2 mb-0">
-										<img src={profile.countryFlag} alt={profile.country} />
+										{profile.countryFlag && <img src={profile.countryFlag} alt={profile.country} />}
 										<small>{profile.country}</small>
 									</div>
 								)}
@@ -935,13 +1661,15 @@ const User: React.FC = () => {
 								>
 									<i className="bi bi-film me-1"></i>MÉDIA
 								</button>
-								<button
-									className={`btn btn-action ${activeView === 'settings' ? 'active' : ''}`}
-									type="button"
-									onClick={() => setActiveView('settings')}
-								>
-									<i className="bi bi-gear-fill me-1"></i>BEÁLLÍTÁSOK
-								</button>
+								{!isReadOnlyProfile && (
+									<button
+										className={`btn btn-action ${activeView === 'settings' ? 'active' : ''}`}
+										type="button"
+										onClick={() => setActiveView('settings')}
+									>
+										<i className="bi bi-gear-fill me-1"></i>BEÁLLÍTÁSOK
+									</button>
+								)}
 							</div>
 						</div>
 
@@ -967,7 +1695,7 @@ const User: React.FC = () => {
 			</div>
 
 			{/* Settings Panel */}
-			{activeView === 'settings' && (
+			{!isReadOnlyProfile && activeView === 'settings' && (
 				<div id="settingsPanel" className="mt-4">
 					{/* Profile Section */}
 					<div className="about-panel p-4 mb-4">
@@ -979,7 +1707,7 @@ const User: React.FC = () => {
 							<div className="col-12 col-md-4 mb-3 mb-md-0">
 								<div className="d-flex align-items-center gap-3 settings-upload-row">
 									<div className="avatar" style={{ width: '96px', height: '96px' }}>
-										<img src={profile.avatar} alt="profilkép" />
+										<img src={pendingAvatarPreview} alt="profilkép" />
 									</div>
 									<div>
 										<label className="form-label">Profilkép feltöltése</label>
@@ -991,10 +1719,10 @@ const User: React.FC = () => {
 										/>
 										<div className="d-flex gap-2 mt-2 settings-upload-actions">
 											<button type="button" className="btn btn-outline-light btn-sm" onClick={handleResetAvatar}>
-												Visszaállítás
+												Profilkép törlése
 											</button>
 											<small className="settings-hint d-block" style={{ lineHeight: 1.2 }}>
-												PNG/JPG/WEBP • max. 2MB
+												A törlés csak a Mentés gomb után lép életbe.
 											</small>
 										</div>
 									</div>
@@ -1177,17 +1905,39 @@ const User: React.FC = () => {
 										type="email"
 										className="form-control"
 										value={settings.email}
-										onChange={(e) => updateSetting('email', e.target.value)}
+										disabled
 									/>
 								</div>
 								<div className="col-md-6 mb-3">
-									<label className="form-label">Országkód</label>
-									<input
-										className="form-control"
-										value={settings.countryCode}
-										maxLength={2}
-										onChange={(e) => updateSetting('countryCode', e.target.value.toUpperCase())}
-									/>
+									<label className="form-label">Ország</label>
+									<div className="custom-select-wrapper position-relative">
+										<button
+											className="form-select text-start"
+											type="button"
+											id="countryCodeDropdown"
+											aria-expanded={openSelect === 'countryCode'}
+											onClick={(e) => {
+												e.stopPropagation();
+												setOpenSelect(prev => (prev === 'countryCode' ? null : 'countryCode'));
+											}}
+										>
+											<span>{getCountryName(settings.countryCode)}</span>
+										</button>
+										<div className={`custom-select-menu ${openSelect === 'countryCode' ? 'show' : ''}`}>
+											{COUNTRY_OPTIONS.map((countryOption) => (
+												<div
+													key={countryOption.value ?? 'none'}
+													className="country-item"
+													onClick={() => {
+														updateSetting('countryCode', countryOption.value);
+														setOpenSelect(null);
+													}}
+												>
+													{countryOption.label}
+												</div>
+											))}
+										</div>
+									</div>
 								</div>
 								<div className="col-md-6 mb-3">
 									<label className="form-label">Jogosultság</label>
@@ -1314,24 +2064,35 @@ const User: React.FC = () => {
 														className="form-select text-start"
 														type="button"
 														aria-expanded={openSelect === `badge-${position}`}
+														disabled={badgeOptions.length === 0}
 														onClick={(e) => {
 															e.stopPropagation();
+															if (badgeOptions.length === 0) return;
 															setOpenSelect(prev => (prev === `badge-${position}` ? null : `badge-${position}` as OpenSelectId));
 														}}
 													>
-														<span>{settings.selectedBadges[position]}</span>
+														<span>{settings.selectedBadges[position] || 'Nincs kiválasztva'}</span>
 													</button>
 													<div className={`custom-select-menu ${openSelect === `badge-${position}` ? 'show' : ''}`}>
-														{BADGE_OPTIONS.map((badge) => (
+														<div
+															className="country-item"
+															onClick={() => {
+																handleBadgeSelect(position, '');
+																setOpenSelect(null);
+															}}
+														>
+															Nincs kiválasztva
+														</div>
+														{badgeOptions.map((badge) => (
 															<div
-																key={badge}
+																key={badge.id}
 																className="country-item"
 																onClick={() => {
-																	handleBadgeSelect(position, badge);
+																	handleBadgeSelect(position, badge.name);
 																	setOpenSelect(null);
 																}}
 															>
-																{badge}
+																{badge.name}
 															</div>
 														))}
 													</div>
@@ -1339,6 +2100,9 @@ const User: React.FC = () => {
 											</div>
 										))}
 									</div>
+									{badgeOptions.length === 0 && (
+										<small className="settings-empty-badges d-block mt-2">Még nincs megszerzett jelvényed, ezért nem állítható be aktív jelvény.</small>
+									)}
 								</div>
 								<div className="col-md-6 mb-3">
 									<label className="form-label">Értesítési gyakoriság</label>
@@ -1555,14 +2319,160 @@ const User: React.FC = () => {
 						aria-modal="true"
 						aria-labelledby="user-save-modal-title"
 					>
-						<div className="user-save-modal-icon">
-							<i className="bi bi-check2-circle"></i>
+						<div className={`user-save-modal-icon ${saveModal.type === 'success' ? 'is-success' : 'is-error'}`}>
+							<i className={`bi ${saveModal.type === 'success' ? 'bi-check2-circle' : 'bi-x-circle'}`}></i>
 						</div>
 						<h4 id="user-save-modal-title">{saveModal.title}</h4>
 						<p>{saveModal.message}</p>
 						<button className="admin-send-btn" onClick={() => setSaveModal(null)}>
 							Rendben
 						</button>
+					</div>
+				</div>
+			)}
+
+			{deleteAccountModalOpen && (
+				<div
+					className="user-report-modal-backdrop"
+					onClick={() => {
+						if (!isSubmittingDeleteAccount) setDeleteAccountModalOpen(false);
+					}}
+				>
+					<div
+						className="user-report-modal"
+						onClick={(event) => event.stopPropagation()}
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="user-delete-modal-title"
+					>
+						<h4 id="user-delete-modal-title">Fiók törlése megerősítés</h4>
+						<p>
+							A folytatáshoz add meg a jelszavad. Ezután emailben küldünk egy megerősítő linket,
+							és csak arra kattintva törlődik a fiókod.
+						</p>
+
+						<form onSubmit={handleDeleteAccountSubmit}>
+							<div className="mb-3">
+								<label className="form-label" htmlFor="deleteAccountPasswordInput">Jelszó</label>
+								<input
+									id="deleteAccountPasswordInput"
+									type="password"
+									className="form-control"
+									value={deleteAccountPassword}
+									onChange={(event) => setDeleteAccountPassword(event.target.value)}
+									disabled={isSubmittingDeleteAccount}
+									autoComplete="current-password"
+									required
+								/>
+							</div>
+
+							<div className="d-flex justify-content-end gap-2">
+								<button
+									type="button"
+									className="btn btn-outline-light"
+									onClick={() => setDeleteAccountModalOpen(false)}
+									disabled={isSubmittingDeleteAccount}
+								>
+									Mégse
+								</button>
+								<button type="submit" className="btn btn-danger" disabled={isSubmittingDeleteAccount}>
+									{isSubmittingDeleteAccount ? 'Küldés...' : 'Megerősítő email kérése'}
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			)}
+
+			{reportModalOpen && (
+				<div
+					className="user-report-modal-backdrop"
+					onClick={() => {
+						if (!isSubmittingReport) setReportModalOpen(false);
+					}}
+				>
+					<div
+						className="user-report-modal"
+						onClick={(event) => event.stopPropagation()}
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="user-report-modal-title"
+					>
+						<h4 id="user-report-modal-title">Felhasználó jelentése</h4>
+						<p>
+							A jelentés kizárólag moderátorok és adminok számára kerül továbbításra.
+						</p>
+
+						<form onSubmit={handleReportSubmit}>
+							<div className="mb-3">
+								<label className="form-label">Jelentett felhasználónév</label>
+								<div className="report-locked-field">
+									<input className="form-control" value={profile.username} readOnly disabled />
+									<i className="bi bi-lock-fill" aria-hidden="true"></i>
+								</div>
+							</div>
+							<div className="mb-3">
+								<label className="form-label">Jelentés oka</label>
+								<div className="custom-select-wrapper position-relative">
+									<button
+										className="form-select text-start"
+										type="button"
+										id="reportReasonDropdown"
+										aria-expanded={openSelect === 'reportReason'}
+										onClick={(e) => {
+											e.stopPropagation();
+											if (isSubmittingReport) return;
+											setOpenSelect(prev => (prev === 'reportReason' ? null : 'reportReason'));
+										}}
+									>
+										<span>{getReportReasonLabel(reportReason)}</span>
+									</button>
+									<div className={`custom-select-menu ${openSelect === 'reportReason' ? 'show' : ''}`}>
+										{REPORT_REASON_OPTIONS.map((option) => (
+											<div
+												key={option.value}
+												className="country-item"
+												onClick={() => {
+													setReportReason(option.value);
+													setOpenSelect(null);
+												}}
+											>
+												{option.label}
+											</div>
+										))}
+									</div>
+								</div>
+							</div>
+							<div className="mb-2">
+								<label className="form-label" htmlFor="reportDetails">Részletes indoklás</label>
+								<textarea
+									id="reportDetails"
+									className="form-control"
+									rows={5}
+									maxLength={2000}
+									placeholder="Írd le röviden, mi történt és miért tartod problémásnak ezt a profilt."
+									value={reportDetails}
+									onChange={(event) => setReportDetails(event.target.value)}
+									disabled={isSubmittingReport}
+								/>
+								<small className="report-char-count">{reportDetails.length}/2000</small>
+							</div>
+
+							<div className="user-report-actions">
+								<button
+									type="button"
+									id="reportCancel"
+									className="btn btn-secondary btn-sm reset"
+									onClick={handleReportCancel}
+									disabled={isSubmittingReport}
+								>
+									Mégse
+								</button>
+								<button id="reportApply" type="submit" className="btn btn-primary btn-sm" disabled={isSubmittingReport}>
+									{isSubmittingReport ? 'Küldés...' : 'Alkalmaz'}
+								</button>
+							</div>
+						</form>
 					</div>
 				</div>
 			)}
@@ -1591,7 +2501,7 @@ const User: React.FC = () => {
 									<div className="col-md-4">
 										<div className="stat-title">Jelvények</div>
 										<div className="mt-2 badge-row">
-											{(settings.selectedBadges.length > 0 ? settings.selectedBadges : currentStats.badges.slice(0, 3)).map((badge, index) => (
+											{currentStats.badges.slice(0, MAX_ACTIVE_BADGES).map((badge, index) => (
 												<span key={index} className="badge-custom">{badge}</span>
 											))}
 										</div>
@@ -1620,19 +2530,13 @@ const User: React.FC = () => {
 										<strong><span>{currentStats.labels.labelReadBooks}</span></strong>{' '}
 										<span>{currentStats.readBooks}</span>
 									</li>
-									{activeView !== 'book' && (
-										<li>
-											<strong><span>{currentStats.labels.labelMediaViewed}</span></strong>{' '}
-											<span>{currentStats.mediaViewed}</span>
-										</li>
-									)}
+									<li>
+										<strong><span>{currentStats.labels.labelMediaViewed}</span></strong>{' '}
+										<span>{currentStats.mediaViewed}</span>
+									</li>
 									<li>
 										<strong><span>{currentStats.labels.labelLongestStreak}</span></strong>{' '}
 										<span>{currentStats.longestStreak}</span>
-									</li>
-									<li>
-										<strong><span>{currentStats.labels.labelReviewsSent}</span></strong>{' '}
-										<span>{currentStats.reviewsSent}</span>
 									</li>
 								</ul>
 							</div>
@@ -1660,10 +2564,17 @@ const User: React.FC = () => {
 
 								{readBooksOpen && (
 									<ul className="list-group list-group-flush book-list">
-										{books.map((book) => (
+										{recentBooks.map((book) => (
 											<li key={book.id} className="list-group-item book-item">
 												<div className="d-flex gap-3 align-items-center">
-													<img src={book.cover} alt={book.title} className="book-logo" />
+													<img
+														src={book.cover}
+														alt={book.title}
+														className="book-logo"
+														onError={(event) => {
+															applyContentImageFallback(event.currentTarget);
+														}}
+													/>
 													<div className="grow">
 														<div className="book-title">{book.title}</div>
 													</div>
@@ -1701,10 +2612,17 @@ const User: React.FC = () => {
 
 								{favBooksOpen && (
 									<ul className="list-group list-group-flush book-list">
-										{books.map((book) => (
+										{favoriteBooks.map((book) => (
 											<li key={book.id} className="list-group-item book-item">
 												<div className="d-flex gap-3 align-items-center">
-													<img src={book.cover} alt={book.title} className="book-logo" />
+													<img
+														src={book.cover}
+														alt={book.title}
+														className="book-logo"
+														onError={(event) => {
+															applyContentImageFallback(event.currentTarget);
+														}}
+													/>
 													<div className="grow">
 														<div className="book-title">{book.title}</div>
 													</div>
@@ -1743,6 +2661,8 @@ const User: React.FC = () => {
 											const next = !prev;
 											if (!next) {
 												setMedalModal(null);
+											} else {
+												setBadgesLoaded(false);
 											}
 											return next;
 										});
@@ -1770,7 +2690,17 @@ const User: React.FC = () => {
 													onClick={() => openMedalModal(medal, group.title)}
 													aria-label={`${medal.label} kitűző részletek`}
 												>
-													<img src={medal.image} alt={medal.label} className="medal" />
+													<img
+														src={medal.image}
+														alt={medal.label}
+														className="medal"
+														onError={(event) => {
+															const imageElement = event.currentTarget;
+															if (imageElement.src !== BADGE_FALLBACK_IMAGE) {
+																imageElement.src = BADGE_FALLBACK_IMAGE;
+															}
+														}}
+													/>
 													<div className="medal-label">{medal.label}</div>
 													<div className="medal-date">{medal.date || '—'}</div>
 												</button>
@@ -1778,6 +2708,12 @@ const User: React.FC = () => {
 										</div>
 									</div>
 								))}
+
+								{badgesExpanded && badgesLoaded && medalGroups.length === 0 && (
+									<div className="group p-3">
+										<div className="text-muted">Nincs megjeleníthető kitűző.</div>
+									</div>
+								)}
 							</div>
 						</div>
 					</div>

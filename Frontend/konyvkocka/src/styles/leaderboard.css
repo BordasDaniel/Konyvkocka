@@ -114,6 +114,24 @@ main {
   text-decoration: none;
 }
 
+.leaderboard-filters .btn-action:disabled,
+.leaderboard-filters .btn-action:disabled:hover {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.58) !important;
+  border-color: rgba(255,255,255,0.06);
+  transform: none;
+  box-shadow: none;
+}
+
+.leaderboard-region-hint {
+  width: 100%;
+  color: rgba(255, 210, 143, 0.92);
+  font-size: 0.82rem;
+  margin-top: 0.2rem;
+}
+
 @media (max-width: 767px) {
   .leaderboard-filters{
     justify-content: flex-start;
@@ -384,6 +402,23 @@ main {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.leaderboard-profile-link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.leaderboard-profile-link:hover {
+  color: var(--secondary);
+}
+
+.leaderboard-profile-link:focus-visible {
+  outline: 1px solid rgba(194, 157, 89, 0.7);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .subscriber-crown {
