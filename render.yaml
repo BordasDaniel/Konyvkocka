@@ -38,14 +38,12 @@ services:
       - key: EmailSettings__SmtpPort
         value: "587"
       - key: EmailSettings__SmtpUsername
-        value: change-me-in-render
-        sync: false
+        value: bordas.daniel0124@gmail.com
       - key: EmailSettings__SmtpPassword
-        value: change-me-in-render
+        value: to-fill-gmail-app-password
         sync: false
       - key: EmailSettings__FromEmail
-        value: change-me-in-render
-        sync: false
+        value: bordas.daniel0124@gmail.com
       - key: EmailSettings__FromName
         value: Könyvkocka csapat
       - key: AppUrlSettings__FrontendBaseUrl
