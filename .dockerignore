@@ -1,0 +1,14 @@
+.git
+.github
+.vs
+.vscode
+
+WPF/
+
+**/bin/
+**/obj/
+**/node_modules/
+**/.vite/
+
+Frontend/konyvkocka/dist/
+Frontend/konyvkocka/coverage/
