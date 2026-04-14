@@ -1,0 +1,43 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
+        VITE_BASE_PATH: "/"
+    environment:
+      PORT: 10000
+      ASPNETCORE_ENVIRONMENT: Development
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: konyvkocka
+      DB_USER: konyvkocka_user
+      DB_PASSWORD: ChangeThisStrongDbPassword!
+      JwtSettings__SecurityKey: Konyvkocka.JWT.2026!A7f9#Lm2Qx5_Rr8@Nt1%Vz4^Hy6&Pw3*Ds0
+      EmailSettings__FromName: Könyvkocka csapat
+    ports:
+      - "10000:10000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    build:
+      context: .
+      dockerfile: Database/Dockerfile
+    environment:
+      MYSQL_DATABASE: konyvkocka
+      MYSQL_USER: konyvkocka_user
+      MYSQL_PASSWORD: ChangeThisStrongDbPassword!
+      MYSQL_ROOT_PASSWORD: ChangeThisStrongRootPassword!
+    volumes:
+      - konyvkocka_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  konyvkocka_db_data:

@@ -7,7 +7,7 @@ namespace KonyvkockaAPI.Models
         public string SmtpUsername { get; set; } = string.Empty;
         public string SmtpPassword { get; set; } = string.Empty;
         public string FromEmail { get; set; } = string.Empty;
-        public string FromName { get; set; } = "Konyvkocka csapat";
+        public string FromName { get; set; } = "Könyvkocka csapat";
         public bool EnableSsl { get; set; } = true;
     }
 }

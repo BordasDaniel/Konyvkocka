@@ -1,0 +1,80 @@
+services:
+  - type: web
+    name: konyvkocka
+    env: docker
+    plan: starter
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+        value: "true"
+      - key: DB_HOST
+        fromService:
+          type: pserv
+          name: konyvkocka-db
+          property: host
+      - key: DB_PORT
+        fromService:
+          type: pserv
+          name: konyvkocka-db
+          property: port
+      - key: DB_NAME
+        value: konyvkocka
+      - key: DB_USER
+        value: konyvkocka_user
+      - key: DB_PASSWORD
+        value: change-me-in-render
+        sync: false
+      - key: JwtSettings__SecurityKey
+        generateValue: true
+      - key: JwtSettings__Issuer
+        value: konyvkocka
+      - key: JwtSettings__Audience
+        value: konyvkocka-users
+      - key: JwtSettings__ExpirityMinutes
+        value: "1440"
+      - key: EmailSettings__SmtpHost
+        value: smtp.gmail.com
+      - key: EmailSettings__SmtpPort
+        value: "587"
+      - key: EmailSettings__SmtpUsername
+        value: change-me-in-render
+        sync: false
+      - key: EmailSettings__SmtpPassword
+        value: change-me-in-render
+        sync: false
+      - key: EmailSettings__FromEmail
+        value: change-me-in-render
+        sync: false
+      - key: EmailSettings__FromName
+        value: Könyvkocka csapat
+      - key: AppUrlSettings__FrontendBaseUrl
+        value: https://konyvkocka.onrender.com
+      - key: AppUrlSettings__ApiBaseUrl
+        value: https://konyvkocka.onrender.com
+
+  - type: pserv
+    name: konyvkocka-db
+    env: docker
+    plan: starter
+    dockerContext: .
+    dockerfilePath: ./Database/Dockerfile
+    autoDeploy: true
+    disk:
+      name: konyvkocka-db-data
+      mountPath: /var/lib/mysql
+      sizeGB: 10
+    envVars:
+      - key: MYSQL_DATABASE
+        value: konyvkocka
+      - key: MYSQL_USER
+        value: konyvkocka_user
+      - key: MYSQL_PASSWORD
+        value: change-me-in-render
+        sync: false
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true

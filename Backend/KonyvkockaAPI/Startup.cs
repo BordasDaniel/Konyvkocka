@@ -15,9 +15,20 @@ namespace KonyvkockaAPI
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            var connectionString = builder.Configuration.GetConnectionString("KonyvkockaConnection") ?? string.Empty;
+            var dbHost = builder.Configuration["DB_HOST"];
+            if (!string.IsNullOrWhiteSpace(dbHost))
+            {
+                var dbPort = builder.Configuration["DB_PORT"] ?? "3306";
+                var dbName = builder.Configuration["DB_NAME"] ?? "konyvkocka";
+                var dbUser = builder.Configuration["DB_USER"] ?? "root";
+                var dbPassword = builder.Configuration["DB_PASSWORD"] ?? string.Empty;
+                connectionString = $"Server={dbHost};Port={dbPort};Database={dbName};Uid={dbUser};Pwd={dbPassword};";
+            }
+
             // Add services to the container.
             builder.Services.AddDbContext<KonyvkockaContext>(options => 
-                options.UseMySQL(builder.Configuration.GetConnectionString("KonyvkockaConnection")));
+                options.UseMySQL(connectionString));
 
             // Register custom services
             builder.Services.AddSingleton<ICountryService, CountryService>();
@@ -111,7 +122,11 @@ namespace KonyvkockaAPI
 
             app.UseCors(options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
+
             app.MapControllers();
+            app.MapFallbackToFile("index.html");
 
             app.Run();
         }
