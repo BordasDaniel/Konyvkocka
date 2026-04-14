@@ -6,14 +6,11 @@
         xmlns:local="clr-namespace:KonyvkockaKliensWPF"
         mc:Ignorable="d"
         Title="Bejelentkezés - KönyvKocka" 
-        Height="410" Width="470"
-        SizeToContent="Height"
-        MinHeight="410"
+        Height="300" Width="400"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize">
-    <Grid Background="#F4F1EB">
+    <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -22,76 +19,28 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0"
-                Margin="18,18,18,10"
-                Padding="20"
-                CornerRadius="12"
-                Background="White"
-                BorderBrush="#D8CDBF"
-                BorderThickness="1">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" 
+                   Text="Bejelentkezés" 
+                   FontSize="24" 
+                   FontWeight="Bold" 
+                   HorizontalAlignment="Center" 
+                   Margin="0,20,0,20"/>
 
-                <TextBlock Grid.Row="0"
-                           Text="Bejelentkezés"
-                           FontSize="26"
-                           FontWeight="Bold"
-                           Foreground="#3B2E23"
-                           HorizontalAlignment="Center"
-                           Margin="0,0,0,4"/>
-
-                <TextBlock Grid.Row="1"
-                           Text="Admin felület elérése"
-                           Foreground="#7A6A57"
-                           HorizontalAlignment="Center"
-                           Margin="0,0,0,14"/>
-
-                <Border Grid.Row="2" Background="#FFF8EE" BorderBrush="#E8D7BF" BorderThickness="1" CornerRadius="8" Padding="10,8">
-                    <TextBlock Text="Add meg az email címet és jelszót. Három sikertelen próbálkozás után az alkalmazás bezáródik."
-                               TextWrapping="Wrap"
-                               Foreground="#5A4A3B"/>
-                </Border>
-            </Grid>
-        </Border>
-
-        <StackPanel Grid.Row="1" Margin="28,6,28,10">
+        <StackPanel Grid.Row="1" Margin="20,0,20,10">
             <TextBlock Text="Email:" Margin="0,0,0,5"/>
             <TextBox x:Name="UsernameTextBox" 
-                     Height="34" 
+                     Height="30" 
                      FontSize="14"
-                     KeyDown="TextBox_KeyDown"
-                     ToolTip="pelda@email.com"/>
+                     KeyDown="TextBox_KeyDown"/>
         </StackPanel>
 
-        <Grid Grid.Row="2" Margin="28,0,28,10">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        <StackPanel Grid.Row="2" Margin="20,0,20,10">
             <TextBlock Text="Jelszó:" Margin="0,0,0,5"/>
             <PasswordBox x:Name="PasswordBox" 
-                         Grid.Row="1"
-                         Height="34" 
+                         Height="30" 
                          FontSize="14"
                          KeyDown="PasswordBox_KeyDown"/>
-            <TextBox x:Name="VisiblePasswordTextBox"
-                     Grid.Row="1"
-                     Height="34"
-                     FontSize="14"
-                     Visibility="Collapsed"
-                     KeyDown="PasswordBox_KeyDown"/>
-            <CheckBox x:Name="ShowPasswordCheckBox"
-                      Grid.Row="2"
-                      Content="Jelszó megjelenítése"
-                      Margin="0,8,0,0"
-                      Checked="ShowPasswordCheckBox_Changed"
-                      Unchecked="ShowPasswordCheckBox_Changed"/>
-        </Grid>
+        </StackPanel>
 
         <TextBlock x:Name="ErrorMessageTextBlock" 
                    Grid.Row="3" 
@@ -101,27 +50,14 @@
                    TextWrapping="Wrap"/>
 
         <Button Grid.Row="4" 
-                x:Name="LoginButton"
                 Content="Bejelentkezés" 
-                Width="200" 
-                Height="38" 
+                Width="150" 
+                Height="35" 
                 FontSize="14"
-                FontWeight="SemiBold"
-                Background="#C29D59"
-                Foreground="White"
-                BorderThickness="0"
-            HorizontalAlignment="Center"
                 Margin="0,0,0,20"
                 Click="LoginButton_Click"/>
 
-        <TextBlock Grid.Row="5"
-                   x:Name="LoginStatusTextBlock"
-                   Text=""
-                   HorizontalAlignment="Center"
-                   Margin="0,0,0,8"
-                   Foreground="#7A6A57"/>
-
-        <TextBlock Grid.Row="6" 
+        <TextBlock Grid.Row="5" 
                    x:Name="AttemptsTextBlock"
                    Text="Hátralévő próbálkozások: 3"
                    HorizontalAlignment="Center" 
