@@ -13,22 +13,18 @@ services:
       - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
         value: "true"
       - key: DB_HOST
-        fromService:
-          type: pserv
-          name: konyvkocka-db
-          property: host
+        value: konyvkocka-db-konyvkocka.g.aivencloud.com
       - key: DB_PORT
-        fromService:
-          type: pserv
-          name: konyvkocka-db
-          property: port
+        value: "15880"
       - key: DB_NAME
         value: konyvkocka
       - key: DB_USER
-        value: konyvkocka_user
+        value: avnadmin
       - key: DB_PASSWORD
-        value: change-me-in-render
+        value: to-fill-aiven-password
         sync: false
+      - key: DB_SSL_MODE
+        value: Required
       - key: JwtSettings__SecurityKey
         generateValue: true
       - key: JwtSettings__Issuer
@@ -56,25 +52,3 @@ services:
         value: https://konyvkocka.onrender.com
       - key: AppUrlSettings__ApiBaseUrl
         value: https://konyvkocka.onrender.com
-
-  - type: pserv
-    name: konyvkocka-db
-    env: docker
-    plan: starter
-    dockerContext: .
-    dockerfilePath: ./Database/Dockerfile
-    autoDeploy: true
-    disk:
-      name: konyvkocka-db-data
-      mountPath: /var/lib/mysql
-      sizeGB: 10
-    envVars:
-      - key: MYSQL_DATABASE
-        value: konyvkocka
-      - key: MYSQL_USER
-        value: konyvkocka_user
-      - key: MYSQL_PASSWORD
-        value: change-me-in-render
-        sync: false
-      - key: MYSQL_ROOT_PASSWORD
-        generateValue: true
