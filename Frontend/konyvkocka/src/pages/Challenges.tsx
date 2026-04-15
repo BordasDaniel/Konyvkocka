@@ -119,9 +119,9 @@ const getDifficultyColor = (difficulty: ChallengeDifficulty): string => {
 
 const getDifficultyLabel = (difficulty: ChallengeDifficulty): string => {
 	switch (difficulty) {
-		case 'EASY': return 'Konnyu';
+		case 'EASY': return 'Könnyű';
 		case 'MEDIUM': return 'Normal';
-		case 'HARD': return 'Nehez';
+		case 'HARD': return 'Nehéz';
 		case 'EPIC': return 'Epikus';
 		default: return 'Ismeretlen';
 	}
@@ -129,12 +129,12 @@ const getDifficultyLabel = (difficulty: ChallengeDifficulty): string => {
 
 const getCategoryLabel = (category: ChallengeCategory): string => {
 	switch (category) {
-		case 'reading': return 'Olvasas';
-		case 'watching': return 'Nezes';
-		case 'social': return 'Kozoessegi';
-		case 'dedication': return 'Kitartas';
-		case 'event': return 'Esemeny';
-		default: return 'Egyeb';
+		case 'reading': return 'Olvasás';
+		case 'watching': return 'Nézés';
+		case 'social': return 'Közösségi';
+		case 'dedication': return 'Kitartás';
+		case 'event': return 'Esemény';
+		default: return 'Egyéb';
 	}
 };
 
@@ -174,7 +174,7 @@ const Challenges: React.FC = () => {
 		const loadChallenges = async () => {
 			if (!isAuthenticated) {
 				setChallenges([]);
-				setError('A kihivasok megtekintesehez be kell jelentkezned.');
+				setError('A kihívások megtekintéséhez be kell jelentkezned.');
 				setIsLoading(false);
 				return;
 			}
@@ -189,9 +189,9 @@ const Challenges: React.FC = () => {
 			} catch (loadError) {
 				if (!isMounted) return;
 				if (loadError instanceof ApiHttpError && loadError.status === 401) {
-					setError('A kihivasok megtekintesehez be kell jelentkezned.');
+					setError('A kihívások megtekintéséhez be kell jelentkezned.');
 				} else {
-					setError('A kihivasok betoltese sikertelen.');
+					setError('A kihívások betöltése sikertelen.');
 				}
 				setChallenges([]);
 			} finally {
@@ -224,7 +224,7 @@ const Challenges: React.FC = () => {
 				),
 			);
 		} catch (claimError) {
-			console.error('Kihivas claim hiba:', claimError);
+			console.error('Kihívás claim hiba:', claimError);
 		} finally {
 			setClaimingIds((prev) => prev.filter((id) => id !== challengeId));
 		}
@@ -253,46 +253,46 @@ const Challenges: React.FC = () => {
 							<div className="text-center mb-4 pt-5">
 								<h1 className="text-uppercase fw-bold mb-2" style={{ color: 'var(--h1Text)' }}>
 									<i className="bi bi-trophy-fill me-3" style={{ color: 'var(--secondary)' }}></i>
-									Kihivasok
+									Kihívások
 								</h1>
 								<p className="text-light mb-0">
-									Teljesits kihivasokat, gyujts XP-t, medalokat es exkluziv cimeket.
+									Teljesíts kihívásokat, gyűjts XP-t, medálokat és exkluzív címeket.
 								</p>
 							</div>
 
 							<div className="challenges-filters mb-3">
 								<button className={`btn btn-action ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>
-									<i className="bi bi-grid-fill me-2"></i>Osszes ({challenges.length})
+									<i className="bi bi-grid-fill me-2"></i>Összes ({challenges.length})
 								</button>
 								<button className={`btn btn-action ${filter === 'active' ? 'active' : ''}`} onClick={() => setFilter('active')}>
-									<i className="bi bi-hourglass-split me-2"></i>Aktiv ({activeCount})
+									<i className="bi bi-hourglass-split me-2"></i>Aktív ({activeCount})
 								</button>
 								<button className={`btn btn-action ${filter === 'claimable' ? 'active' : ''}`} onClick={() => setFilter('claimable')}>
-									<i className="bi bi-gift-fill me-2"></i>Atveheto ({claimableCount})
+									<i className="bi bi-gift-fill me-2"></i>Átvehető ({claimableCount})
 								</button>
 								<button className={`btn btn-action ${filter === 'claimed' ? 'active' : ''}`} onClick={() => setFilter('claimed')}>
-									<i className="bi bi-check2-circle me-2"></i>Atvett ({claimedCount})
+									<i className="bi bi-check2-circle me-2"></i>Átvett ({claimedCount})
 								</button>
 								<button className={`btn btn-action ${filter === 'event' ? 'active' : ''}`} onClick={() => setFilter('event')}>
-									<i className="bi bi-calendar-event me-2"></i>Esemenyek ({eventCount})
+									<i className="bi bi-calendar-event me-2"></i>Események ({eventCount})
 								</button>
 							</div>
 
 							<div className="challenges-filters">
 								<button className={`btn btn-action ${categoryFilter === 'all' ? 'active' : ''}`} onClick={() => setCategoryFilter('all')}>
-									<i className="bi bi-grid-fill me-2"></i>Osszes
+									<i className="bi bi-grid-fill me-2"></i>Összes
 								</button>
 								<button className={`btn btn-action ${categoryFilter === 'reading' ? 'active' : ''}`} onClick={() => setCategoryFilter('reading')}>
-									<i className="bi bi-book me-1"></i>Olvasas
+									<i className="bi bi-book me-1"></i>Olvasás
 								</button>
 								<button className={`btn btn-action ${categoryFilter === 'watching' ? 'active' : ''}`} onClick={() => setCategoryFilter('watching')}>
-									<i className="bi bi-play-circle me-1"></i>Nezes
+									<i className="bi bi-play-circle me-1"></i>Nézés
 								</button>
 								<button className={`btn btn-action ${categoryFilter === 'social' ? 'active' : ''}`} onClick={() => setCategoryFilter('social')}>
-									<i className="bi bi-people me-1"></i>Kozossegi
+									<i className="bi bi-people me-1"></i>Közösségi
 								</button>
 								<button className={`btn btn-action ${categoryFilter === 'dedication' ? 'active' : ''}`} onClick={() => setCategoryFilter('dedication')}>
-									<i className="bi bi-hourglass-split me-1"></i>Kitartas
+									<i className="bi bi-hourglass-split me-1"></i>Kitartás
 								</button>
 							</div>
 						</div>
@@ -303,7 +303,7 @@ const Challenges: React.FC = () => {
 							{isLoading ? (
 								<div className="empty-state text-center">
 									<div className="spinner-border text-light" role="status">
-										<span className="visually-hidden">Betoltes...</span>
+										<span className="visually-hidden">Betöltés...</span>
 									</div>
 								</div>
 							) : error ? (
@@ -317,8 +317,8 @@ const Challenges: React.FC = () => {
 								<div className="empty-state text-center">
 									<div>
 										<i className="bi bi-trophy" style={{ fontSize: '3rem', color: 'var(--secondary)', opacity: 0.5, marginBottom: '1rem' }}></i>
-										<p className="empty-title mb-2">Nincs talalat</p>
-										<p className="empty-subtitle mb-0">Probald mas szurokkel.</p>
+										<p className="empty-title mb-2">Nincs találat</p>
+										<p className="empty-subtitle mb-0">Próbáld más szűrőkkel.</p>
 									</div>
 								</div>
 							) : (
@@ -348,13 +348,13 @@ const Challenges: React.FC = () => {
 															{isClaimable(challenge) && (
 																<span className="badge badge-claimable">
 																	<i className="bi bi-gift-fill me-1"></i>
-																	Atveheto
+																	Átvehető
 																</span>
 															)}
 															{isClaimed(challenge) && (
 																<span className="badge badge-claimed">
 																	<i className="bi bi-check2-circle me-1"></i>
-																	Atveve
+																	Átvéve
 																</span>
 															)}
 														</div>
@@ -375,7 +375,7 @@ const Challenges: React.FC = () => {
 													{challenge.expiresAt && (
 														<div className="challenge-expiry">
 															<i className="bi bi-clock me-1"></i>
-															Lejar: {new Date(challenge.expiresAt).toLocaleDateString('hu-HU')}
+															Lejár: {new Date(challenge.expiresAt).toLocaleDateString('hu-HU')}
 														</div>
 													)}
 												</div>
@@ -398,14 +398,14 @@ const Challenges: React.FC = () => {
 													{isClaimable(challenge) && (
 														<button className="btn challenge-claim-btn mt-3" disabled={claimingIds.includes(challenge.id)} onClick={() => void handleClaim(challenge.id)}>
 															<i className="bi bi-gift-fill me-2"></i>
-															{claimingIds.includes(challenge.id) ? 'Atvetel...' : 'Jutalom atvetele'}
+															{claimingIds.includes(challenge.id) ? 'Átvétel...' : 'Jutalom átvétele'}
 														</button>
 													)}
 
 													{isClaimed(challenge) && challenge.claimedAt && (
 														<div className="challenge-claimed-at mt-2">
 															<i className="bi bi-clock-history me-1"></i>
-															Atveve: {new Date(challenge.claimedAt).toLocaleString('hu-HU')}
+															Átvéve: {new Date(challenge.claimedAt).toLocaleString('hu-HU')}
 														</div>
 													)}
 												</div>
