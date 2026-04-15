@@ -383,10 +383,12 @@ const mapRecentItemsToBooks = (items: UserRecentFavoriteItemResponse[]): Book[] 
 
 const mapBadgeCategoryName = (category: string): string => {
 	const normalized = category.toUpperCase();
-	if (normalized === 'EVENT') return 'Események';
+	if (normalized === 'EVENT') return 'Esemény';
 	if (normalized === 'STREAK') return 'Kitartás';
-	if (normalized === 'READING' || normalized === 'WATCHING') return 'Megszerezve';
-	if (normalized === 'SPECIAL') return 'Különlegesek';
+	if (normalized === 'READING') return 'Olvasás';
+	if (normalized === 'WATCHING') return 'Nézés';
+	if (normalized === 'SOCIAL') return 'Közösségi';
+	if (normalized === 'SPECIAL') return 'Különleges';
 	return category;
 };
 
@@ -581,10 +583,12 @@ const MEDAL_DB_DETAILS: Record<number, Partial<MedalDetails>> = {
 
 const getMedalDetails = (medal: Medal, groupTitle: string): MedalDetails => {
 	const groupCategoryMap: Record<string, string> = {
-		Események: 'Esemény',
-		Kitartás: 'Aktivitás',
-		Megszerezve: 'Gyűjtemény',
-		Különlegesek: 'Különleges',
+		Esemény: 'Esemény',
+		Kitartás: 'Kitartás',
+		Olvasás: 'Olvasás',
+		Nézés: 'Nézés',
+		Közösségi: 'Közösségi',
+		Különleges: 'Különleges',
 	};
 
 	const defaults: MedalDetails = {
