@@ -33,14 +33,11 @@ const Watch: React.FC = () => {
   const [selectedEpisodeIndex, setSelectedEpisodeIndex] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [watchActionError, setWatchActionError] = useState<string | null>(null);
   const [activeContentId, setActiveContentId] = useState<number | null>(null);
   const [activeContentType, setActiveContentType] = useState<NormalizedContentType | null>(null);
   const [isCompletedLocked, setIsCompletedLocked] = useState<boolean>(false);
   const [movieProgressMinutes, setMovieProgressMinutes] = useState<number>(0);
   const [seriesProgress, setSeriesProgress] = useState<number>(1);
-  const [totalUnits, setTotalUnits] = useState<number | null>(null);
-  const [markCompleteLoading, setMarkCompleteLoading] = useState<boolean>(false);
 
   const progressReadyRef = useRef<boolean>(false);
   const lastSavedMovieProgressRef = useRef<number>(0);
@@ -49,10 +46,6 @@ const Watch: React.FC = () => {
   const movieStartMsRef = useRef<number | null>(null);
 
   const embedVideoUrl = toEmbedVideoUrl(videoUrl);
-
-  const handleLoginRedirect = () => {
-    window.location.href = '#/belepes';
-  };
 
   useEffect(() => {
     let isMounted = true;
@@ -74,8 +67,6 @@ const Watch: React.FC = () => {
           setIsCompletedLocked(false);
           setMovieProgressMinutes(0);
           setSeriesProgress(1);
-          setTotalUnits(null);
-          setWatchActionError(null);
           setError('A tartalom megtekinteshez be kell jelentkezned.');
           setLoading(false);
         }
@@ -84,7 +75,6 @@ const Watch: React.FC = () => {
 
       setLoading(true);
       setError(null);
-      setWatchActionError(null);
 
       const urlParams = new URLSearchParams(location.search);
       const contentParam = urlParams.get('content');
@@ -140,11 +130,6 @@ const Watch: React.FC = () => {
           const historyStatus = (historyItem?.status ?? '').toUpperCase();
           const completedLocked = historyStatus === 'COMPLETED';
           setIsCompletedLocked(completedLocked);
-
-          const normalizedTotalUnits = typeof historyItem?.totalUnits === 'number' && historyItem.totalUnits > 0
-            ? Math.floor(historyItem.totalUnits)
-            : null;
-          setTotalUnits(normalizedTotalUnits);
 
           const savedProgress = Math.max(0, Math.floor(historyItem?.progress ?? 0));
 
@@ -209,8 +194,6 @@ const Watch: React.FC = () => {
           setIsCompletedLocked(false);
           setMovieProgressMinutes(0);
           setSeriesProgress(1);
-          setTotalUnits(null);
-          setWatchActionError(null);
           document.title = 'Videó lejátszása - KonyvKocka';
           setError('Nincs megadott tartalom ehhez az oldalhoz.');
         }
@@ -225,8 +208,6 @@ const Watch: React.FC = () => {
         setIsCompletedLocked(false);
         setMovieProgressMinutes(0);
         setSeriesProgress(1);
-        setTotalUnits(null);
-        setWatchActionError(null);
         setError('A video adatok betoltese sikertelen.');
       } finally {
         if (isMounted) setLoading(false);
@@ -390,81 +371,6 @@ const Watch: React.FC = () => {
     }
   };
 
-  const handleMarkCompleted = async () => {
-    if (!isAuthenticated) {
-      handleLoginRedirect();
-      return;
-    }
-
-    if (!activeContentType || !activeContentId || markCompleteLoading || isCompletedLocked) {
-      return;
-    }
-
-    setMarkCompleteLoading(true);
-    setWatchActionError(null);
-
-    const completeProgress = activeContentType === 'movie'
-      ? Math.max(1, totalUnits ?? movieProgressMinutes)
-      : Math.max(1, totalUnits ?? seriesProgress);
-
-    try {
-      await updateHistory({
-        contentType: activeContentType,
-        contentId: activeContentId,
-        progress: completeProgress,
-        status: 'COMPLETED',
-      });
-
-      if (activeContentType === 'movie') {
-        setMovieProgressMinutes(completeProgress);
-        lastSavedMovieProgressRef.current = completeProgress;
-        movieBaseProgressRef.current = completeProgress;
-      } else {
-        setSeriesProgress(completeProgress);
-        lastSavedSeriesProgressRef.current = completeProgress;
-      }
-
-      setIsCompletedLocked(true);
-    } catch (completeError) {
-      if (completeError instanceof ApiHttpError && completeError.status === 404) {
-        try {
-          await recordContentView({ contentType: activeContentType, contentId: activeContentId });
-          await updateHistory({
-            contentType: activeContentType,
-            contentId: activeContentId,
-            progress: completeProgress,
-            status: 'COMPLETED',
-          });
-
-          if (activeContentType === 'movie') {
-            setMovieProgressMinutes(completeProgress);
-            lastSavedMovieProgressRef.current = completeProgress;
-            movieBaseProgressRef.current = completeProgress;
-          } else {
-            setSeriesProgress(completeProgress);
-            lastSavedSeriesProgressRef.current = completeProgress;
-          }
-
-          setIsCompletedLocked(true);
-          return;
-        } catch (retryError) {
-          console.warn('Befejezés mentése sikertelen (retry):', retryError);
-          setWatchActionError('A befejezett állapot mentése sikertelen.');
-          return;
-        }
-      }
-
-      console.warn('Befejezés mentése sikertelen:', completeError);
-      if (completeError instanceof ApiHttpError && completeError.message) {
-        setWatchActionError(completeError.message);
-      } else {
-        setWatchActionError('A befejezett állapot mentése sikertelen.');
-      }
-    } finally {
-      setMarkCompleteLoading(false);
-    }
-  };
-
   if (isAuthLoading) {
     return (
       <main className="mt-5">
@@ -543,16 +449,11 @@ const Watch: React.FC = () => {
               {/* Video info */}
               <div className="video-info-card">
                 <h2 id="videoTitle" className="video-title">{title}</h2>
-                <div className="watch-progress-row">
-                  {activeContentType === 'movie' ? (
-                    <span className="watch-progress-pill">Mentett előrehaladás: {Math.max(0, movieProgressMinutes)} perc</span>
-                  ) : activeContentType === 'series' ? (
-                    <span className="watch-progress-pill">Mentett előrehaladás: {Math.max(1, seriesProgress)}. epizód</span>
-                  ) : null}
-                  {isCompletedLocked && (
+                {isCompletedLocked && (
+                  <div className="watch-progress-row">
                     <span className="watch-lock-pill"><i className="bi bi-lock-fill me-1"></i>Befejezett (zárolt)</span>
-                  )}
-                </div>
+                  </div>
+                )}
                 <div id="videoMeta" className="video-meta">
                   {tags.length > 0 && (
                     <div className="tags" id="videoTags">
@@ -581,27 +482,6 @@ const Watch: React.FC = () => {
                         </button>
                       );
                     })}
-                  </div>
-                )}
-
-                {watchActionError && (
-                  <p className="watch-action-error mb-0">{watchActionError}</p>
-                )}
-
-                {!error && embedVideoUrl && (
-                  <div className="watch-action-row">
-                    <button
-                      type="button"
-                      className="watch-complete-btn"
-                      onClick={handleMarkCompleted}
-                      disabled={markCompleteLoading || isCompletedLocked}
-                    >
-                      {isCompletedLocked
-                        ? 'Befejezett (zárolt)'
-                        : markCompleteLoading
-                          ? 'Mentés...'
-                          : 'Befejezettnek jelölöm'}
-                    </button>
                   </div>
                 )}
 

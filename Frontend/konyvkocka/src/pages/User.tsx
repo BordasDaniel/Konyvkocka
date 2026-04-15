@@ -1062,19 +1062,26 @@ const User: React.FC = () => {
 			setMedalGroups([]);
 			let serverEmail = '';
 			try {
-				const viewerUserId = getStoredUserId();
-				setViewerUserId(viewerUserId);
-				const targetUserId = requestedProfileUserId ?? viewerUserId;
+				const storedViewerUserId = getStoredUserId();
+				const meResponse = await authMe().catch(() => null);
+				const resolvedViewerUserId = typeof meResponse?.id === 'number' ? meResponse.id : storedViewerUserId;
+
+				setViewerUserId(resolvedViewerUserId);
+				const targetUserId = requestedProfileUserId ?? resolvedViewerUserId;
 				setProfileUserId(targetUserId);
 				setHasReportedCurrentProfile(
-					Boolean(viewerUserId && targetUserId && viewerUserId !== targetUserId && hasUserAlreadyReported(viewerUserId, targetUserId)),
+					Boolean(
+						resolvedViewerUserId
+						&& targetUserId
+						&& resolvedViewerUserId !== targetUserId
+						&& hasUserAlreadyReported(resolvedViewerUserId, targetUserId),
+					),
 				);
 
 				if (targetUserId) {
-					const shouldLoadOwnedTitles = !isReadOnlyProfile && viewerUserId === targetUserId;
-					const [profileResponse, meResponse, recentItems, favoriteItems, ownedTitles] = await Promise.all([
+					const shouldLoadOwnedTitles = !isReadOnlyProfile && resolvedViewerUserId === targetUserId;
+					const [profileResponse, recentItems, favoriteItems, ownedTitles] = await Promise.all([
 						getUserProfile(targetUserId),
-						authMe().catch(() => null),
 						getUserRecent(targetUserId, 'all').catch(() => [] as UserRecentFavoriteItemResponse[]),
 						getUserFavorites(targetUserId, 'all').catch(() => [] as UserRecentFavoriteItemResponse[]),
 						shouldLoadOwnedTitles
@@ -1245,6 +1252,13 @@ const User: React.FC = () => {
 
 	// Jelenlegi nézet statisztikái
 	const currentStats = allStats[activeView] || allStats['all'];
+	const isOwnReadOnlyProfile = Boolean(
+		isReadOnlyProfile
+		&& viewerUserId
+		&& profileUserId
+		&& viewerUserId === profileUserId,
+	);
+	const canReportCurrentProfile = isReadOnlyProfile && !isOwnReadOnlyProfile;
 
 	const openReportModal = () => {
 		if (!isReadOnlyProfile || !profileUserId) return;
@@ -1297,6 +1311,36 @@ const User: React.FC = () => {
 				type: 'error',
 				title: 'Jelentés sikertelen',
 				message: 'Nem sikerült meghatározni a jelentett felhasználót.',
+			});
+			return;
+		}
+
+		if (!viewerUserId) {
+			setReportModalOpen(false);
+			setSaveModal({
+				type: 'error',
+				title: 'Bejelentkezés szükséges',
+				message: 'Felhasználó jelentéséhez be kell jelentkezned.',
+			});
+			return;
+		}
+
+		if (viewerUserId === profileUserId) {
+			setReportModalOpen(false);
+			setSaveModal({
+				type: 'error',
+				title: 'Saját profil',
+				message: 'A saját profilodat nem jelentheted.',
+			});
+			return;
+		}
+
+		if (hasReportedCurrentProfile) {
+			setReportModalOpen(false);
+			setSaveModal({
+				type: 'error',
+				title: 'Már elküldve',
+				message: 'Ezt a felhasználót már jelentetted.',
 			});
 			return;
 		}
@@ -1616,7 +1660,7 @@ const User: React.FC = () => {
 										)}
 										{profile.username}
 									</h2>
-									{isReadOnlyProfile && (
+													{canReportCurrentProfile && (
 										<button
 											type="button"
 											className="btn-report-flag"
