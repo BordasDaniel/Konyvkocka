@@ -34,13 +34,13 @@ services:
       - key: JwtSettings__ExpirityMinutes
         value: "1440"
       - key: EmailSettings__SmtpHost
-        value: smtp.gmail.com
+        value: smtp-relay.brevo.com
       - key: EmailSettings__SmtpPort
-        value: "587"
+        value: "2525"
       - key: EmailSettings__SmtpUsername
-        value: bordas.daniel0124@gmail.com
+        value: a829a8001@smtp-brevo.com
       - key: EmailSettings__SmtpPassword
-        value: to-fill-gmail-app-password
+        value: to-fill-brevo-smtp-key
         sync: false
       - key: EmailSettings__FromEmail
         value: bordas.daniel0124@gmail.com
