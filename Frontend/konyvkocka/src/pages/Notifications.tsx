@@ -24,9 +24,9 @@ interface Notification {
 }
 
 const toRelativeTime = (value: string | null): string => {
-	if (!value) return 'ismeretlen idopont';
+	if (!value) return 'ismeretlen időpont';
 	const then = new Date(value);
-	if (Number.isNaN(then.getTime())) return 'ismeretlen idopont';
+	if (Number.isNaN(then.getTime())) return 'ismeretlen időpont';
 
 	const diffMs = Date.now() - then.getTime();
 	const diffMinutes = Math.floor(diffMs / (1000 * 60));
@@ -35,7 +35,7 @@ const toRelativeTime = (value: string | null): string => {
 
 	if (diffMinutes < 1) return 'most';
 	if (diffMinutes < 60) return `${diffMinutes} perce`;
-	if (diffHours < 24) return `${diffHours} oraja`;
+	if (diffHours < 24) return `${diffHours} órája`;
 	if (diffDays < 7) return `${diffDays} napja`;
 	return then.toLocaleDateString('hu-HU');
 };
@@ -90,7 +90,7 @@ const Notifications: React.FC = () => {
 			if (!isAuthenticated) {
 				setNotifications([]);
 				setUnreadCount(0);
-				setError('Az ertesitesek megtekintesehez be kell jelentkezned.');
+				setError('Az értesítések megtekintéséhez be kell jelentkezned.');
 				setIsLoading(false);
 				return;
 			}
@@ -115,9 +115,9 @@ const Notifications: React.FC = () => {
 			} catch (loadError) {
 				if (!isMounted) return;
 				if (loadError instanceof ApiHttpError && loadError.status === 401) {
-					setError('Az ertesitesek megtekintesehez be kell jelentkezned.');
+					setError('Az értesítések megtekintéséhez be kell jelentkezned.');
 				} else {
-					setError('Az ertesitesek betoltese sikertelen.');
+					setError('Az értesítések betöltése sikertelen.');
 				}
 				setNotifications([]);
 				setUnreadCount(0);
@@ -191,14 +191,14 @@ const Notifications: React.FC = () => {
 							<div className="text-center mb-4 pt-5">
 								<h1 className="text-uppercase fw-bold mb-2" style={{ color: 'var(--h1Text)' }}>
 									<i className="bi bi-bell-fill me-3" style={{ color: 'var(--secondary)' }}></i>
-									Ertesitesek
+									Értesítések
 									{unreadCount > 0 && (
 										<span className="badge bg-danger ms-3" style={{ fontSize: '0.6em', verticalAlign: 'super' }}>
 											{unreadCount}
 										</span>
 									)}
 								</h1>
-								<p className="text-light mb-0">Tartsd szemmel az uj esemenyeket es rendszeruzeneteket.</p>
+								<p className="text-light mb-0">Tartsd szemmel az új eseményeket és rendszerüzeneteket.</p>
 							</div>
 
 							<div className="notifications-filters">
@@ -212,13 +212,13 @@ const Notifications: React.FC = () => {
 									<i className="bi bi-gear-fill me-2"></i>Rendszer
 								</button>
 								<button className={`btn btn-action ${filter === 'challenge' ? 'active' : ''}`} onClick={() => setFilter('challenge')}>
-									<i className="bi bi-trophy-fill me-2"></i>Kihivas
+									<i className="bi bi-trophy-fill me-2"></i>Kihívás
 								</button>
 								<button className={`btn btn-action ${filter === 'friend' ? 'active' : ''}`} onClick={() => setFilter('friend')}>
-									<i className="bi bi-people-fill me-2"></i>Barat
+									<i className="bi bi-people-fill me-2"></i>Barát
 								</button>
 								<button className={`btn btn-action ${filter === 'purchase' ? 'active' : ''}`} onClick={() => setFilter('purchase')}>
-									<i className="bi bi-cart-fill me-2"></i>Vasarlas
+									<i className="bi bi-cart-fill me-2"></i>Vásárlás
 								</button>
 								{unreadCount > 0 && (
 									<button className="btn btn-action" onClick={() => void markAllAsRead()}>
@@ -234,7 +234,7 @@ const Notifications: React.FC = () => {
 							{isLoading ? (
 								<div className="empty-state text-center">
 									<div className="spinner-border text-light" role="status">
-										<span className="visually-hidden">Betoltes...</span>
+										<span className="visually-hidden">Betöltés...</span>
 									</div>
 								</div>
 							) : error ? (
@@ -249,7 +249,7 @@ const Notifications: React.FC = () => {
 									<div>
 										<i className="bi bi-bell-slash" style={{ fontSize: '3rem', color: 'var(--secondary)', opacity: 0.5, marginBottom: '1rem' }}></i>
 										<p className="empty-title mb-2">
-											{filter === 'unread' ? 'Nincsenek olvasatlan ertesitesek.' : 'Nincsenek ertesitesek.'}
+											{filter === 'unread' ? 'Nincsenek olvasatlan értesítések.' : 'Nincsenek értesítések.'}
 										</p>
 									</div>
 								</div>
@@ -269,11 +269,11 @@ const Notifications: React.FC = () => {
 											</div>
 											<div className="notification-actions">
 												{!notification.isRead && (
-													<button className="btn btn-sm btn-icon" onClick={() => void markAsRead(notification.id)} title="Olvasottnak jelol">
+													<button className="btn btn-sm btn-icon" onClick={() => void markAsRead(notification.id)} title="Olvasottnak jelöl">
 														<i className="bi bi-check2"></i>
 													</button>
 												)}
-												<button className="btn btn-sm btn-icon text-danger" onClick={() => void handleDeleteNotification(notification.id)} title="Torles">
+												<button className="btn btn-sm btn-icon text-danger" onClick={() => void handleDeleteNotification(notification.id)} title="Törlés">
 													<i className="bi bi-trash"></i>
 												</button>
 											</div>
