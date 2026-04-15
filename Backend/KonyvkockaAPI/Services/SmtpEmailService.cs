@@ -17,8 +17,22 @@ namespace KonyvkockaAPI.Services
 
         public async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody)
         {
-            if (string.IsNullOrWhiteSpace(_emailSettings.SmtpHost) ||
-                string.IsNullOrWhiteSpace(_emailSettings.FromEmail))
+            var smtpHost = Normalize(_emailSettings.SmtpHost);
+            var fromEmail = Normalize(_emailSettings.FromEmail);
+            var fromName = Normalize(_emailSettings.FromName);
+            var smtpUsername = Normalize(_emailSettings.SmtpUsername);
+            var smtpPassword = Normalize(_emailSettings.SmtpPassword);
+
+            if (string.Equals(smtpHost, "smtp.gmail.com", StringComparison.OrdinalIgnoreCase))
+            {
+                // Gmail app passwords are often copied with spaces for readability.
+                smtpPassword = smtpPassword.Replace(" ", string.Empty);
+            }
+
+            if (string.IsNullOrWhiteSpace(smtpHost) ||
+                string.IsNullOrWhiteSpace(fromEmail) ||
+                string.IsNullOrWhiteSpace(smtpUsername) ||
+                string.IsNullOrWhiteSpace(smtpPassword))
             {
                 _logger.LogWarning("Email settings are incomplete. Skipping email send.");
                 return false;
@@ -26,15 +40,15 @@ namespace KonyvkockaAPI.Services
 
             try
             {
-                using var smtpClient = new SmtpClient(_emailSettings.SmtpHost, _emailSettings.SmtpPort)
+                using var smtpClient = new SmtpClient(smtpHost, _emailSettings.SmtpPort)
                 {
                     EnableSsl = _emailSettings.EnableSsl,
-                    Credentials = new NetworkCredential(_emailSettings.SmtpUsername, _emailSettings.SmtpPassword)
+                    Credentials = new NetworkCredential(smtpUsername, smtpPassword)
                 };
 
                 using var mailMessage = new MailMessage
                 {
-                    From = new MailAddress(_emailSettings.FromEmail, _emailSettings.FromName),
+                    From = new MailAddress(fromEmail, fromName),
                     Subject = subject,
                     Body = htmlBody,
                     IsBodyHtml = true
@@ -50,6 +64,11 @@ namespace KonyvkockaAPI.Services
                 _logger.LogError(ex, "Failed to send email to {Email}", toEmail);
                 return false;
             }
+        }
+
+        private static string Normalize(string? value)
+        {
+            return (value ?? string.Empty).Trim().Trim('"');
         }
     }
 }

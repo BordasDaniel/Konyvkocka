@@ -16,14 +16,27 @@ namespace KonyvkockaAPI
             var builder = WebApplication.CreateBuilder(args);
 
             var connectionString = builder.Configuration.GetConnectionString("KonyvkockaConnection") ?? string.Empty;
-            var dbHost = builder.Configuration["DB_HOST"];
-            if (!string.IsNullOrWhiteSpace(dbHost))
+            var dbHostValue = builder.Configuration["DB_HOST"];
+            if (!string.IsNullOrWhiteSpace(dbHostValue))
             {
+                var dbHost = dbHostValue.Trim();
                 var dbPort = builder.Configuration["DB_PORT"] ?? "3306";
                 var dbName = builder.Configuration["DB_NAME"] ?? "konyvkocka";
                 var dbUser = builder.Configuration["DB_USER"] ?? "root";
                 var dbPassword = builder.Configuration["DB_PASSWORD"] ?? string.Empty;
-                connectionString = $"Server={dbHost};Port={dbPort};Database={dbName};Uid={dbUser};Pwd={dbPassword};";
+                var dbSslMode = builder.Configuration["DB_SSL_MODE"];
+
+                if (Uri.TryCreate(dbHost, UriKind.Absolute, out var dbUri) && !string.IsNullOrWhiteSpace(dbUri.Host))
+                {
+                    dbHost = dbUri.Host;
+                    if (dbUri.Port > 0)
+                    {
+                        dbPort = dbUri.Port.ToString();
+                    }
+                }
+
+                var sslSegment = !string.IsNullOrWhiteSpace(dbSslMode) ? $";SslMode={dbSslMode}" : string.Empty;
+                connectionString = $"Server={dbHost};Port={dbPort};Database={dbName};Uid={dbUser};Pwd={dbPassword}{sslSegment};";
             }
 
             // Add services to the container.
