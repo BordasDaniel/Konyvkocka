@@ -17,9 +17,10 @@
             --font-size-sm: 18px;
             --font-size-base: 24px;
             --font-size-lg: 32px;
-            --font-size-xl: 48px;
+            --font-size-xl: 42px;
             --font-size-2xl: 64px;
             --font-size-3xl: 80px;
+            --font-size-title: 76px;
             
             /* Spacing */
             --space-8: 8px;
@@ -131,9 +132,20 @@
             text-align: center;
             line-height: 1.05;
         }
+
+        .slide-title-page {
+            font-size: var(--font-size-title);
+            font-weight: 700;
+            margin-bottom: var(--space-32);
+            color: var(--color-text);
+            /* center long titles and allow wrapping cleanly */
+            display: block;
+            text-align: center;
+            line-height: 1.05;
+        }
         
         /* Small note under the main title (e.g. '(nem végleges név)') */
-        .slide-title .title-note {
+        .slide-title-page .title-note {
             display: block;
             margin-top: var(--space-8);
             font-size: 0.65em;
