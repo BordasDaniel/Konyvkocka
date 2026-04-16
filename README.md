@@ -1,36 +1,39 @@
-﻿# Konyvkocka - Branch dokumentacio: backend
+﻿# KÖNYVKOCKA — backend
 
-## Attekintes
+## Röviden erről az ágról
 
-Szerveroldali fejlesztesek branchje: API vegpontok, uzleti logika, autentikacio es szolgaltatasi integraciok.
+A backend branch az üzleti logika és az API-végpontok fókuszterülete.
 
-## Programtipus
+Ez az ág kezeli a hitelesítést, adatelérést és a rendszer mögötti működési szabályokat.
 
-Backend-fokuszu monorepo branch, API- es szolgaltatasfejlesztesre.
+## Mit találsz ebben a branchben?
 
-## Fo fajlok es mappak leirasa
+- .github: CI/CD és workflow konfigurációk.
+- .gitignore: verziókezelésből kizárt fájlok és mappák.
+- Backend: ASP.NET Core API réteg, üzleti logikával, végpontokkal és adatkezeléssel.
+- Database: SQL scriptek, adatmodell és adatbázis-segédfájlok.
+- Frontend: React + Vite kliensalkalmazás, modern felhasználói felülettel.
+- README.md: branch-szintű áttekintő dokumentáció.
 
-- .github: CI/CD es workflow konfiguraciok a GitHub alapu automatizalasokhoz.
-- .gitignore: Verzokezelesbol kizart fajlok es mappak szabalyai.
-- Backend: ASP.NET Core API projekt, REST vegpontokkal, szolgaltatasokkal, DTO-kal es adateleressel.
-- Database: SQL scriptgyujtemeny, adatmodell-leirasok es adatbazis-segedanyagok.
-- Frontend: React/Vite alapokon epulo kliensalkalmazas, felhasznaloi felulettel es oldalnavigacioval.
+## Kiemelt erősségek
 
-## Mukodes roviden
+- REST-alapú végpontstruktúra, tiszta üzleti logikával.
+- Bővíthető szolgáltatásréteg és jól követhető domain modellek.
+- Integrációbarát API-kialakítás a kliensoldal számára.
 
-- A branchben talalhato komponensek egy kozos uzleti celra epulnek: a Konyvkocka platform tartalomfogyasztasi elmenyenek kiszolgalasara.
-- A struktura kulon valasztja az alkalmazasretegeket (kliens, szerver, adat), ezert a fejlesztes, teszteles es uzemeltetes kulon-kulon is jol kezelheto.
-- A branch neve es tartalma osszhangban van a release/fejlesztesi szerepkorrel, igy a bizottsagi bemutatas soran konnyen indokolhato a branch letjogosultsaga.
+## Hogyan értelmezd ezt a tartalmat?
 
-## Milyen allapotot kepvisel ez a branch?
+- A branch felépítése moduláris: külön rétegben jelenik meg a kliens, a szerver és az adatkezelés.
+- A mappastruktúra tudatosan átlátható, így gyorsan megtalálhatók a kulcsfontosságú részek.
+- A tartalom a branch nevéhez igazodik, ezért könnyen követhető, hogy ez az ág milyen szerepet tölt be a teljes projektben.
 
-Ez a branch a projekt egy jol elkulonitheto szeletet mutatja be. A tartalom ugy van szervezve, hogy szakmai bemutaton, minosegellenorzesen es GitHub-alapu attekintesben egyarant atlathato legyen.
+## Kinek ajánlott ez az ág?
 
-## Legutobbi 5 commit
+- Fejlesztőknek és érdeklődőknek, akik az adott branch célterületét szeretnék átlátni.
+- Olyan felhasználóknak, akik a projekt fejlődési lépcsőit követik.
 
-- c6a9635 (2026-04-08): Adatb├ízis V1.1 - 025b6b3 (2026-04-08): Jelsz├│ vissza├íll├şt├ís - 8b4094d (2026-04-08): ├Üjrakezd├ęs gomb.. - 1308071 (2026-04-08): - Olvas├ís v├ędelem - 8925d09 (2026-04-08): - Fi├│k t├Ârl├ęs v├ęgpont.
+## Miért érdemes ezt megnézni?
 
-## GitHub szemlelet
-
-- A branch celja egyertelmu: vagy fejlesztesi fokusz (frontend/backend/database), vagy release/snapshot stabilizalas, vagy dokumentacios/bemutato cel.
-- A commitelozmeny kovethetosege tamogatja a transzparens projektkommunikaciot es a visszakeresheto valtozaskezelesi gyakorlatot.
+- Jól látható rajta a KÖNYVKOCKA projekt fókusza és működési logikája.
+- Gyors belépési pontot ad az adott funkcionális területhez.
+- Segít abban, hogy pár perc alatt tudd, hol keresd a számodra fontos részeket.
