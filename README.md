@@ -1,36 +1,38 @@
-﻿# Konyvkocka - Branch dokumentacio: Tests
+﻿# KÖNYVKOCKA — Tests
 
-## Attekintes
+## Röviden erről az ágról
 
-Onallo tesztkornyezet branch, amely tobb tesztszintet fog ossze: unit, in-memory integracios es Selenium alapu vegponti teszteket.
+A Tests branch dedikáltan az automatizált tesztelést gyűjti össze.
 
-## Programtipus
+A cél a működés gyors visszaellenőrzése unit, integrációs és E2E szinteken.
 
-Dedikalt teszt branch (InMemory, React unit tesztek, Selenium E2E).
+## Mit találsz ebben a branchben?
 
-## Fo fajlok es mappak leirasa
+- .gitignore: verziókezelésből kizárt fájlok és mappák.
+- InMemory: memóriaalapú backend tesztek a gyors és izolált ellenőrzéshez.
+- README.md: branch-szintű áttekintő dokumentáció.
+- react: frontend komponens- és viselkedéstesztek (Jest).
+- selenium: végponti (E2E) automatizált tesztek böngészőben.
 
-- .gitignore: Verzokezelesbol kizart fajlok es mappak szabalyai.
-- InMemory: In-memory tesztprojektek es backend-validacios tesztfuttatasok.
-- README.md: Branch-szintu attekinto dokumentacio.
-- react: React komponens- es viselkedes-tesztek (Jest), tesztkonfiguracioval es tesztartefaktumokkal.
-- selenium: Vegponti (E2E) automatizalt tesztek Selenium alapon.
+## Kiemelt erősségek
 
-## Mukodes roviden
+- Átlátható struktúra az adott célterülethez igazítva.
+- Könnyű tájékozódás és gyors belépési pont a projektbe.
+- A branch funkciója egyértelműen felismerhető a tartalomból.
 
-- A branchben talalhato komponensek egy kozos uzleti celra epulnek: a Konyvkocka platform tartalomfogyasztasi elmenyenek kiszolgalasara.
-- A struktura kulon valasztja az alkalmazasretegeket (kliens, szerver, adat), ezert a fejlesztes, teszteles es uzemeltetes kulon-kulon is jol kezelheto.
-- A branch neve es tartalma osszhangban van a release/fejlesztesi szerepkorrel, igy a bizottsagi bemutatas soran konnyen indokolhato a branch letjogosultsaga.
+## Hogyan értelmezd ezt a tartalmat?
 
-## Milyen allapotot kepvisel ez a branch?
+- A branch felépítése moduláris: külön rétegben jelenik meg a kliens, a szerver és az adatkezelés.
+- A mappastruktúra tudatosan átlátható, így gyorsan megtalálhatók a kulcsfontosságú részek.
+- A tartalom a branch nevéhez igazodik, ezért könnyen követhető, hogy ez az ág milyen szerepet tölt be a teljes projektben.
 
-Ez a branch a projekt egy jol elkulonitheto szeletet mutatja be. A tartalom ugy van szervezve, hogy szakmai bemutaton, minosegellenorzesen es GitHub-alapu attekintesben egyarant atlathato legyen.
+## Kinek ajánlott ez az ág?
 
-## Legutobbi 5 commit
+- QA és fejlesztő csapatoknak, akik reprodukálható ellenőrzést várnak.
+- Hibajavítás előtt/után validáló futtatásokhoz.
 
-- c0ce281 (2026-04-09): Selenium / Jest / InMemory tesztek - d41a5cc (2025-11-01): Update README for versioning and branch descriptions - e0ce37d (2025-11-01): Delete CNAME - a35671d (2025-10-30): Update CNAME - 88cf9bf (2025-10-30): Update CNAME
+## Miért érdemes ezt megnézni?
 
-## GitHub szemlelet
-
-- A branch celja egyertelmu: vagy fejlesztesi fokusz (frontend/backend/database), vagy release/snapshot stabilizalas, vagy dokumentacios/bemutato cel.
-- A commitelozmeny kovethetosege tamogatja a transzparens projektkommunikaciot es a visszakeresheto valtozaskezelesi gyakorlatot.
+- Jól látható rajta a KÖNYVKOCKA projekt fókusza és működési logikája.
+- Gyors belépési pontot ad az adott funkcionális területhez.
+- Segít abban, hogy pár perc alatt tudd, hol keresd a számodra fontos részeket.
