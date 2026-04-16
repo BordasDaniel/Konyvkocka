@@ -1,39 +1,42 @@
-﻿# Konyvkocka - Branch dokumentacio: main
+﻿# KÖNYVKOCKA — main
 
-## Attekintes
+## Röviden erről az ágról
 
-A veglegesitett fo branch, ahol a teljes rendszer egyutt futtathato: backend API, React frontend, SQL adatbazis es konteneresitett uzemeltetes.
+A KÖNYVKOCKA egy többplatformos tartalomfogyasztási rendszer, ahol a felhasználók könyves és filmes tartalmakat fedezhetnek fel, követhetik a haladásukat, valamint személyre szabott élményben részesülnek.
 
-## Programtipus
+Ebben a branchben a jelenlegi, publikálásra kész full-stack változat található: API, frontend, adatbázis és deployment konfiguráció együtt.
 
-Publikalasra kesz full-stack webalkalmazas (ASP.NET Core API + React/Vite kliens + SQL adatbazis + Docker deploy).
+## Mit találsz ebben a branchben?
 
-## Fo fajlok es mappak leirasa
+- .dockerignore: a konténer buildből kizárt elemek listája.
+- .gitignore: verziókezelésből kizárt fájlok és mappák.
+- Backend: ASP.NET Core API réteg, üzleti logikával, végpontokkal és adatkezeléssel.
+- Database: SQL scriptek, adatmodell és adatbázis-segédfájlok.
+- Dockerfile: konténerkép-építési konfiguráció.
+- Frontend: React + Vite kliensalkalmazás, modern felhasználói felülettel.
+- README.md: branch-szintű áttekintő dokumentáció.
+- docker-compose.yml: több szolgáltatás összehangolt helyi futtatása.
+- render.yaml: Render platformos deploy-konfiguráció.
 
-- .dockerignore: A kontener buildbol kizart fajlok listaja.
-- .gitignore: Verzokezelesbol kizart fajlok es mappak szabalyai.
-- Backend: ASP.NET Core API projekt, REST vegpontokkal, szolgaltatasokkal, DTO-kal es adateleressel.
-- Database: SQL scriptgyujtemeny, adatmodell-leirasok es adatbazis-segedanyagok.
-- Dockerfile: Kontener build-definicio a futtathato alkalmazaskep eloallitasahoz.
-- Frontend: React/Vite alapokon epulo kliensalkalmazas, felhasznaloi felulettel es oldalnavigacioval.
-- docker-compose.yml: Osszehangolt helyi futtatas tobb szolgaltatassal (app + adatbazis).
-- render.yaml: Render platformhoz szolo deploy konfiguracio.
+## Kiemelt erősségek
 
-## Mukodes roviden
+- Gyors, többplatformos élmény: webes kliens és stabil API együtt.
+- Letisztult architektúra: jól elkülönített frontend, backend és adatbázis réteg.
+- Éles deploy-képesség: konténeres futtatás és cloud-konfiguráció egy helyen.
 
-- A branchben talalhato komponensek egy kozos uzleti celra epulnek: a Konyvkocka platform tartalomfogyasztasi elmenyenek kiszolgalasara.
-- A struktura kulon valasztja az alkalmazasretegeket (kliens, szerver, adat), ezert a fejlesztes, teszteles es uzemeltetes kulon-kulon is jol kezelheto.
-- A branch neve es tartalma osszhangban van a release/fejlesztesi szerepkorrel, igy a bizottsagi bemutatas soran konnyen indokolhato a branch letjogosultsaga.
+## Hogyan értelmezd ezt a tartalmat?
 
-## Milyen allapotot kepvisel ez a branch?
+- A branch felépítése moduláris: külön rétegben jelenik meg a kliens, a szerver és az adatkezelés.
+- A mappastruktúra tudatosan átlátható, így gyorsan megtalálhatók a kulcsfontosságú részek.
+- A tartalom a branch nevéhez igazodik, ezért könnyen követhető, hogy ez az ág milyen szerepet tölt be a teljes projektben.
 
-Ez a branch a projekt egy jol elkulonitheto szeletet mutatja be. A tartalom ugy van szervezve, hogy szakmai bemutaton, minosegellenorzesen es GitHub-alapu attekintesben egyarant atlathato legyen.
+## Kinek ajánlott ez az ág?
 
-## Legutobbi 5 commit
+- Új felhasználóknak, akik a teljes rendszerrel szeretnének megismerkedni.
+- Fejlesztőknek, akik a produkciós szerkezetet keresik.
 
-- cbcc14a (2026-04-15): Merge pull request #36 from BordasDaniel/release/v1.0 - 39c1def (2026-04-15): - Badge fix - 8b2c91a (2026-04-15): - Report elt├ívol├ştva saj├ít magadr├│l - Teljes├ştett gomb elv├ętele - f41e6b8 (2026-04-15): - Typo - Gitignore fix - 1459c28 (2026-04-15): Merge pull request #35 from BordasDaniel/main
+## Miért érdemes ezt megnézni?
 
-## GitHub szemlelet
-
-- A branch celja egyertelmu: vagy fejlesztesi fokusz (frontend/backend/database), vagy release/snapshot stabilizalas, vagy dokumentacios/bemutato cel.
-- A commitelozmeny kovethetosege tamogatja a transzparens projektkommunikaciot es a visszakeresheto valtozaskezelesi gyakorlatot.
+- Jól látható rajta a KÖNYVKOCKA projekt fókusza és működési logikája.
+- Gyors belépési pontot ad az adott funkcionális területhez.
+- Segít abban, hogy pár perc alatt tudd, hol keresd a számodra fontos részeket.
