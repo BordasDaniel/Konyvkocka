@@ -1,33 +1,35 @@
-# IKTProject2025
+﻿# Konyvkocka - Branch dokumentacio: Documents
 
-## Branch magyarázatok:
+## Attekintes
 
+A projektet bemutato es formalisan dokumentalo branch, amely bizottsagi prezentaciohoz is kozvetlenul hasznalhato anyagokat tartalmaz.
 
-- ***main:***
-  * Ide kerül a végső, éles verzió.
-  * Senki ne commitoljon közvetlenül ide!
-  * Csak akkor mergelünk ide, amikor egy teljesen stabil release elkészült.
+## Programtipus
 
-- ***releases:***
-  * Verziók kiadásakor használjuk (pl. release/v1.0-rc3).
-  * Ide kerülnek a `develop` és `feature/*` branchekből érkező pull requestek, amikor a kód eléri a **kiadható állapotot**.  
-  * Innen ágaznak le az **egyedi verzió branch-ek** (`release/v1.0-rc3`, `release/v1.1`, stb.).
+Projekt-dokumentacios branch: dokumentumok, tesztdokumentacio, prezentacio.
 
-- ***release:***
-  * Minden **önálló verzióhoz** külön branch tartozik.  
-  * Tartalmazza az adott verzió **befagyasztott (freeze)** állapotát.    
-  * A tesztelés lezárása után innen történik a **merge a `main` branchbe** (végleges kiadás).  
+## Fo fajlok es mappak leirasa
 
-- ***develop:***
-  * Az aktuális fejlesztési állapot.
-  * Minden új feature branch ide merge-elődik, miután review és teszt megtörtént.
-  * Innen nyitunk majd release brancheket.
+- KonyvKocka_Dokumentacio.docx: Formai/szakmai projektdokumentacio.
+- Konyvkocka_TesztDokumentacio.docx: Tesztelesi folyamatot es eredmenyeket rogzito dokumentum.
+- README.md: Branch-szintu attekinto dokumentacio.
+- konyvkocka.pptx: Projekt-prezentacio diasor, bizottsagi bemutatas tamogatasara.
 
-- ***feature:***
-  * Új funkciók fejlesztésére szolgál (pl. `feature/login-auth`, `feature/dashboard-ui`).
-  * A feature branch a develop-ből indul, és oda merge-elődik vissza.
-  * Egy feature branch érintheti a frontend + backend + sql + desktop részeket egyszerre.
+## Mukodes roviden
 
-- ***hotfix:***
-  * Ha a main-ben sürgősen javítani kell egy hibát, innen dolgozunk (pl. `hotfix/fix-login-bug`).
-  * A javítást merge-eljük vissza main-be és develop-ba, hogy mindenhol frissüljön.
+- A branchben talalhato komponensek egy kozos uzleti celra epulnek: a Konyvkocka platform tartalomfogyasztasi elmenyenek kiszolgalasara.
+- A struktura kulon valasztja az alkalmazasretegeket (kliens, szerver, adat), ezert a fejlesztes, teszteles es uzemeltetes kulon-kulon is jol kezelheto.
+- A branch neve es tartalma osszhangban van a release/fejlesztesi szerepkorrel, igy a bizottsagi bemutatas soran konnyen indokolhato a branch letjogosultsaga.
+
+## Milyen allapotot kepvisel ez a branch?
+
+Ez a branch a projekt egy jol elkulonitheto szeletet mutatja be. A tartalom ugy van szervezve, hogy szakmai bemutaton, minosegellenorzesen es GitHub-alapu attekintesben egyarant atlathato legyen.
+
+## Legutobbi 5 commit
+
+- 66cc427 (2026-04-15): K├Ânyvkocka prezent├íci├│ja - 567e0f8 (2026-04-13): Z├ír├│dolgozat tesztdokument├íci├│ja - e435df7 (2026-04-07): Add files via upload - d41a5cc (2025-11-01): Update README for versioning and branch descriptions - e0ce37d (2025-11-01): Delete CNAME
+
+## GitHub szemlelet
+
+- A branch celja egyertelmu: vagy fejlesztesi fokusz (frontend/backend/database), vagy release/snapshot stabilizalas, vagy dokumentacios/bemutato cel.
+- A commitelozmeny kovethetosege tamogatja a transzparens projektkommunikaciot es a visszakeresheto valtozaskezelesi gyakorlatot.
