@@ -1,35 +1,37 @@
-﻿# Konyvkocka - Branch dokumentacio: release/v0.3-snapshot
+﻿# KÖNYVKOCKA — release/v0.3-snapshot
 
-## Attekintes
+## Röviden erről az ágról
 
-Harmadik snapshot, amely a release-folyamatot, build-kornyezetet es stabilitast erosito valtozasokat tartalmaz.
+A v0.3 snapshot a frontend és build folyamatok tisztításának fontos állomása.
 
-## Programtipus
+Ez az ág a gyorsabb és megbízhatóbb fejlesztési ciklust készítette elő.
 
-Frontend snapshot branch tovabbfejlesztett build- es release-folyamattal.
+## Mit találsz ebben a branchben?
 
-## Fo fajlok es mappak leirasa
+- .github: CI/CD és workflow konfigurációk.
+- .gitignore: verziókezelésből kizárt fájlok és mappák.
+- README.md: branch-szintű áttekintő dokumentáció.
+- konyvkocka: önálló frontend projektmappa (src/public/config fájlokkal).
 
-- .github: CI/CD es workflow konfiguraciok a GitHub alapu automatizalasokhoz.
-- .gitignore: Verzokezelesbol kizart fajlok es mappak szabalyai.
-- README.md: Branch-szintu attekinto dokumentacio.
-- konyvkocka: Onallo frontend projektmappa (Vite, TypeScript, public/src szerkezet).
+## Kiemelt erősségek
 
-## Mukodes roviden
+- Átlátható struktúra az adott célterülethez igazítva.
+- Könnyű tájékozódás és gyors belépési pont a projektbe.
+- A branch funkciója egyértelműen felismerhető a tartalomból.
 
-- A branchben talalhato komponensek egy kozos uzleti celra epulnek: a Konyvkocka platform tartalomfogyasztasi elmenyenek kiszolgalasara.
-- A struktura kulon valasztja az alkalmazasretegeket (kliens, szerver, adat), ezert a fejlesztes, teszteles es uzemeltetes kulon-kulon is jol kezelheto.
-- A branch neve es tartalma osszhangban van a release/fejlesztesi szerepkorrel, igy a bizottsagi bemutatas soran konnyen indokolhato a branch letjogosultsaga.
+## Hogyan értelmezd ezt a tartalmat?
 
-## Milyen allapotot kepvisel ez a branch?
+- A branch felépítése moduláris: külön rétegben jelenik meg a kliens, a szerver és az adatkezelés.
+- A mappastruktúra tudatosan átlátható, így gyorsan megtalálhatók a kulcsfontosságú részek.
+- A tartalom a branch nevéhez igazodik, ezért könnyen követhető, hogy ez az ág milyen szerepet tölt be a teljes projektben.
 
-Ez a branch a projekt egy jol elkulonitheto szeletet mutatja be. A tartalom ugy van szervezve, hogy szakmai bemutaton, minosegellenorzesen es GitHub-alapu attekintesben egyarant atlathato legyen.
+## Kinek ajánlott ez az ág?
 
-## Legutobbi 5 commit
+- Fejlesztőknek és érdeklődőknek, akik az adott branch célterületét szeretnék átlátni.
+- Olyan felhasználóknak, akik a projekt fejlődési lépcsőit követik.
 
-- afe001c (2026-02-25): Merge pull request #17 from BordasDaniel/develop - c07a850 (2026-02-25): CI: npm helyett bun haszn├ílata a buildhez - 96f39e2 (2026-02-25): Merge pull request #16 from BordasDaniel/develop - 3cf0469 (2026-02-25): Revert "gitignore update" - e921e7c (2026-02-25): Revert "Delete .github directory"
+## Miért érdemes ezt megnézni?
 
-## GitHub szemlelet
-
-- A branch celja egyertelmu: vagy fejlesztesi fokusz (frontend/backend/database), vagy release/snapshot stabilizalas, vagy dokumentacios/bemutato cel.
-- A commitelozmeny kovethetosege tamogatja a transzparens projektkommunikaciot es a visszakeresheto valtozaskezelesi gyakorlatot.
+- Jól látható rajta a KÖNYVKOCKA projekt fókusza és működési logikája.
+- Gyors belépési pontot ad az adott funkcionális területhez.
+- Segít abban, hogy pár perc alatt tudd, hol keresd a számodra fontos részeket.
