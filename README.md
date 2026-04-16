@@ -1,39 +1,42 @@
-﻿# Konyvkocka - Branch dokumentacio: release/v1.0
+﻿# KÖNYVKOCKA — release/v1.0
 
-## Attekintes
+## Röviden erről az ágról
 
-A v1.0 kiadas branchje, ahol a funkcionalitas mar uzleti es felhasznaloi szempontbol is stabil allapotot kepvisel.
+A v1.0 release branch a rendszer első teljes értékű, éles használatra szánt kiadási változata.
 
-## Programtipus
+A fókusz a konzisztens működésen, a felhasználói élményen és a stabil deploy-on van.
 
-V1.0 jelolt full-stack kiadas branch, termekkozel allapottal.
+## Mit találsz ebben a branchben?
 
-## Fo fajlok es mappak leirasa
+- .dockerignore: a konténer buildből kizárt elemek listája.
+- .gitignore: verziókezelésből kizárt fájlok és mappák.
+- Backend: ASP.NET Core API réteg, üzleti logikával, végpontokkal és adatkezeléssel.
+- Database: SQL scriptek, adatmodell és adatbázis-segédfájlok.
+- Dockerfile: konténerkép-építési konfiguráció.
+- Frontend: React + Vite kliensalkalmazás, modern felhasználói felülettel.
+- README.md: branch-szintű áttekintő dokumentáció.
+- docker-compose.yml: több szolgáltatás összehangolt helyi futtatása.
+- render.yaml: Render platformos deploy-konfiguráció.
 
-- .dockerignore: A kontener buildbol kizart fajlok listaja.
-- .gitignore: Verzokezelesbol kizart fajlok es mappak szabalyai.
-- Backend: ASP.NET Core API projekt, REST vegpontokkal, szolgaltatasokkal, DTO-kal es adateleressel.
-- Database: SQL scriptgyujtemeny, adatmodell-leirasok es adatbazis-segedanyagok.
-- Dockerfile: Kontener build-definicio a futtathato alkalmazaskep eloallitasahoz.
-- Frontend: React/Vite alapokon epulo kliensalkalmazas, felhasznaloi felulettel es oldalnavigacioval.
-- docker-compose.yml: Osszehangolt helyi futtatas tobb szolgaltatassal (app + adatbazis).
-- render.yaml: Render platformhoz szolo deploy konfiguracio.
+## Kiemelt erősségek
 
-## Mukodes roviden
+- Átlátható struktúra az adott célterülethez igazítva.
+- Könnyű tájékozódás és gyors belépési pont a projektbe.
+- A branch funkciója egyértelműen felismerhető a tartalomból.
 
-- A branchben talalhato komponensek egy kozos uzleti celra epulnek: a Konyvkocka platform tartalomfogyasztasi elmenyenek kiszolgalasara.
-- A struktura kulon valasztja az alkalmazasretegeket (kliens, szerver, adat), ezert a fejlesztes, teszteles es uzemeltetes kulon-kulon is jol kezelheto.
-- A branch neve es tartalma osszhangban van a release/fejlesztesi szerepkorrel, igy a bizottsagi bemutatas soran konnyen indokolhato a branch letjogosultsaga.
+## Hogyan értelmezd ezt a tartalmat?
 
-## Milyen allapotot kepvisel ez a branch?
+- A branch felépítése moduláris: külön rétegben jelenik meg a kliens, a szerver és az adatkezelés.
+- A mappastruktúra tudatosan átlátható, így gyorsan megtalálhatók a kulcsfontosságú részek.
+- A tartalom a branch nevéhez igazodik, ezért könnyen követhető, hogy ez az ág milyen szerepet tölt be a teljes projektben.
 
-Ez a branch a projekt egy jol elkulonitheto szeletet mutatja be. A tartalom ugy van szervezve, hogy szakmai bemutaton, minosegellenorzesen es GitHub-alapu attekintesben egyarant atlathato legyen.
+## Kinek ajánlott ez az ág?
 
-## Legutobbi 5 commit
+- Fejlesztőknek és érdeklődőknek, akik az adott branch célterületét szeretnék átlátni.
+- Olyan felhasználóknak, akik a projekt fejlődési lépcsőit követik.
 
-- 39c1def (2026-04-15): - Badge fix - 8b2c91a (2026-04-15): - Report elt├ívol├ştva saj├ít magadr├│l - Teljes├ştett gomb elv├ętele - f41e6b8 (2026-04-15): - Typo - Gitignore fix - 1459c28 (2026-04-15): Merge pull request #35 from BordasDaniel/main - 177caba (2026-04-15): H├ítha...
+## Miért érdemes ezt megnézni?
 
-## GitHub szemlelet
-
-- A branch celja egyertelmu: vagy fejlesztesi fokusz (frontend/backend/database), vagy release/snapshot stabilizalas, vagy dokumentacios/bemutato cel.
-- A commitelozmeny kovethetosege tamogatja a transzparens projektkommunikaciot es a visszakeresheto valtozaskezelesi gyakorlatot.
+- Jól látható rajta a KÖNYVKOCKA projekt fókusza és működési logikája.
+- Gyors belépési pontot ad az adott funkcionális területhez.
+- Segít abban, hogy pár perc alatt tudd, hol keresd a számodra fontos részeket.
