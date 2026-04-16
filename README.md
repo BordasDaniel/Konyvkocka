@@ -1,35 +1,37 @@
-﻿# Konyvkocka - Branch dokumentacio: Documents
+﻿# KÖNYVKOCKA — Documents
 
-## Attekintes
+## Röviden erről az ágról
 
-A projektet bemutato es formalisan dokumentalo branch, amely bizottsagi prezentaciohoz is kozvetlenul hasznalhato anyagokat tartalmaz.
+A Documents branch a projekt legfontosabb összefoglaló anyagait tartalmazza.
 
-## Programtipus
+Itt találhatók azok a fájlok, amelyek gyors áttekintést adnak a koncepcióról, a tesztelésről és a prezentációról.
 
-Projekt-dokumentacios branch: dokumentumok, tesztdokumentacio, prezentacio.
+## Mit találsz ebben a branchben?
 
-## Fo fajlok es mappak leirasa
+- KonyvKocka_Dokumentacio.docx: részletes projektdokumentáció.
+- Konyvkocka_TesztDokumentacio.docx: tesztelési terv és eredmények.
+- README.md: branch-szintű áttekintő dokumentáció.
+- konyvkocka.pptx: vizuális projektprezentáció diasorban.
 
-- KonyvKocka_Dokumentacio.docx: Formai/szakmai projektdokumentacio.
-- Konyvkocka_TesztDokumentacio.docx: Tesztelesi folyamatot es eredmenyeket rogzito dokumentum.
-- README.md: Branch-szintu attekinto dokumentacio.
-- konyvkocka.pptx: Projekt-prezentacio diasor, bizottsagi bemutatas tamogatasara.
+## Kiemelt erősségek
 
-## Mukodes roviden
+- Átlátható struktúra az adott célterülethez igazítva.
+- Könnyű tájékozódás és gyors belépési pont a projektbe.
+- A branch funkciója egyértelműen felismerhető a tartalomból.
 
-- A branchben talalhato komponensek egy kozos uzleti celra epulnek: a Konyvkocka platform tartalomfogyasztasi elmenyenek kiszolgalasara.
-- A struktura kulon valasztja az alkalmazasretegeket (kliens, szerver, adat), ezert a fejlesztes, teszteles es uzemeltetes kulon-kulon is jol kezelheto.
-- A branch neve es tartalma osszhangban van a release/fejlesztesi szerepkorrel, igy a bizottsagi bemutatas soran konnyen indokolhato a branch letjogosultsaga.
+## Hogyan értelmezd ezt a tartalmat?
 
-## Milyen allapotot kepvisel ez a branch?
+- A branch felépítése moduláris: külön rétegben jelenik meg a kliens, a szerver és az adatkezelés.
+- A mappastruktúra tudatosan átlátható, így gyorsan megtalálhatók a kulcsfontosságú részek.
+- A tartalom a branch nevéhez igazodik, ezért könnyen követhető, hogy ez az ág milyen szerepet tölt be a teljes projektben.
 
-Ez a branch a projekt egy jol elkulonitheto szeletet mutatja be. A tartalom ugy van szervezve, hogy szakmai bemutaton, minosegellenorzesen es GitHub-alapu attekintesben egyarant atlathato legyen.
+## Kinek ajánlott ez az ág?
 
-## Legutobbi 5 commit
+- A projektet gyorsan áttekinteni kívánó érdeklődőknek.
+- Olyan csapattagoknak, akik dokumentált formában szeretnének tájékozódni.
 
-- 66cc427 (2026-04-15): K├Ânyvkocka prezent├íci├│ja - 567e0f8 (2026-04-13): Z├ír├│dolgozat tesztdokument├íci├│ja - e435df7 (2026-04-07): Add files via upload - d41a5cc (2025-11-01): Update README for versioning and branch descriptions - e0ce37d (2025-11-01): Delete CNAME
+## Miért érdemes ezt megnézni?
 
-## GitHub szemlelet
-
-- A branch celja egyertelmu: vagy fejlesztesi fokusz (frontend/backend/database), vagy release/snapshot stabilizalas, vagy dokumentacios/bemutato cel.
-- A commitelozmeny kovethetosege tamogatja a transzparens projektkommunikaciot es a visszakeresheto valtozaskezelesi gyakorlatot.
+- Jól látható rajta a KÖNYVKOCKA projekt fókusza és működési logikája.
+- Gyors belépési pontot ad az adott funkcionális területhez.
+- Segít abban, hogy pár perc alatt tudd, hol keresd a számodra fontos részeket.
