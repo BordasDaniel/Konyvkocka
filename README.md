@@ -1,37 +1,40 @@
-﻿# Konyvkocka - Branch dokumentacio: pptx
+﻿# KÖNYVKOCKA — pptx
 
-## Attekintes
+## Röviden erről az ágról
 
-Bemutato oldalkent szolgalo branch, amely webes formaban jeleniti meg a projekt informacios es vizualis anyagait.
+A pptx branch egy könnyen befogadható, vizuális bemutatófelületet ad a projekthez.
 
-## Programtipus
+Kifejezetten hasznos, ha gyorsan szeretnéd átlátni a rendszer fő elemeit és üzenetét.
 
-Prezentacios weboldal branch, amely a projekt bemutatasat tamogatja.
+## Mit találsz ebben a branchben?
 
-## Fo fajlok es mappak leirasa
+- .gitignore: verziókezelésből kizárt fájlok és mappák.
+- README.md: branch-szintű áttekintő dokumentáció.
+- images: prezentációs és vizuális anyagok (ábrák, képernyőképek).
+- index.html: a branch működését támogató projektfájl vagy mappa.
+- konyvkocka.pptx: vizuális projektprezentáció diasorban.
+- script.js: a branch működését támogató projektfájl vagy mappa.
+- style.css: a branch működését támogató projektfájl vagy mappa.
 
-- .gitignore: Verzokezelesbol kizart fajlok es mappak szabalyai.
-- images: Prezentacios oldalon hasznalt vizualis anyagok (diagramok, screenshotok, illusztraciok).
-- index.html: A prezentacios vagy frontend oldal belepesi pontja.
-- konyvkocka.pptx: Projekt-prezentacio diasor, bizottsagi bemutatas tamogatasara.
-- script.js: A bemutato oldal kliensoldali interakcioit kezelo JavaScript fajl.
-- style.css: A bemutato oldal vizualis stiluslapja.
+## Kiemelt erősségek
 
-## Mukodes roviden
+- Átlátható struktúra az adott célterülethez igazítva.
+- Könnyű tájékozódás és gyors belépési pont a projektbe.
+- A branch funkciója egyértelműen felismerhető a tartalomból.
 
-- A branchben talalhato komponensek egy kozos uzleti celra epulnek: a Konyvkocka platform tartalomfogyasztasi elmenyenek kiszolgalasara.
-- A struktura kulon valasztja az alkalmazasretegeket (kliens, szerver, adat), ezert a fejlesztes, teszteles es uzemeltetes kulon-kulon is jol kezelheto.
-- A branch neve es tartalma osszhangban van a release/fejlesztesi szerepkorrel, igy a bizottsagi bemutatas soran konnyen indokolhato a branch letjogosultsaga.
+## Hogyan értelmezd ezt a tartalmat?
 
-## Milyen allapotot kepvisel ez a branch?
+- A branch felépítése moduláris: külön rétegben jelenik meg a kliens, a szerver és az adatkezelés.
+- A mappastruktúra tudatosan átlátható, így gyorsan megtalálhatók a kulcsfontosságú részek.
+- A tartalom a branch nevéhez igazodik, ezért könnyen követhető, hogy ez az ág milyen szerepet tölt be a teljes projektben.
 
-Ez a branch a projekt egy jol elkulonitheto szeletet mutatja be. A tartalom ugy van szervezve, hogy szakmai bemutaton, minosegellenorzesen es GitHub-alapu attekintesben egyarant atlathato legyen.
+## Kinek ajánlott ez az ág?
 
-## Legutobbi 5 commit
+- Fejlesztőknek és érdeklődőknek, akik az adott branch célterületét szeretnék átlátni.
+- Olyan felhasználóknak, akik a projekt fejlődési lépcsőit követik.
 
-- be7da26 (2026-04-15): dfg - c6a2792 (2026-04-15): Prezent├íci├│ friss├şt├ęse a v├ęgleges projekthez. - cfd259f (2026-04-07): Hi├ínyp├│tl├ís - 4c66a11 (2026-03-18): Szerkeszt┼Ĺk neve hozz├íadva - ef2e981 (2026-02-23): Majdnem v├ęgleges pptx
+## Miért érdemes ezt megnézni?
 
-## GitHub szemlelet
-
-- A branch celja egyertelmu: vagy fejlesztesi fokusz (frontend/backend/database), vagy release/snapshot stabilizalas, vagy dokumentacios/bemutato cel.
-- A commitelozmeny kovethetosege tamogatja a transzparens projektkommunikaciot es a visszakeresheto valtozaskezelesi gyakorlatot.
+- Jól látható rajta a KÖNYVKOCKA projekt fókusza és működési logikája.
+- Gyors belépési pontot ad az adott funkcionális területhez.
+- Segít abban, hogy pár perc alatt tudd, hol keresd a számodra fontos részeket.
