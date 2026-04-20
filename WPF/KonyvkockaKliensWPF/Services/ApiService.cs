@@ -1,6 +1,8 @@
 using KonyvkockaKliensWPF.Models;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
@@ -11,11 +13,14 @@ namespace KonyvkockaKliensWPF.Services
     {
         private static ApiService? _instance;
         private readonly HttpClient _httpClient;
-        private const string BaseUrl = "https://localhost:7058/api";
+        private const string DefaultBaseUrl = "https://konyvkocka.onrender.com/api";
+        private readonly string _baseUrl;
         private string? _authToken;
 
         private ApiService()
         {
+            _baseUrl = LoadBaseUrlFromSettings();
+
             var handler = new HttpClientHandler
             {
                 ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
@@ -23,13 +28,44 @@ namespace KonyvkockaKliensWPF.Services
 
             _httpClient = new HttpClient(handler) 
             { 
-                BaseAddress = new Uri(BaseUrl),
+                BaseAddress = new Uri(_baseUrl),
                 Timeout = TimeSpan.FromSeconds(30)
             };
 
             _httpClient.DefaultRequestHeaders.Accept.Clear();
             _httpClient.DefaultRequestHeaders.Accept.Add(
                 new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+        }
+
+        private static string LoadBaseUrlFromSettings()
+        {
+            try
+            {
+                var settingsPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+                if (!File.Exists(settingsPath))
+                {
+                    return DefaultBaseUrl;
+                }
+
+                var json = File.ReadAllText(settingsPath);
+                using var document = JsonDocument.Parse(json);
+
+                if (document.RootElement.TryGetProperty("ApiSettings", out var apiSettings) &&
+                    apiSettings.TryGetProperty("BaseUrl", out var baseUrlProperty))
+                {
+                    var configuredBaseUrl = baseUrlProperty.GetString();
+                    if (!string.IsNullOrWhiteSpace(configuredBaseUrl))
+                    {
+                        return configuredBaseUrl.TrimEnd('/');
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading appsettings.json: {ex.Message}");
+            }
+
+            return DefaultBaseUrl;
         }
 
         public static ApiService Instance
@@ -54,10 +90,19 @@ namespace KonyvkockaKliensWPF.Services
         // Bejelentkezés
         public async Task<bool> LoginAsync(string email, string password)
         {
-            try
+            // Compatibility fallback:
+            // 1) preferred: send SHA256(password)
+            // 2) fallback: send raw password in PasswordHash field for legacy datasets
+            var candidates = new[]
             {
-                var request = new LoginRequestDto { Email = email, Password = password };
-                var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/Auth/login", request);
+                ComputeSha256Hex(password),
+                password
+            };
+
+            foreach (var candidate in candidates)
+            {
+                var request = new LoginRequestDto { Email = email, PasswordHash = candidate };
+                var response = await _httpClient.PostAsJsonAsync("/api/Auth/login", request);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -73,12 +118,31 @@ namespace KonyvkockaKliensWPF.Services
                     }
                 }
 
-                return false;
+                // Invalid credentials: try next candidate, or fail after both.
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    continue;
+                }
+
+                // For non-auth errors, fail fast so UI can show the connection/server issue.
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Login failed ({(int)response.StatusCode}): {errorContent}");
             }
-            catch
-            {
-                return false;
-            }
+
+            return false;
+        }
+
+        public static string ComputeSha256Hex(string value)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(value);
+            byte[] hash = SHA256.HashData(bytes);
+            return Convert.ToHexString(hash).ToLowerInvariant();
+        }
+
+        public static string GenerateSalt(int byteLength = 16)
+        {
+            byte[] saltBytes = RandomNumberGenerator.GetBytes(byteLength);
+            return Convert.ToHexString(saltBytes).ToLowerInvariant();
         }
 
         // Regisztráció
@@ -94,7 +158,7 @@ namespace KonyvkockaKliensWPF.Services
                     CountryCode = "HU"
                 };
 
-            var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/Auth/register", request);
+            var response = await _httpClient.PostAsJsonAsync("/api/Auth/register", request);
                 return response.IsSuccessStatusCode;
             }
             catch
@@ -108,24 +172,27 @@ namespace KonyvkockaKliensWPF.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync($"{BaseUrl}/Users/MindenFelhasznalo?page={page}&pageSize={pageSize}");
+                var response = await _httpClient.GetAsync($"/api/admin/users?page={page}&pageSize={pageSize}");
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var content = await response.Content.ReadAsStringAsync();
-                    var users = JsonSerializer.Deserialize<List<UserDto>>(content, new JsonSerializerOptions
+                    var payload = await response.Content.ReadFromJsonAsync<UsersListResponseDto>(new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
                     });
-                    return users ?? new List<UserDto>();
+
+                    return payload?.Users ?? new List<UserDto>();
                 }
+
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException(
+                    $"Felhasználók listázása sikertelen ({(int)response.StatusCode}): {errorContent}");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error fetching users: {ex.Message}");
+                throw;
             }
-
-            return new List<UserDto>();
         }
 
         // Egyedi felhasználó részletes lekérése (teljes DTO)
@@ -133,7 +200,7 @@ namespace KonyvkockaKliensWPF.Services
         {
             try
             {
-                var response = await _httpClient.GetAsync($"{BaseUrl}/Users/Felhasznalo/{id}");
+                var response = await _httpClient.GetAsync($"{_baseUrl}/Users/Felhasznalo/{id}");
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -156,14 +223,19 @@ namespace KonyvkockaKliensWPF.Services
         {
             try
             {
-                var response = await _httpClient.DeleteAsync($"{BaseUrl}/Users/FelhasznaloTorlese/{id}");
+                var response = await _httpClient.DeleteAsync($"/api/admin/users/{id}");
                 if (response.IsSuccessStatusCode)
                 {
                     MessageBox.Show("Felhasználó sikeresen törölve.", "Siker", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
-                    MessageBox.Show("Hiba történt a felhasználó törlése közben.", "Hiba", MessageBoxButton.OK, MessageBoxImage.Error);
+                    string errorContent = await response.Content.ReadAsStringAsync();
+                    MessageBox.Show(
+                        $"Hiba történt a felhasználó törlése közben.\nStátusz: {(int)response.StatusCode}\n{errorContent}",
+                        "Hiba",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
                 }
 
                 return response.IsSuccessStatusCode;
@@ -175,16 +247,16 @@ namespace KonyvkockaKliensWPF.Services
             }
         }
 
-        // Felhasználó módosítása (teljes DTO-val)
-        public async Task<bool> UpdateUserAsync(int id, UserDetailDto user)
+        // Felhasználó módosítása (admin DTO-val)
+        public async Task<bool> UpdateUserAsync(int id, UpdateAdminUserRequestDto user)
         {
             try
             {
-                string toSend = JsonSerializer.Serialize(user, JsonSerializerOptions.Default);
-                var content = new StringContent(toSend, Encoding.UTF8, "application/json");
-                var response = await _httpClient.PutAsync($"{BaseUrl}/Users/FelhasznaloFrissitese/{id}", content);
+                var response = await _httpClient.PutAsJsonAsync($"/api/admin/users/{id}", user);
                 if (!response.IsSuccessStatusCode)
                 {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"Error updating user {id}: {errorContent}");
                     return false;
                 }
                 else

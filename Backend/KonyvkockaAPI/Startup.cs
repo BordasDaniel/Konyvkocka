@@ -16,8 +16,15 @@ namespace KonyvkockaAPI
             var builder = WebApplication.CreateBuilder(args);
 
             var connectionString = builder.Configuration.GetConnectionString("KonyvkockaConnection") ?? string.Empty;
+            var databaseUrl = builder.Configuration["DATABASE_URL"] ?? builder.Configuration["DB_URL"];
+
+            if (!string.IsNullOrWhiteSpace(databaseUrl))
+            {
+                connectionString = BuildConnectionStringFromDatabaseUrl(databaseUrl);
+            }
+
             var dbHost = builder.Configuration["DB_HOST"];
-            if (!string.IsNullOrWhiteSpace(dbHost))
+            if (string.IsNullOrWhiteSpace(databaseUrl) && !string.IsNullOrWhiteSpace(dbHost))
             {
                 var dbPort = builder.Configuration["DB_PORT"] ?? "3306";
                 var dbName = builder.Configuration["DB_NAME"] ?? "konyvkocka";
@@ -129,6 +136,74 @@ namespace KonyvkockaAPI
             app.MapFallbackToFile("index.html");
 
             app.Run();
+        }
+
+        private static string BuildConnectionStringFromDatabaseUrl(string databaseUrl)
+        {
+            if (!databaseUrl.StartsWith("mysql://", StringComparison.OrdinalIgnoreCase))
+            {
+                return databaseUrl;
+            }
+
+            var uri = new Uri(databaseUrl);
+            var userInfoParts = uri.UserInfo.Split(':', 2, StringSplitOptions.TrimEntries);
+            var user = userInfoParts.Length > 0 ? Uri.UnescapeDataString(userInfoParts[0]) : string.Empty;
+            var password = userInfoParts.Length > 1 ? Uri.UnescapeDataString(userInfoParts[1]) : string.Empty;
+            var dbName = uri.AbsolutePath.Trim('/');
+
+            var queryValues = ParseQueryString(uri.Query);
+            var sslModeValue = queryValues.TryGetValue("ssl-mode", out var sslMode)
+                ? sslMode
+                : (queryValues.TryGetValue("sslmode", out var altSslMode) ? altSslMode : string.Empty);
+
+            var connectionString = $"Server={uri.Host};Port={uri.Port};Database={dbName};Uid={user};Pwd={password};";
+            if (!string.IsNullOrWhiteSpace(sslModeValue))
+            {
+                connectionString += $"SslMode={NormalizeSslMode(sslModeValue)};";
+            }
+
+            return connectionString;
+        }
+
+        private static Dictionary<string, string> ParseQueryString(string query)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return result;
+            }
+
+            var trimmedQuery = query.StartsWith('?') ? query[1..] : query;
+            var parameters = trimmedQuery.Split('&', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var parameter in parameters)
+            {
+                var keyValue = parameter.Split('=', 2);
+                if (keyValue.Length == 0 || string.IsNullOrWhiteSpace(keyValue[0]))
+                {
+                    continue;
+                }
+
+                var key = Uri.UnescapeDataString(keyValue[0]);
+                var value = keyValue.Length > 1 ? Uri.UnescapeDataString(keyValue[1]) : string.Empty;
+                result[key] = value;
+            }
+
+            return result;
+        }
+
+        private static string NormalizeSslMode(string sslMode)
+        {
+            return sslMode.Trim().ToUpperInvariant() switch
+            {
+                "DISABLED" => "None",
+                "PREFERRED" => "Preferred",
+                "REQUIRED" => "Required",
+                "VERIFYCA" => "VerifyCA",
+                "VERIFY-CA" => "VerifyCA",
+                "VERIFYIDENTITY" => "VerifyFull",
+                "VERIFY-IDENTITY" => "VerifyFull",
+                _ => "Required"
+            };
         }
     }
 }

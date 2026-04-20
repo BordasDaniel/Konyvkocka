@@ -15,5 +15,7 @@ namespace KonyvkockaAPI.DTO.Request
         public int BookPoints { get; set; }
         public int SeriesPoints { get; set; }
         public int MoviePoints { get; set; }
+        public string? NewPasswordHash { get; set; }
+        public string? NewPasswordSalt { get; set; }
     }
 }

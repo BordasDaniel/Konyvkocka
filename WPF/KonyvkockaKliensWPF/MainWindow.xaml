@@ -82,17 +82,32 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="15"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Row="0" 
+                                   Grid.ColumnSpan="3"
                                    Text="Összes felhasználó" 
                                    FontSize="22" 
                                    FontWeight="Bold" 
                                    Foreground="#2E7D32"
-                                   Margin="0,0,0,15"/>
+                                   Margin="0,0,0,8"/>
 
-                        <DataGrid IsEnabled="False" Grid.Row="1" 
+                        <TextBlock Grid.Row="1"
+                                   Grid.ColumnSpan="3"
+                                   Text="Jelölj ki egy felhasználót a táblázatban a részletes nézethez."
+                                   Foreground="#4E6E53"
+                                   Margin="0,0,0,12"/>
+
+                        <DataGrid Grid.Row="1" 
+                                  Grid.RowSpan="2"
+                                  Grid.Column="0"
                                   x:Name="UsersDataGrid"
                                   AutoGenerateColumns="False"
                                   CanUserAddRows="False"
@@ -100,62 +115,92 @@
                                   GridLinesVisibility="Horizontal"
                                   HeadersVisibility="Column"
                                   MinRowHeight="35"
-                                  IsReadOnly="True">
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  SelectionChanged="UsersDataGrid_SelectionChanged">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
                                 <DataGridTextColumn Header="Felhasználónév" Binding="{Binding Username}" Width="*"/>
                                 <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="*"/>
-                                <DataGridCheckBoxColumn Header="Előfizető" Binding="{Binding IsSubscriber}" Width="90"/>
+                                <DataGridCheckBoxColumn Header="Előfizető" Binding="{Binding Premium}" Width="90"/>
                                 <DataGridTextColumn Header="Szint" Binding="{Binding Level}" Width="60"/>
                                 <DataGridTextColumn Header="Utolsó belépés" Binding="{Binding LastLoginDate}" Width="180"/>
                             </DataGrid.Columns>
                         </DataGrid>
+
+                        <Border Grid.Row="2"
+                                Grid.Column="2"
+                                Background="#F9FFF7"
+                                BorderBrush="#AED7AF"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="14">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel TextElement.Foreground="#1F2933">
+                                    <TextBlock Text="Kijelölt felhasználó" FontWeight="Bold" FontSize="18" Foreground="#2E7D32" Margin="0,0,0,10"/>
+
+                                    <TextBlock x:Name="DetailsPlaceholderTextBlock"
+                                               Text="Nincs kijelölt felhasználó."
+                                               Foreground="#5D7C60"
+                                               Margin="0,0,0,10"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Text="ID:" FontWeight="SemiBold" Margin="0,0,8,6"/>
+                                        <TextBlock Grid.Column="1" x:Name="DetailsIdTextBlock" Margin="0,0,0,6" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="1" Text="Felhasználónév:" FontWeight="SemiBold" Margin="0,0,8,6"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="1" x:Name="DetailsUsernameTextBlock" Margin="0,0,0,6" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="2" Text="Email:" FontWeight="SemiBold" Margin="0,0,8,6"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="1" x:Name="DetailsEmailTextBlock" Margin="0,0,0,6" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="3" Text="Szerepkör:" FontWeight="SemiBold" Margin="0,0,8,6"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="1" x:Name="DetailsPermissionTextBlock" Margin="0,0,0,6" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="4" Text="Előfizetés:" FontWeight="SemiBold" Margin="0,0,8,6"/>
+                                        <TextBlock Grid.Row="4" Grid.Column="1" x:Name="DetailsSubscriptionTextBlock" Margin="0,0,0,6" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="5" Text="Szint / XP:" FontWeight="SemiBold" Margin="0,0,8,6"/>
+                                        <TextBlock Grid.Row="5" Grid.Column="1" x:Name="DetailsLevelXpTextBlock" Margin="0,0,0,6" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="6" Text="Pontok:" FontWeight="SemiBold" Margin="0,0,8,6"/>
+                                        <TextBlock Grid.Row="6" Grid.Column="1" x:Name="DetailsPointsTextBlock" Margin="0,0,0,6" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="7" Text="Streak:" FontWeight="SemiBold" Margin="0,0,8,6"/>
+                                        <TextBlock Grid.Row="7" Grid.Column="1" x:Name="DetailsStreakTextBlock" Margin="0,0,0,6" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="8" Text="Aktivitás:" FontWeight="SemiBold" Margin="0,0,8,6"/>
+                                        <TextBlock Grid.Row="8" Grid.Column="1" x:Name="DetailsActivityTextBlock" Margin="0,0,0,6" TextWrapping="Wrap"/>
+
+                                        <TextBlock Grid.Row="9" Text="Utolsó belépés:" FontWeight="SemiBold" Margin="0,0,8,0"/>
+                                        <TextBlock Grid.Row="9" Grid.Column="1" x:Name="DetailsLastLoginTextBlock" TextWrapping="Wrap"/>
+                                    </Grid>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
                     </Grid>
                 </Border>
             </TabItem>
 
-            <!-- 2. Fül: Létrehozás -->
-            <TabItem Style="{StaticResource ModernTabItem}"
-                     Background="#2196F3"
-                     Foreground="White">
-                <TabItem.Header>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="➕" FontSize="20" Margin="0,0,8,0"/>
-                        <TextBlock Text="Új felhasználó" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </TabItem.Header>
-                <Border Background="#E3F2FD" Padding="20">
-                    <StackPanel MaxWidth="500" VerticalAlignment="Center">
-                        <TextBlock Text="Új felhasználó létrehozása" 
-                                   FontSize="22" 
-                                   FontWeight="Bold" 
-                                   Foreground="#1565C0"
-                                   Margin="0,0,0,30"/>
-
-                        <TextBlock Text="Felhasználónév:" Foreground="Black" Margin="0,0,0,5"/>
-                        <TextBox x:Name="NewUsernameTextBox" Height="35" FontSize="14" Margin="0,0,0,15"/>
-
-                        <TextBlock Text="Email:" Foreground="Black" Margin="0,0,0,5"/>
-                        <TextBox x:Name="NewEmailTextBox" Height="35" FontSize="14" Margin="0,0,0,15"/>
-
-                        <TextBlock Text="Jelszó:" Foreground="Black" Margin="0,0,0,5"/>
-                        <PasswordBox x:Name="NewPasswordBox" Height="35" FontSize="14" Margin="0,0,0,15"/>
-
-                        
-                        <Button Content="Felhasználó létrehozása" 
-                                Background="#2196F3" 
-                                Foreground="White"
-                                FontSize="16"
-                                FontWeight="Bold"
-                                Height="45"
-                                BorderThickness="0"
-                                Cursor="Hand"
-                                Click="CreateUserButton_Click"/>
-                    </StackPanel>
-                </Border>
-            </TabItem>
-
-            <!-- 3. Fül: Módosítás -->
+            <!-- 2. Fül: Módosítás -->
             <TabItem Style="{StaticResource ModernTabItem}"
                      Background="#FF9800"
                      Foreground="White">
@@ -213,20 +258,16 @@
                                     <TextBox x:Name="EditCountryTextBox" Height="35" FontSize="14"/>
                                 </StackPanel>
 
-                                <!-- Profilkép URL -->
+                                <!-- Jogosultság -->
                                 <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,0,0,10">
-                                    <TextBlock Text="Profilkép URL:" Foreground="Black" Margin="0,0,0,5"/>
-                                    <TextBox x:Name="EditProfilePictureTextBox" Height="35" FontSize="14"/>
+                                    <TextBlock Text="Jogosultság:" Foreground="Black" Margin="0,0,0,5"/>
+                                    <ComboBox x:Name="EditPermissionComboBox" Height="35" FontSize="14"/>
                                 </StackPanel>
 
-                                <!-- Prémium -->
+                                <!-- Előfizetés típus -->
                                 <StackPanel Grid.Row="4" Grid.Column="0" Margin="0,0,0,10">
-                                    <TextBlock Text="Prémium státusz:" Foreground="Black" Margin="0,0,0,5"/>
-                                    <CheckBox x:Name="EditIsPremiumCheckBox" 
-                                              Content="Prémium felhasználó" 
-                                              FontSize="14" 
-                                              VerticalContentAlignment="Center"
-                                              Height="35"/>
+                                    <TextBlock Text="Előfizetés csomag:" Foreground="Black" Margin="0,0,0,5"/>
+                                    <ComboBox x:Name="EditSubscriptionTypeComboBox" Height="35" FontSize="14"/>
                                 </StackPanel>
 
                                 <!-- Szint -->
@@ -273,6 +314,25 @@
                                 </StackPanel>
                             </Grid>
 
+                            <StackPanel Margin="0,10,0,0">
+                                <TextBlock Text="Előfizetés vége:" Foreground="Black" Margin="0,0,0,5"/>
+                                <DatePicker x:Name="EditPremiumExpiresDatePicker" Height="35" FontSize="14" Margin="0,0,0,10"/>
+                                <CheckBox x:Name="EditResetProfilePictureCheckBox"
+                                          Content="Profilkép visszaállítása alapértelmezettre"
+                                          FontSize="14"
+                                          Height="30"/>
+
+                                <Border Background="#FFF8F0" BorderBrush="#F4C48A" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,12,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Jelszó módosítása (opcionális)" FontWeight="SemiBold" Foreground="#A24E00" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Új jelszó:" Foreground="Black" Margin="0,0,0,5"/>
+                                        <PasswordBox x:Name="EditNewPasswordBox" Height="35" FontSize="14" Margin="0,0,0,10"/>
+                                        <TextBlock Text="Új jelszó megerősítése:" Foreground="Black" Margin="0,0,0,5"/>
+                                        <PasswordBox x:Name="EditConfirmNewPasswordBox" Height="35" FontSize="14"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
                             <Button Content="💾 Módosítások mentése" 
                                     Background="#FF9800" 
                                     Foreground="White"
@@ -287,7 +347,7 @@
                 </Border>
             </TabItem>
 
-            <!-- 4. Fül: Törlés -->
+            <!-- 3. Fül: Törlés -->
             <TabItem Style="{StaticResource ModernTabItem}"
                      Background="#F44336"
                      Foreground="White">
@@ -298,12 +358,17 @@
                     </StackPanel>
                 </TabItem.Header>
                 <Border Background="#FFEBEE" Padding="20">
-                    <StackPanel MaxWidth="500" VerticalAlignment="Center">
+                    <StackPanel MaxWidth="560" VerticalAlignment="Center">
                         <TextBlock Text="Felhasználó törlése" 
                                    FontSize="22" 
                                    FontWeight="Bold" 
                                    Foreground="#C62828"
-                                   Margin="0,0,0,20"/>
+                                   Margin="0,0,0,14"/>
+
+                        <TextBlock Text="A törlés előtt ellenőrizd a kiválasztott felhasználót, majd gépeld be pontosan a felhasználónevét megerősítésként."
+                                   Foreground="#7E2A2A"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,14"/>
 
                         <Border Background="#FFCDD2" 
                                 BorderBrush="#F44336" 
@@ -322,9 +387,36 @@
                         </Border>
 
                         <TextBlock Text="Felhasználó kiválasztása:" Foreground="Black" Margin="0,0,0,5"/>
-                        <ComboBox x:Name="DeleteUserComboBox" Height="35" FontSize="14" Margin="0,0,0,25"/>
+                        <ComboBox x:Name="DeleteUserComboBox"
+                                  Height="35"
+                                  FontSize="14"
+                                  Margin="0,0,0,16"
+                                  SelectionChanged="DeleteUserComboBox_SelectionChanged"/>
+
+                        <Border Background="#FFEEF0"
+                                BorderBrush="#F44336"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12"
+                                Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Törlésre kijelölt felhasználó" FontWeight="Bold" Foreground="#B71C1C" Margin="0,0,0,8"/>
+                                <TextBlock x:Name="DeletePreviewTextBlock" Text="Nincs kijelölt felhasználó." TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="Megerősítés: írd be a felhasználónevet" Foreground="Black" Margin="0,0,0,5" FontWeight="SemiBold"/>
+                        <TextBox x:Name="DeleteConfirmTextBox"
+                                 Height="35"
+                                 FontSize="14"
+                                 Margin="0,0,0,6"
+                                 TextChanged="DeleteConfirmTextBox_TextChanged"/>
+                        <TextBlock x:Name="DeleteValidationTextBlock"
+                                   Foreground="#C62828"
+                                   Margin="0,0,0,18"/>
 
                         <Button Content="⚠️ Felhasználó törlése" 
+                                x:Name="DeleteUserButton"
                                 Background="#F44336" 
                                 Foreground="White"
                                 FontSize="16"
@@ -332,6 +424,7 @@
                                 Height="45"
                                 BorderThickness="0"
                                 Cursor="Hand"
+                                IsEnabled="False"
                                 Click="DeleteUserButton_Click"/>
                     </StackPanel>
                 </Border>

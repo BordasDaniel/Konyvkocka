@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace KonyvkockaAPI.Controllers
 {
@@ -1221,6 +1223,35 @@ namespace KonyvkockaAPI.Controllers
                     });
                 }
 
+                var hasNewPasswordHash = !string.IsNullOrWhiteSpace(dto.NewPasswordHash);
+                var hasNewPasswordSalt = !string.IsNullOrWhiteSpace(dto.NewPasswordSalt);
+                if (hasNewPasswordHash != hasNewPasswordSalt)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidPasswordPayload",
+                        Message = "Jelszó változtatásnál a NewPasswordHash és a NewPasswordSalt is kötelező."
+                    });
+                }
+
+                if (hasNewPasswordHash && dto.NewPasswordHash!.Length < 32)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidPasswordHash",
+                        Message = "A NewPasswordHash érvénytelen."
+                    });
+                }
+
+                if (hasNewPasswordSalt && dto.NewPasswordSalt!.Length < 8)
+                {
+                    return BadRequest(new ErrorResponseDTO
+                    {
+                        Error = "InvalidPasswordSalt",
+                        Message = "A NewPasswordSalt érvénytelen."
+                    });
+                }
+
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
                 if (user == null)
                 {
@@ -1248,6 +1279,12 @@ namespace KonyvkockaAPI.Controllers
                 user.BookPoints = dto.BookPoints;
                 user.SeriesPoints = dto.SeriesPoints;
                 user.MoviePoints = dto.MoviePoints;
+
+                if (hasNewPasswordHash)
+                {
+                    user.PasswordHash = CreateSHA256(dto.NewPasswordHash! + dto.NewPasswordSalt!);
+                    user.PasswordSalt = dto.NewPasswordSalt!;
+                }
 
                 await _context.SaveChangesAsync();
 
@@ -2068,6 +2105,21 @@ namespace KonyvkockaAPI.Controllers
             {
                 return StatusCode(500, new ErrorResponseDTO { Error = "InternalError", Message = ex.Message });
             }
+        }
+
+        private static string CreateSHA256(string text)
+        {
+            var bytes = Encoding.UTF8.GetBytes(text);
+            using var sha256 = SHA256.Create();
+            var hash = sha256.ComputeHash(bytes);
+            var builder = new StringBuilder(hash.Length * 2);
+
+            foreach (var item in hash)
+            {
+                builder.Append(item.ToString("x2"));
+            }
+
+            return builder.ToString();
         }
     }
 }
